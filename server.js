@@ -3,27 +3,15 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// 1. Tell the server to look in the root AND the 'files (33)' folder
-app.use(express.static(path.join(__dirname)));
-app.use(express.static(path.join(__dirname, 'files (33)')));
+// Serve all files in the current directory
+app.use(express.static(__dirname));
 
-// 2. A more robust way to find your dashboard
+// Serve the dashboard at the root
 app.get('/', (req, res) => {
-    const locations = [
-        path.join(__dirname, 'career-os-v2.html'),
-        path.join(__dirname, 'files (33)', 'career-os-v2.html')
-    ];
-    
-    const fs = require('fs');
-    const fileToLink = locations.find(loc => fs.existsSync(loc));
-    
-    if (fileToLink) {
-        res.sendFile(fileToLink);
-    } else {
-        res.status(404).json({ error: "Dashboard file not found in any directory" });
-    }
+    res.sendFile(path.join(__dirname, 'career-os-v2.html'));
 });
 
+// Required for Railway
 app.get('/health', (req, res) => res.status(200).send('OK'));
 
 app.listen(PORT, '0.0.0.0', () => {
