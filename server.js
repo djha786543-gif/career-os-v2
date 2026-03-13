@@ -3,6 +3,8 @@ const path = require('path');
 const fs = require('fs');
 const app = express();
 const cors = require('cors');
+app.use(cors({ origin: '*' }));
+const cors = require('cors');
 app.use(cors());
 const PORT = process.env.PORT || 8080;
 
@@ -34,3 +36,4 @@ app.get('/api/jobs', (req, res) => {
 });
 
 app.listen(PORT, '0.0.0.0', () => console.log('Server live on port ' + PORT));
+// Build Version: 1773362013
