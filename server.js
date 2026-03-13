@@ -9,27 +9,23 @@ app.set('trust proxy', 1);
 app.use(cors());
 app.use(express.static(__dirname));
 
-// Healthcheck
 app.get('/health', (req, res) => res.status(200).send('OK'));
 
-// THE REAL DATA ENGINE
 app.get('/api/jobs', async (req, res) => {
-    const { ADZUNA_APP_ID, ADZUNA_APP_KEY } = process.env;
-    const profile = req.query.profile || 'dj';
+    // AUDIT CHECK: Log if keys are missing
+    const appId = process.env.ADZUNA_APP_ID;
+    const appKey = process.env.ADZUNA_APP_KEY;
     
-    // Default search for IT Audit / CISA
-    try {
-        const response = await axios.get(`https://api.adzuna.com/v1/api/jobs/us/search/1`, {
-            params: {
-                app_id: ADZUNA_APP_ID,
-                app_key: ADZUNA_APP_KEY,
-                results_per_page: 10,
-                what: "IT Audit CISA SOX",
-                content_type: "application/json"
-            }
-        });
+    console.log(`[Audit] Fetching jobs. Keys present: ID=${!!appId}, Key=${!!appKey}`);
 
-        // Mapping Adzuna data to your Dashboard format
+    if (!appId || !appKey) {
+        return res.status(500).json({ status: 'error', message: 'Missing API Keys in Railway Variables' });
+    }
+
+    try {
+        const url = `https://api.adzuna.com/v1/api/jobs/us/search/1?app_id=${appId}&app_key=${appKey}&results_per_page=10&what=CISA%20IT%20Audit&content_type=application/json`;
+        const response = await axios.get(url);
+
         const jobs = response.data.results.map(job => ({
             id: job.id,
             title: job.title,
@@ -38,14 +34,13 @@ app.get('/api/jobs', async (req, res) => {
             salary: job.salary_min ? `$${Math.round(job.salary_min/1000)}k` : "N/A",
             snippet: job.description.substring(0, 150) + "...",
             applyUrl: job.redirect_url,
-            postedDate: "Recent",
-            fitScore: 85 // placeholder for AI scoring
+            fitScore: 85
         }));
 
         res.json({ status: 'success', jobs: jobs });
     } catch (error) {
-        console.error('Adzuna Error:', error.message);
-        res.status(500).json({ status: 'error', message: 'API Key or Adzuna Error' });
+        console.error('[Adzuna Error Detail]:', error.response ? error.response.data : error.message);
+        res.status(500).json({ status: 'error', message: 'Adzuna API rejection' });
     }
 });
 
@@ -53,4 +48,4 @@ app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'career-os-v2.html'));
 });
 
-app.listen(PORT, '0.0.0.0', () => console.log('Production Engine Live on ' + PORT));
+app.listen(PORT, '0.0.0.0', () => console.log('Audit Engine Active on ' + PORT));
