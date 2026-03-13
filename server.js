@@ -5,7 +5,6 @@ const axios = require('axios');
 const app = express();
 const PORT = process.env.PORT || 8080;
 
-app.set('trust proxy', 1);
 app.use(cors());
 app.use(express.static(__dirname));
 
@@ -16,13 +15,15 @@ app.get('/api/jobs', async (req, res) => {
     const appKey = process.env.ADZUNA_APP_KEY;
 
     try {
-        // Use params object so axios handles encoding automatically
-        const response = await axios.get('https://api.adzuna.com/v1/api/jobs/us/search/1', {
+        // Simplified URL with NO special characters or complex encoding
+        const url = `https://api.adzuna.com/v1/api/jobs/us/search/1`;
+        
+        const response = await axios.get(url, {
             params: {
                 app_id: appId,
                 app_key: appKey,
-                results_per_page: 10,
-                what: "IT Audit CISA",
+                results_per_page: 5,
+                what: "audit", // Bare minimum keyword to test
                 content_type: "application/json"
             }
         });
@@ -35,19 +36,17 @@ app.get('/api/jobs', async (req, res) => {
             salary: job.salary_min ? `$${Math.round(job.salary_min/1000)}k` : "N/A",
             snippet: job.description.substring(0, 150) + "...",
             applyUrl: job.redirect_url,
-            fitScore: 88
+            fitScore: 92
         }));
 
         res.json({ status: 'success', jobs: jobs });
     } catch (error) {
-        // Detailed log to see if it's still a 400
-        console.error('[Final Audit Error]:', error.response ? error.response.status : error.message);
-        res.status(500).json({ status: 'error', message: 'Adzuna Sync Failure' });
+        // This will print the EXACT error from Adzuna's server to your Railway logs
+        console.error('[Final Audit Error]:', error.response ? error.response.data : error.message);
+        res.status(500).json({ status: 'error', message: 'Adzuna rejection' });
     }
 });
 
-app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'career-os-v2.html'));
-});
+app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'career-os-v2.html')));
 
-app.listen(PORT, '0.0.0.0', () => console.log('Final Audit Engine Active'));
+app.listen(PORT, '0.0.0.0', () => console.log('Audit Engine Finalized'));
