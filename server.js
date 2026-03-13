@@ -2,6 +2,8 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs');
 const app = express();
+const cors = require('cors');
+app.use(cors());
 const PORT = process.env.PORT || 8080;
 
 // FIX 1: Trust Railway's Proxy (Stops the X-Forwarded-For error)
