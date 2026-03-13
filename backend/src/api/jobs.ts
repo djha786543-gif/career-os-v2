@@ -19,7 +19,8 @@ router.get('/', async (req, res) => {
   // Ensure regions is always a string[]
   const regions: string[] = region ? [region as string] : candidate.regions;
   const jobBoards: JobBoard[] = ['LinkedIn', 'Indeed', 'Glassdoor', 'Naukri', 'EuroJobs'];
-  const jobs = await ingestJobs(regions, jobBoards);
+  // Pass candidateWithTrack to ingestJobs for candidate-specific queries
+  const jobs = await ingestJobs(regions, jobBoards, candidateWithTrack);
   // filterAndScoreJobs expects candidateWithTrack to possibly have a track
   const filtered = filterAndScoreJobs(jobs, candidateWithTrack as any, filters);
   res.json(filtered);
