@@ -6,8 +6,7 @@ const app = express();
 const PORT = process.env.PORT || 8080;
 
 app.use(cors());
-// Serve the Next.js static export from the 'out' directory
-app.use(express.static(path.join(__dirname, 'out')));
+app.use(express.static(__dirname));
 
 app.get('/health', (req, res) => res.status(200).send('OK'));
 
@@ -38,9 +37,6 @@ app.get('/api/jobs', async (req, res) => {
     }
 });
 
-// Always serve index.html for any other route to support Next.js client-side routing
-app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'out', 'index.html'));
-});
+app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'career-os-v2.html')));
 
-app.listen(PORT, '0.0.0.0', () => console.log('System Stabilized & Serving Next.js Build'));
+app.listen(PORT, '0.0.0.0', () => console.log('System Stabilized'));
