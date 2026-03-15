@@ -1,0 +1,7 @@
+tsconfig.tsbuildinfo
+*.tsbuildinfo
+.next/
+frontend/.next/
+frontend/out/
+node_modules/
+frontend/node_modules/
