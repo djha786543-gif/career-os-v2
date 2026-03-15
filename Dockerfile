@@ -1,7 +1,10 @@
 FROM node:18-alpine
 WORKDIR /app
 COPY package*.json ./
-RUN npm install --omit=dev
+RUN npm ci
+COPY frontend/package*.json ./frontend/
+RUN cd frontend && npm ci
 COPY . .
-EXPOSE 8080
+RUN cd frontend && npm run build
+EXPOSE 3000
 CMD ["node", "server.js"]
