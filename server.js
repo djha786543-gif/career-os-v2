@@ -6,7 +6,8 @@ const app = express();
 const PORT = process.env.PORT || 8080;
 
 app.use(cors());
-app.use(express.static(__dirname));
+// Serve the Next.js static export from the 'out' directory
+app.use(express.static(path.join(__dirname, 'out')));
 
 app.get('/health', (req, res) => res.status(200).send('OK'));
 
@@ -15,9 +16,7 @@ app.get('/api/jobs', async (req, res) => {
     const key = process.env.ADZUNA_APP_KEY;
 
     try {
-        // NUCLEAR OPTION: No params object, just a clean, hard-coded URL string
         const url = `https://api.adzuna.com/v1/api/jobs/us/search/1?app_id=${id}&app_key=${key}&results_per_page=10&what=audit`;
-        
         console.log("Attempting Nuclear Fetch...");
         const response = await axios.get(url);
 
@@ -39,5 +38,9 @@ app.get('/api/jobs', async (req, res) => {
     }
 });
 
-app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'career-os-v2.html')));
-app.listen(PORT, '0.0.0.0', () => console.log('System Stabilized'));
+// Always serve index.html for any other route to support Next.js client-side routing
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'out', 'index.html'));
+});
+
+app.listen(PORT, '0.0.0.0', () => console.log('System Stabilized & Serving Next.js Build'));
