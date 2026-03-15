@@ -166,7 +166,7 @@ export function JobHub() {
   
   const [keywords, setKeywords] = useState<string>(CP_PROFILES[subContext].searchKeywordsDefault);
   const [isRemote, setIsRemote] = useState(subContext === 'dj');
-  const [country, setCountry] = useState('usa');
+  const [country, setCountry] = useState(subContext === 'pooja' ? 'all' : 'usa');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [autoRefresh, setAutoRefresh] = useState(true);
@@ -349,6 +349,7 @@ export function JobHub() {
             <input value={keywords} onChange={e => setKeywords(e.target.value)} placeholder="Search keywords..." style={s.searchInput} />
             {subContext === 'pooja' && (
               <select value={country} onChange={e => setCountry(e.target.value)} style={s.countrySelect}>
+                <option value="all">🌍 Global (All)</option>
                 <option value="usa">🇺🇸 USA</option>
                 <option value="uk">🇬🇧 UK</option>
                 <option value="canada">🇨🇦 Canada</option>
@@ -385,7 +386,7 @@ export function JobHub() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
             {/* Results count */}
             <span style={{ color: 'var(--text-muted)', fontSize: 13, flex: 1 }}>
-              {state.totalResults || 0} {isRemote || subContext === 'dj' ? 'remote ' : ''} {CP_PROFILES[subContext].role.replace(' Manager', '')} positions · {subContext === 'dj' ? 'USA' : country.toUpperCase()} · Updated {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              {state.totalResults || 0} {isRemote || subContext === 'dj' ? 'remote ' : ''} {CP_PROFILES[subContext].role.replace(' Manager', '')} positions · {subContext === 'dj' ? 'USA' : country === 'all' ? 'GLOBAL' : country.toUpperCase()} · Updated {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </span>
 
             {/* Sort dropdown — DJ only */}
