@@ -1,1 +1,1 @@
-deploy Sun Mar 15 19:15:36 CDT 2026
+deploy Sun Mar 15 19:30:00 CDT 2026 - fix: portal rebuild triggered after BUG3 fixes
