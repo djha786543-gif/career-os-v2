@@ -173,6 +173,7 @@ export function JobHub() {
   const [timeLeft, setTimeLeft] = useState(45 * 60);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>(subContext === 'pooja' ? 'list' : 'grid');
   const [sortBy, setSortBy] = useState<'fit' | 'newest' | 'salary' | 'company'>('fit');
+  const [apiUsage, setApiUsage] = useState<any>(null);
 
   const candidateId = subContext;
 
@@ -214,9 +215,11 @@ export function JobHub() {
     setLoading(true);
     setError(null);
     try {
-      const pageSize = 16;
+      const pageSize = 50;
       const remoteParam = subContext === 'dj' ? 'true' : isRemote;
       const data = await api.get(`/jobs?candidate=${subContext}&page=${state.page}&pageSize=${pageSize}&remote=${remoteParam}${subContext === 'pooja' ? `&country=${country}` : ''}`);
+      
+      if (data.usage) setApiUsage(data.usage);
       
       setState({ 
         jobs: data.jobs,
@@ -398,6 +401,26 @@ export function JobHub() {
             </div>
             <button onClick={fetchJobs} style={s.manualBtn}>↺ Refresh Now</button>
           </div>
+
+          {apiUsage && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 16,
+              padding: '12px 16px',
+              background: apiUsage.percentage > 80 ? 'rgba(244,63,94,0.1)' : 'rgba(16,185,129,0.1)',
+              border: `1px solid ${apiUsage.percentage > 80 ? 'rgba(244,63,94,0.2)' : 'rgba(16,185,129,0.2)'}`,
+              borderRadius: 8,
+              marginBottom: 16
+            }}>
+              <span style={{ fontSize: 12, fontWeight: 700, color: apiUsage.percentage > 80 ? '#f43f5e' : '#10b981' }}>
+                📊 SerpApi Usage: {apiUsage.used} / {apiUsage.limit} calls ({apiUsage.percentage}%)
+              </span>
+              <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                Remaining: {apiUsage.remaining} | Est. Cost: ${apiUsage.estimatedCost}
+              </span>
+            </div>
+          )}
 
           {error && <div style={s.error}>{error}</div>}
 
