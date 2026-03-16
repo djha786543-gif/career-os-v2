@@ -25,7 +25,7 @@ app.get('/health', (req, res) => {
 })
 
 // Fallback for all routes
-app.get('*', (req, res) => {
+app.get('(.*)', (req, res) => {
   const indexPath = path.join(outDir, 'index.html')
   if (fs.existsSync(indexPath)) {
     res.sendFile(indexPath)
