@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import jobsRouter from './api/jobs';
 import alertsRouter from './api/alerts';
+import aiRouter from './api/ai';
 
 dotenv.config();
 
@@ -34,6 +35,7 @@ app.get('/health', (_req, res) => {
 // Mount routers
 app.use('/api/jobs', jobsRouter);
 app.use('/api/alerts', alertsRouter);
+app.use('/api/ai', aiRouter);
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
