@@ -210,25 +210,30 @@ export function JobHub() {
   const [assistResult, setAssistResult] = useState<string | null>(null);
   const [loadingAssist, setLoadingAssist] = useState(false);
 
-  const fetchJobs = useCallback(async () => {
+  const fetchJobs = useCallback(async (forceRefresh = false) => {
     setLoading(true);
     setError(null);
     try {
       const pageSize = 16;
       const remoteParam = subContext === 'dj' ? 'true' : isRemote;
-      const data = await api.get(`/jobs?candidate=${subContext}&page=${state.page}&pageSize=${pageSize}&remote=${remoteParam}${subContext === 'pooja' ? `&country=${country}` : ''}`);
-      
-      setState({ 
+      const forceParam = forceRefresh ? '&forceRefresh=true' : '';
+      const data = await api.get(`/jobs?candidate=${subContext}&page=${state.page}&pageSize=${pageSize}&remote=${remoteParam}${subContext === 'pooja' ? `&country=${country}` : ''}${forceParam}`);
+
+      setState({
         jobs: data.jobs,
         totalResults: data.totalResults,
         totalPages: data.totalPages,
         hasNext: data.hasNext,
         hasPrev: data.hasPrev,
-        lastJobIds: state.lastJobIds.size === 0 ? new Set(data.jobs.map((j: any) => j.id)) : state.lastJobIds 
+        lastJobIds: state.lastJobIds.size === 0 ? new Set(data.jobs.map((j: any) => j.id)) : state.lastJobIds
       });
       setTimeLeft(45 * 60);
-    } catch (err) {
-      setError('Failed to fetch jobs. Please check your connection.');
+    } catch (err: any) {
+      if (err?.response?.status === 429) {
+        setError('Force refresh is rate-limited. Please wait 1 hour between force refreshes.');
+      } else {
+        setError('Failed to fetch jobs. Please check your connection.');
+      }
     } finally {
       setLoading(false);
     }
@@ -388,7 +393,7 @@ export function JobHub() {
                 </>
               )}
             </div>
-            <button onClick={fetchJobs} style={{ ...s.searchBtn, background: subContext === 'dj' ? '#22D3EE' : '#F472B6' }} disabled={loading}>{loading ? '...' : 'Search Jobs'}</button>
+            <button onClick={() => fetchJobs(false)} style={{ ...s.searchBtn, background: subContext === 'dj' ? '#22D3EE' : '#F472B6' }} disabled={loading}>{loading ? '...' : 'Search Jobs'}</button>
           </div>
 
           <div style={s.refreshBar}>
@@ -396,7 +401,8 @@ export function JobHub() {
               <span style={s.timerText}>Next refresh in {formatTime(timeLeft)}</span>
               <button onClick={() => setAutoRefresh(!autoRefresh)} style={s.autoBtn}>{autoRefresh ? 'Pause Auto' : 'Resume Auto'}</button>
             </div>
-            <button onClick={fetchJobs} style={s.manualBtn}>↺ Refresh Now</button>
+            <button onClick={() => fetchJobs(false)} style={s.manualBtn}>↺ Refresh Now</button>
+            <button onClick={() => fetchJobs(true)} style={{ ...s.manualBtn, background: 'rgba(244,63,94,0.15)', color: '#f43f5e', border: '1px solid rgba(244,63,94,0.3)' }} title="Bypass cache — use once per hour">⚡ Force Refresh</button>
           </div>
 
           {error && <div style={s.error}>{error}</div>}
