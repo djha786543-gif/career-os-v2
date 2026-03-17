@@ -1,10 +1,6 @@
-node_modules/
-frontend/node_modules/
-.next/
-frontend/.next/
-*.tsbuildinfo
-.env
-.env.local
-.env.production
-.git/
-.claude/
+﻿.git
+.aider*
+node_modules
+frontend/node_modules
+*.md
+.env*

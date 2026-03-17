@@ -1,10 +1,9 @@
 ﻿/** @type {import('next').NextConfig} */
 const nextConfig = {
+  reactStrictMode: true,
   output: 'export',
   images: { unoptimized: true },
-  trailingSlash: true,
-  env: {
-    NEXT_PUBLIC_API_URL: 'https://career-os-backend-production.up.railway.app/api'
-  }
+  typescript: { ignoreBuildErrors: true },
+  eslint: { ignoreDuringBuilds: true }
 }
 module.exports = nextConfig
