@@ -142,9 +142,12 @@ export function OpportunityMonitor() {
     api.get('/api/monitor/stats')
       .then(res => {
         setStats(res)
-     if (res?.last_scan) {
-          setLastUpdated(timeAgo(new Date(res.last_scan).toISOString()));
+     const scanDate = res?.last_scan ? new Date(res.last_scan) : null;
+
+        if (scanDate && !isNaN(scanDate.getTime())) {
+          setLastUpdated(timeAgo(scanDate.toISOString()));
         } else {
+
           setLastUpdated('Never');
         }
 
@@ -351,7 +354,7 @@ export function OpportunityMonitor() {
           <input type="checkbox" checked={newOnly} onChange={e => setNewOnly(e.target.checked)} />
           New Only
         </label>
-      </div>
+       </div>
 
       <h2>{SECTOR_CONFIG[activeSector].label} ({SECTOR_CONFIG[activeSector].desc})</h2>
       <ul style={styles.jobList}>
