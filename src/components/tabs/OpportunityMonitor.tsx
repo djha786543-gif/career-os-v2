@@ -8,10 +8,10 @@ type Sector = 'academia' | 'industry' | 'international' | 'india'
 type Region = 'de' | 'ca' | 'sg';
 
 const SECTOR_CONFIG: Record<Sector, { icon: string; label: string; color: string; desc: string }> = {
-  academia: { icon: 'ðŸ“', label: 'Academia', color: '#2563eb', desc: 'University, Postdoc, Research Assistant positions' },
-  industry: { icon: 'ðŸ°', label: 'Industry', color: '#059669', desc: 'Corporate research and development roles' },
-  international: { icon: 'âš§ï¸', label: 'International Orgs', color: '#8b5cf6', desc: 'Positions at CERN, EMBO, NIH, etc.' },
-  india: { icon: 'ðŸ‡®ðŸ‡³', label: 'India', color: '#ec4899', desc: 'Top 15 Indian research institutes' }
+  academia: { icon: '🔬', label: 'Academia', color: '#2563eb', desc: 'University, Postdoc, Research Assistant positions' },
+  industry: { icon: '🏢', label: 'Industry', color: '#059669', desc: 'Corporate research and development roles' },
+  international: { icon: '🌐', label: 'International Orgs', color: '#8b5cf6', desc: 'Positions at CERN, EMBO, NIH, etc.' },
+  india: { icon: '🇮🇳', label: 'India', color: '#ec4899', desc: 'Top 15 Indian research institutes' }
 }
 
 interface SectorStats {
@@ -288,7 +288,7 @@ export function OpportunityMonitor() {
         <div style={styles.filterGroup}>
           <label style={styles.toggle}>
             <input type="checkbox" checked={newOnly} onChange={e => setNewOnly(e.target.checked)} />
-            <span style={{ color: newOnly ? '#f43f5e' : 'inherit' }}>ðŸ”´ New Only</span>
+            <span style={{ color: newOnly ? '#f43f5e' : 'inherit' }}>🔴 New Only</span>
           </label>
           <select value={sortBy} onChange={e => setSortBy(e.target.value as any)} style={styles.select}>
             <option value="newest">Newest First</option>
@@ -319,23 +319,23 @@ export function OpportunityMonitor() {
                   }}>
                     <div style={styles.jobMain}>
                       <div style={styles.jobHeader}>
-                        {job.is_new && <span className="pulse-badge" style={styles.newBadge}>âœ° NEW</span>}
+                        {job.is_new && <span className="pulse-badge" style={styles.newBadge}>✦ NEW</span>}
                          <h3 style={styles.jobTitle}>{job?.title}</h3> {/* Defensive access */}
                       </div>
                       <div style={styles.jobSub}>
                         <span style={styles.orgLabel}>{job?.org_name}</span> {/* Defensive access */}
-                        <span style={styles.dot}>â€¢</span>
+                        <span style={styles.dot}>•</span>
                         <span>{job?.location} {countryFlag(job?.country || '')}</span> {/* Defensive access */}
                       </div>
                       <div style={styles.jobMeta}>
                         <span>Detected {timeAgo(job?.detected_at || '')}</span> {/* Defensive access */}
-                        <span style={styles.dot}>â€¢</span>
+                        <span style={styles.dot}>•</span>
                         <span style={styles.sourceBadge}>{sourceBadgeLabel(job?.api_type || 'websearch')}</span> {/* Defensive access */}
                       </div>
                       <p style={styles.snippet}>{job.snippet}</p>
                     </div>
                     <div style={styles.jobActions}>
-                      <button onClick={() => window.open(job.apply_url, '_blank')} style={styles.applyBtn}>Apply â†’</button>
+                      <button onClick={() => window.open(job.apply_url, '_blank')} style={styles.applyBtn}>Apply →</button>
                       <button onClick={() => handleSaveToTracker(job)} style={styles.saveBtn}>+ Save to Tracker</button>
                     </div>
                   </div>
@@ -349,7 +349,7 @@ export function OpportunityMonitor() {
                     </div>
                   ) : (
                     <div style={styles.emptyCaughtUp}>
-                      <span style={{ fontSize: 48 }}>âœ…</span>
+                      <span style={{ fontSize: 48 }}>✅</span>
                       <p>All caught up! No positions match your current filters.</p>
                     </div>
                   )}
