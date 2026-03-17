@@ -46,15 +46,19 @@ async function fetchRegions(
 }
 
 export async function fetchJobs(
-    profileId: ProfileId,
-    track?: string,
-    regions: string[] = ['de', 'ca', 'sg']
+  profileId: ProfileId,
+  track?: string,
+  regions?: string[]
 ): Promise<JobsResponse> {
-    const candidateId = profileId === 'dj' ? 'deobrat' : 'pooja';
+  const candidateId = profileId === 'dj' ? 'deobrat' : 'pooja';
+  
+  // Pooja gets international regions by default
+  const targetRegions = regions || (profileId === 'pj' 
+    ? ['de', 'ca', 'sg', 'in'] 
+    : ['us']); // DJ keeps US-only
 
-    try {
-        // First attempt with original track
-        const results = await fetchRegions(candidateId, track, regions);
+  try {
+    const results = await fetchRegions(candidateId, track, targetRegions);
 
         // Retry logic for IT Audit
         if (results.jobs.length === 0 && track?.includes('IT Audit')) {
