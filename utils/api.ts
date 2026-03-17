@@ -102,24 +102,30 @@ export async function fetchAdzunaJobs(
     return filterTopCompanies(response.data.results, sector);
 }
 
-function filterTopCompanies(jobs: FrontendJob[], sector: 'corporate' | 'academic'): FrontendJob[] {
-    const topCompanies = {
-        corporate: ['Deloitte', 'PwC', 'EY', 'KPMG', 'Accenture'],
-        academic: ['Harvard', 'MIT', 'Stanford', 'ETH Zurich', 'Cambridge']
-    };
+function filterTopCompanies(jobs: FrontendJob[], sector: 'corporate' | 'academic' | 'government'): FrontendJob[] {
+  const poojaResearchTargets = [
+    // Academic
+    'Technical University of Munich', 'LMU Munich', 'University of Toronto',
+    'National University of Singapore', 'Indian Institute of Science',
+    // Government
+    'AIIMS Delhi', 'Max Planck Institutes', 'A*STAR Research Institutes'
+  ];
 
-    return jobs.filter(job =>
-        topCompanies[sector].some(company =>
-            job.company?.toLowerCase().includes(company.toLowerCase())
-        )
+  return jobs.filter(job => {
+    const companyName = job.company?.toLowerCase() || '';
+    return poojaResearchTargets.some(target => 
+      companyName.includes(target.toLowerCase())
     );
+  });
 }
 
 export async function refreshJobs(profileId: ProfileId, track?: string): Promise<void> {
-    const candidateId = profileId === 'dj' ? 'deobrat' : 'pooja';
-    await axios.post(`${BASE}/api/jobs/refresh`, {
-        candidate: candidateId,
-        track,
-        regions: ['de', 'ca', 'sg'] // Specify regions
-    });
+  const candidateId = profileId === 'dj' ? 'deobrat' : 'pooja';
+  const regions = profileId === 'pj' ? ['de', 'ca', 'sg', 'in'] : ['us'];
+  
+  await axios.post(`${BASE}/api/jobs/refresh`, {
+    candidate: candidateId,
+    track,
+    regions
+  });
 }
