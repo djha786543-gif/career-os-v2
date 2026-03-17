@@ -52,7 +52,7 @@ export function OpportunityMonitor() {
   const [activeRegion, setActiveRegion] = useState<Region>('de')
   const [stats, setStats] = useState<GlobalStats | null>(null)
   const [orgs, setOrgs] = useState<MonitorOrg[]>([])
-  const [jobs, setJobs] = useState<Record<Sector, Record<Region, MonitorJob[]>>>({
+   const [jobs, setJobs] = useState<Record<Sector, Record<Region, MonitorJob[]>>>({
     academia: { de: [], ca: [], sg: [] },
     industry: { de: [], ca: [], sg: [] },
     international: { de: [], ca: [], sg: [] },
@@ -105,12 +105,13 @@ export function OpportunityMonitor() {
           [sector]: { de: false, ca: false, sg: false }
         }));
       }
-    }
+     }
   }, [activeSector]);
 
-  const filteredJobs = (jobs: MonitorJob[]) => {
-    return (jobs || [])
-      .filter(j => j && (!newOnly || j.is_new))
+  const filteredJobs = (jobsList: any) => {
+    console.log('jobsList', jobsList)
+    const safeJobs = Array.isArray(jobsList) ? jobsList : [];
+    return safeJobs.filter(j => j && (!newOnly || j.is_new))
       .filter(j => j && (!selectedOrg || j.org_name === selectedOrg))
       .filter(j =>
         j && ((j.title || '').toLowerCase().includes(search.toLowerCase()) ||
@@ -202,10 +203,10 @@ export function OpportunityMonitor() {
             Last scan: {stats?.last_scan ? timeAgo(stats.last_scan) : 'Never'}
           </span>
           <button onClick={handleScan} disabled={scanning} style={styles.scanBtn}>
-            {scanning ? 'Scanning...' : 'â–¶ Scan Now'}
+            {scanning ? 'Scanning...' : 'Scan Now'}
           </button>
           <button onClick={handleMarkSeen} style={styles.seenBtn}>
-            âœ“ Mark Sector Seen
+            Mark Sector Seen
           </button>
         </div>
       </header>
@@ -265,7 +266,7 @@ export function OpportunityMonitor() {
         <div style={styles.filterGroup}>
           <label style={styles.toggle}>
             <input type="checkbox" checked={newOnly} onChange={e => setNewOnly(e.target.checked)} />
-            <span style={{ color: newOnly ? '#f43f5e' : 'inherit' }}>ðŸ”´ New Only</span>
+            <span style={{ color: newOnly ? '#f43f5e' : 'inherit' }}>🔴 New Only</span>
           </label>
           <select value={sortBy} onChange={e => setSortBy(e.target.value as any)} style={styles.select}>
             <option value="newest">Newest First</option>
@@ -296,23 +297,23 @@ export function OpportunityMonitor() {
                   }}>
                     <div style={styles.jobMain}>
                       <div style={styles.jobHeader}>
-                        {job.is_new && <span className="pulse-badge" style={styles.newBadge}>ðŸ†• NEW</span>}
+                        {job.is_new && <span className="pulse-badge" style={styles.newBadge}>📌 NEW</span>}
                         <h3 style={styles.jobTitle}>{job?.title}</h3> {/* Defensive access */}
                       </div>
                       <div style={styles.jobSub}>
                         <span style={styles.orgLabel}>{job?.org_name}</span> {/* Defensive access */}
-                        <span style={styles.dot}>â€¢</span>
+                        <span style={styles.dot}>•</span>
                         <span>{job?.location} {countryFlag(job?.country || '')}</span> {/* Defensive access */}
                       </div>
                       <div style={styles.jobMeta}>
                         <span>Detected {timeAgo(job?.detected_at || '')}</span> {/* Defensive access */}
-                        <span style={styles.dot}>â€¢</span>
+                        <span style={styles.dot}>•</span>
                         <span style={styles.sourceBadge}>{sourceBadgeLabel(job?.api_type || 'websearch')}</span> {/* Defensive access */}
                       </div>
                       <p style={styles.snippet}>{job.snippet}</p>
                     </div>
                     <div style={styles.jobActions}>
-                      <button onClick={() => window.open(job.apply_url, '_blank')} style={styles.applyBtn}>Apply â†’</button>
+                      <button onClick={() => window.open(job.apply_url, '_blank')} style={styles.applyBtn}>Apply →</button>
                       <button onClick={() => handleSaveToTracker(job)} style={styles.saveBtn}>+ Save to Tracker</button>
                     </div>
                   </div>
@@ -326,7 +327,7 @@ export function OpportunityMonitor() {
                     </div>
                   ) : (
                     <div style={styles.emptyCaughtUp}>
-                      <span style={{ fontSize: 48 }}>âœ…</span>
+                      <span style={{ fontSize: 48 }}>✅</span>
                       <p>All caught up! No positions match your current filters.</p>
                     </div>
                   )}
