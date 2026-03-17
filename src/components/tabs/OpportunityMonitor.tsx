@@ -297,10 +297,10 @@ export function OpportunityMonitor() {
           onChange={(e) => setSearch(e.target.value)}
         />
         <select value={selectedOrg || ''} onChange={(e) => setSelectedOrg(e.target.value === '' ? null : e.target.value)}>
-          <option value="">All Organizations</option>
-          {orgs.map(org => (
+         <option value="">All Organizations</option>
+          {Array.isArray(orgs) ? orgs.map(org => (
             <option key={org.id} value={org.name}>{org.name}</option>
-          ))}
+          )) : null}
         </select>
         <select value={sortBy} onChange={(e) => setSortBy(e.target.value as any)}>
           <option value="newest">Newest</option>
