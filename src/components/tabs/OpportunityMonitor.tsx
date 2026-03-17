@@ -14,7 +14,7 @@ interface UsageData {
   monthly_ai_calls:     number
   jobs_found_month:     number
   cost_per_scan_cycle:  number
-  source:               'anthropic_api' | 'estimated'
+  source:               'anthropic_api' | 'budgeted' | 'estimated'
 }
 
 const SECTOR_CONFIG: Record<Sector, { icon: string; label: string; color: string; desc: string }> = {
@@ -233,16 +233,18 @@ export function OpportunityMonitor() {
           {usage && (
             <div style={styles.healthRow}>
               {(() => {
-                const bal   = usage.available_balance
-                const spent = usage.estimated_monthly_cost
+                const bal    = usage.available_balance
+                const spent  = usage.estimated_monthly_cost
+                const src    = usage.source
                 const runsLeft = bal != null
                   ? Math.floor(bal / usage.cost_per_scan_cycle)
                   : null
                 const pillColor = bal == null
                   ? '#f59e0b'
                   : bal > 5 ? '#22c55e' : '#f59e0b'
-                const label = bal != null
-                  ? `$${bal.toFixed(2)} remaining`
+                const prefix = src === 'budgeted' ? 'Budgeted' : src === 'anthropic_api' ? '' : null
+                const label  = bal != null
+                  ? `$${bal.toFixed(2)} remaining${prefix ? ` (${prefix})` : ''}`
                   : `~$${spent.toFixed(3)} used this month`
                 return (
                   <>
