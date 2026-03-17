@@ -142,7 +142,11 @@ export function OpportunityMonitor() {
     api.get('/api/monitor/stats')
       .then(res => {
         setStats(res)
-        setLastUpdated(timeAgo(res?.last_scan))
+     if (res?.last_scan) {
+          setLastUpdated(timeAgo(new Date(res.last_scan).toISOString()));
+        } else {
+          setLastUpdated('Never');
+        }
 
       })
   }, [])
@@ -305,7 +309,7 @@ export function OpportunityMonitor() {
             {sector.label}
           </div>
         ))}
-      </div>
+       </div>
 
 
       <div style={styles.regionTabs}>
@@ -320,7 +324,7 @@ export function OpportunityMonitor() {
             {region.toUpperCase()}
           </div>
         ))}
-      </div>
+       </div>
   
 
 
