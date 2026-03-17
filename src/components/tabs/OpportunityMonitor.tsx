@@ -111,8 +111,8 @@ export function OpportunityMonitor() {
           [sector]: { de: false, ca: false, sg: false }
         }));
       }
-+    }
-   }, [activeSector]);
+    }
+  }, [activeSector]);
  
    const filteredJobs = (jobsList: any): MonitorJob[] => {
 @@ -271,7 +271,7 @@
