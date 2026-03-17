@@ -141,43 +141,30 @@ export function OpportunityMonitor() {
   useEffect(() => {
     api.get('/api/monitor/stats')
       .then(res => {
-       setStats(res);
+        setStats(res);
         const rawDate = res?.lastScan || res?.last_scan;
-+       if (rawDate) {
-+         const d = new Date(rawDate);
-+         if (!isNaN(d.getTime())) {
-+           setLastUpdated(timeAgo(d.toISOString()));
-+         } else {
-+           setLastUpdated('Just now');
-+         }
-+       } else {
-+         setLastUpdated('Never');
-+       }
-+     }})
-+ }, [])
- 
--        if (rawDate) {
--          const scanDate = new Date(rawDate);
--        if (scanDate && !isNaN(scanDate.getTime())) {
--
--          setLastUpdated(timeAgo(scanDate.toISOString()));
--        } else {
--
--          setLastUpdated('Never');
--        }
--      }})
--  }, [])
-+
+        if (rawDate) {
+          const d = new Date(rawDate);
+          if (!isNaN(d.getTime())) {
+            setLastUpdated(timeAgo(d.toISOString()));
+          } else {
+            setLastUpdated('Just now');
+          }
+        } else {
+          setLastUpdated('Never');
+        }
+      })
+  }, [])
  
   const [totalJobs, setTotalJobs] = useState<number>(0);
     useEffect(() => {
-@@ -358,7 +361,7 @@
+@@ -358,7 +358,7 @@
       <div style={styles.container}>
         <header style={styles.header}>
           <div>
--          <h1 style={styles.title}>What's up, Opportunity Monitor</h1>
-+          <h1 style={styles.title}>Hey, Opportunity Monitor</h1>
-            <p style={styles.subtitle}>Real-time job alerts</p>
-          </div>
-          <div style={styles.headerActions}>
+-          <h1 style={styles.title}>Hey, Opportunity Monitor</h1>
++          <h1 style={styles.title}>Yo, Opportunity Monitor</h1>
+             <p style={styles.subtitle}>Real-time job alerts</p>
+           </div>
+           <div style={styles.headerActions}>
 
