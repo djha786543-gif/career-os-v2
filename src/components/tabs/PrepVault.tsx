@@ -23,7 +23,7 @@ export function PrepVault() {
   const [aiResult, setAiResult] = useState<string | null>(null);
   const [cached, setCached] = useState(false);
 
-  const filteredSections = data.sections.filter(s => {
+  const filteredSections = (data.sections || []).filter(s => {
     if (filter === 'All') return true;
     if (filter === '🔴 Critical') return s.weight === 'critical';
     if (filter === '🟠 High') return s.weight === 'high';
