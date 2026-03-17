@@ -117,13 +117,13 @@ export function OpportunityMonitor() {
   const filteredJobs = (jobsList: any): MonitorJob[] => {
     console.log('jobsList', jobsList)
     const safeJobs = Array.isArray(jobsList) ? jobsList : [];
-    return safeJobs.filter((j: MonitorJob) => j && (!newOnly || j.is_new))
-      .filter(j => j && (!selectedOrg || j.org_name === selectedOrg))
-      .filter(j =>
+    return safeJobs.filter((j: any) => j && (!newOnly || j.is_new))
+      .filter((j:any) => j && (!selectedOrg || j.org_name === selectedOrg))
+      .filter((j:any) =>
         j && ((j.title || '').toLowerCase().includes(search.toLowerCase()) ||
         (j.org_name || '').toLowerCase().includes(search.toLowerCase()))
       )
-      .sort((a, b) => {
+      .sort((a:any, b:any) => {
         if (sortBy === 'newest') return (new Date(b?.detected_at || 0)).getTime() - (new Date(a?.detected_at || 0)).getTime()
         if (sortBy === 'oldest') return (new Date(a?.detected_at || 0)).getTime() - (new Date(b?.detected_at || 0)).getTime()
         if (sortBy === 'org') return (a?.org_name || '').localeCompare(b?.org_name || '')
@@ -136,19 +136,19 @@ export function OpportunityMonitor() {
 
   // Auto-refresh every 30 mins
   useEffect(() => {
-    const timer = setInterval(() => fetchData(true), 30 * 60 * 1000)
+     const timer = setInterval(() => fetchData(true), 30 * 60 * 1000)
     return () => clearInterval(timer)
   }, [fetchData])
 
   const handleScan = async () => {
     setScanning(true)
      try {
-       await api.post('/monitor/scan', {})
+        await api.post('/monitor/scan', {})
       // Wait a bit for scan to progress then refresh
       setTimeout(fetchData, 5000)
       setTimeout(fetchData, 15000)
-      setTimeout(fetchData, 30000)
-    } catch (err) {
+       setTimeout(fetchData, 30000)
+     } catch (err) {
       alert('Scan trigger failed')
     } finally {
       setScanning(false)
@@ -192,7 +192,7 @@ export function OpportunityMonitor() {
         <div style={styles.headerActions}>
           {lastUpdated && <span style={styles.updatedBadge}>Updated {lastUpdated}</span>}
           <span style={styles.lastScan}>
-            Last scan: {stats?.last_scan ? timeAgo(stats.last_scan) : 'Never'}
+            Last scan: {stats?.last_scan ? timeAgo(new Date(stats.last_scan).toISOString()) : 'Never'}
           </span>
           <button onClick={handleScan} disabled={scanning} style={styles.scanBtn}>
             {scanning ? 'Scanning...' : 'Scan Now'}
