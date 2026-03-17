@@ -36,7 +36,7 @@ async function fetchRegions(
     );
 
     const responses = await Promise.all(requests);
-    const successful = responses.filter(Boolean).map(r => r.data);
+    const successful = responses.filter(Boolean).map(r => r?.data);
 
     return successful.reduce((acc, curr) => ({
         ...acc,

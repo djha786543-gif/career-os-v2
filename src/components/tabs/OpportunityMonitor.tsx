@@ -22,6 +22,7 @@ interface SectorStats {
 }
 
 interface GlobalStats {
+  last_scan?: string | Date
   sectors: SectorStats[]
 }
 
@@ -126,7 +127,7 @@ export function OpportunityMonitor() {
         if (sortBy === 'newest') return (new Date(b?.detected_at || 0)).getTime() - (new Date(a?.detected_at || 0)).getTime()
         if (sortBy === 'oldest') return (new Date(a?.detected_at || 0)).getTime() - (new Date(b?.detected_at || 0)).getTime()
         if (sortBy === 'org') return (a?.org_name || '').localeCompare(b?.org_name || '')
-        return 0
+         return 0
       });
   }
   useEffect(() => {
@@ -251,7 +252,7 @@ export function OpportunityMonitor() {
             </div>
           </div>
         ))}
-      </div>
+       </div>
 
       <div style={styles.filters}>
         <div style={styles.filterGroup}>
@@ -289,7 +290,7 @@ export function OpportunityMonitor() {
                     <div style={styles.jobMain}>
                       <div style={styles.jobHeader}>
                         {job.is_new && <span className="pulse-badge" style={styles.newBadge}>âœ° NEW</span>}
-                        <h3 style={styles.jobTitle}>{job?.title}</h3> {/* Defensive access */}
+                         <h3 style={styles.jobTitle}>{job?.title}</h3> {/* Defensive access */}
                       </div>
                       <div style={styles.jobSub}>
                         <span style={styles.orgLabel}>{job?.org_name}</span> {/* Defensive access */}
