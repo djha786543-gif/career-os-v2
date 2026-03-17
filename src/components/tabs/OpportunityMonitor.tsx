@@ -7,6 +7,24 @@ import { timeAgo, countryFlag, sourceBadgeLabel } from '../../utils/monitorHelpe
 type Sector = 'academia' | 'industry' | 'international' | 'india'
 type Region = 'de' | 'ca' | 'sg';
 
+const SECTOR_CONFIG: Record<Sector, { icon: string; label: string; color: string; desc: string }> = {
+  academia: { icon: 'ðŸ“', label: 'Academia', color: '#2563eb', desc: 'University, Postdoc, Research Assistant positions' },
+  industry: { icon: 'ðŸ°', label: 'Industry', color: '#059669', desc: 'Corporate research and development roles' },
+  international: { icon: 'âš§ï¸', label: 'International Orgs', color: '#8b5cf6', desc: 'Positions at CERN, EMBO, NIH, etc.' },
+  india: { icon: 'ðŸ‡®ðŸ‡³', label: 'India', color: '#ec4899', desc: 'Top 15 Indian research institutes' }
+}
+
+interface SectorStats {
+  sector: Sector
+  total_jobs: number
+  new_jobs: number
+  last_detected: string
+}
+
+interface GlobalStats {
+  sectors: SectorStats[]
+}
+
 interface MonitorJob {
   id: string
   title: string
@@ -22,19 +40,6 @@ interface MonitorJob {
   api_type?: string;
 }
 
-interface SectorStats {
-  sector: Sector
-  total_jobs: number
-  new_jobs: number
-  last_detected: string
-}
-
-interface GlobalStats {
-  total_jobs: number
-  new_jobs: number
-  last_scan: string
-  sectors: SectorStats[]
-}
 
 interface MonitorOrg {
   id: string
@@ -108,10 +113,10 @@ export function OpportunityMonitor() {
      }
   }, [activeSector]);
 
-  const filteredJobs = (jobsList: any) => {
+  const filteredJobs = (jobsList: any): MonitorJob[] => {
     console.log('jobsList', jobsList)
     const safeJobs = Array.isArray(jobsList) ? jobsList : [];
-    return safeJobs.filter(j => j && (!newOnly || j.is_new))
+    return safeJobs.filter((j: MonitorJob) => j && (!newOnly || j.is_new))
       .filter(j => j && (!selectedOrg || j.org_name === selectedOrg))
       .filter(j =>
         j && ((j.title || '').toLowerCase().includes(search.toLowerCase()) ||
@@ -136,7 +141,7 @@ export function OpportunityMonitor() {
 
   const handleScan = async () => {
     setScanning(true)
-    try {
+     try {
       await api.post('/monitor/scan', {})
       // Wait a bit for scan to progress then refresh
       setTimeout(fetchData, 5000)
@@ -174,27 +179,13 @@ export function OpportunityMonitor() {
     }
   }
 
-  const filteredJobsList = (jobs || [])
-    .filter(j => j && (!newOnly || j.is_new)) // Check if j is defined before accessing its properties
-    .filter(j => j && (!selectedOrg || j.org_name === selectedOrg)) // Check if j is defined
-    .filter(j =>
-      j && ((j.title || '').toLowerCase().includes(search.toLowerCase()) || // Defensive access to j.title
-      (j.org_name || '').toLowerCase().includes(search.toLowerCase()))     // Defensive access to j.org_name
-    )
-    .sort((a, b) => {
-      if (sortBy === 'newest') return (new Date(b?.detected_at || 0)).getTime() - (new Date(a?.detected_at || 0)).getTime() // Defensive date creation
-      if (sortBy === 'oldest') return (new Date(a?.detected_at || 0)).getTime() - (new Date(b?.detected_at || 0)).getTime() // Defensive date creation
-      if (sortBy === 'org') return (a?.org_name || '').localeCompare(b?.org_name || '') // Defensive access to org_name
-      return 0
-    })
-
   if (loading && !stats) return <div style={styles.loading}>Loading Monitor...</div>
 
   return (
     <div style={styles.container}>
       <header style={styles.header}>
         <div>
-          <h1 style={styles.title}>Yo, Opportunity Monitor</h1>
+          <h1 style={styles.title}>Sup, Opportunity Monitor</h1>
           <p style={styles.subtitle}>Real-time job alerts from 55 target organizations</p>
         </div>
         <div style={styles.headerActions}>
@@ -266,7 +257,7 @@ export function OpportunityMonitor() {
         <div style={styles.filterGroup}>
           <label style={styles.toggle}>
             <input type="checkbox" checked={newOnly} onChange={e => setNewOnly(e.target.checked)} />
-            <span style={{ color: newOnly ? '#f43f5e' : 'inherit' }}>🔴 New Only</span>
+            <span style={{ color: newOnly ? '#f43f5e' : 'inherit' }}>ðŸ”´ New Only</span>
           </label>
           <select value={sortBy} onChange={e => setSortBy(e.target.value as any)} style={styles.select}>
             <option value="newest">Newest First</option>
@@ -289,7 +280,7 @@ export function OpportunityMonitor() {
             {loading[activeSector][region] ? (
               <div>Loading {region.toUpperCase()} jobs...</div>
             ) : (
-              (filteredJobs(jobs[activeSector][region] || [])).length > 0 ? ( // Redundant but harmless, filteredJobs is already defensively created
+               (filteredJobs(jobs[activeSector][region] || [])).length > 0 ? ( // Redundant but harmless, filteredJobs is already defensively created
                 (filteredJobs(jobs[activeSector][region] || [])).map(job => (
                   <div key={job.id} className="glass" style={{
                     ...styles.jobCard,
@@ -297,23 +288,23 @@ export function OpportunityMonitor() {
                   }}>
                     <div style={styles.jobMain}>
                       <div style={styles.jobHeader}>
-                        {job.is_new && <span className="pulse-badge" style={styles.newBadge}>📌 NEW</span>}
+                        {job.is_new && <span className="pulse-badge" style={styles.newBadge}>âœ° NEW</span>}
                         <h3 style={styles.jobTitle}>{job?.title}</h3> {/* Defensive access */}
                       </div>
                       <div style={styles.jobSub}>
                         <span style={styles.orgLabel}>{job?.org_name}</span> {/* Defensive access */}
-                        <span style={styles.dot}>•</span>
+                        <span style={styles.dot}>â€¢</span>
                         <span>{job?.location} {countryFlag(job?.country || '')}</span> {/* Defensive access */}
                       </div>
                       <div style={styles.jobMeta}>
                         <span>Detected {timeAgo(job?.detected_at || '')}</span> {/* Defensive access */}
-                        <span style={styles.dot}>•</span>
+                        <span style={styles.dot}>â€¢</span>
                         <span style={styles.sourceBadge}>{sourceBadgeLabel(job?.api_type || 'websearch')}</span> {/* Defensive access */}
                       </div>
                       <p style={styles.snippet}>{job.snippet}</p>
                     </div>
                     <div style={styles.jobActions}>
-                      <button onClick={() => window.open(job.apply_url, '_blank')} style={styles.applyBtn}>Apply →</button>
+                      <button onClick={() => window.open(job.apply_url, '_blank')} style={styles.applyBtn}>Apply â†’</button>
                       <button onClick={() => handleSaveToTracker(job)} style={styles.saveBtn}>+ Save to Tracker</button>
                     </div>
                   </div>
@@ -327,7 +318,7 @@ export function OpportunityMonitor() {
                     </div>
                   ) : (
                     <div style={styles.emptyCaughtUp}>
-                      <span style={{ fontSize: 48 }}>✅</span>
+                      <span style={{ fontSize: 48 }}>âœ…</span>
                       <p>All caught up! No positions match your current filters.</p>
                     </div>
                   )}
