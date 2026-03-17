@@ -264,8 +264,118 @@ export function OpportunityMonitor() {
      <div style={styles.container}>
        <header style={styles.header}>
          <div>
--          <h1 style={styles.title}>Sup, Opportunity Monitor</h1>
-+          <h1 style={styles.title}>Hey, Opportunity Monitor</h1>
+          <h1 style={styles.title}>What's up, Opportunity Monitor</h1>
            <p style={styles.subtitle}>Real-time job alerts</p>
          </div>
          <div style={styles.headerActions}>
+           {lastUpdated && <span style={styles.updatedBadge}>Updated {lastUpdated}</span>}
+         {scanInitiated && <span style={styles.updatedBadge}>{'Scan initiated for 77 organizations...'}</span>}
+          <button style={styles.scanButton} onClick={() => {
+   setScanning(true);
+   setScanInitiated(true);
+            api.post('/api/monitor/scan')
+              .then(() => {
+                fetchData()
+                api.get('/api/monitor/stats')
+                  .then(res => {
+                    setStats(res)
+  
+                    setLastUpdated(timeAgo(new Date(res?.last_scan).toISOString()))
+                  })
+       
+                setScanning(false)
+       setScanInitiated(false);
+              })
+      
+          }} disabled={scanning}>
+            {scanning ? 'Scanning...' : 'Scan'}
+          </button>
+  
+        </div>
+      </header>
+
+      <div style={styles.sectorTabs}>
+  {Object.entries(SECTOR_CONFIG).map(([key, sector]) => (
+          <div
+            key={key}
+   style={{ ...styles.sectorTab, ...(activeSector === key ? styles.activeSectorTab : {}) }}
+            onClick={() => setActiveSector(key as Sector)}
+
+          >
+            {sector.label}
+          </div>
+        ))}
+      </div>
+
+
+      <div style={styles.regionTabs}>
+        {['de', 'ca', 'sg'].map(region => (
+          <div
+            key={region}
+            style={{ ...styles.regionTab, ...(activeRegion === region ? styles.activeRegionTab : {}) }}
+
+            onClick={() => setActiveRegion(region as Region)}
+
+          >
+            {region.toUpperCase()}
+          </div>
+        ))}
+      </div>
+  
+
+
+      <div style={styles.filters}>
+        <input
+          type="text"
+          placeholder="Filter by title or organization"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+    
+        <select value={selectedOrg || ''} onChange={(e) => setSelectedOrg(e.target.value === '' ? null : e.target.value)}>
+         <option value="">All Organizations</option>
+          {Array.isArray(orgs) ? orgs.map(org => (
+            <option key={org.id} value={org.name}>{org.name}</option>
+
+          )) : null}
+        </select>
+        <select value={sortBy} onChange={(e) => setSortBy(e.target.value as any)}>
+          <option value="newest">Newest First</option>
+          <option value="oldest">Oldest First</option>
+        </select>
+        <label>
+          <input type="checkbox" checked={newOnly} onChange={e => setNewOnly(e.target.checked)} />
+          New Only
+        </label>
+      </div>
+
+      <h2>{SECTOR_CONFIG[activeSector].label} ({SECTOR_CONFIG[activeSector].desc})</h2>
+      <ul style={styles.jobList}>
+           {/* Show 'No jobs found' message if no jobs are available */}
+        {loading[activeSector][activeRegion] ? (
+          <li>Loading jobs...</li>
+        ) : (
+          filteredJobs(jobs[activeSector][activeRegion] || []).map(job => (
+            <li key={job.id} style={styles.jobItem}>
+              <h3>{job.title}</h3>
+              <p>{job.org_name} - {job.location} ({countryFlag(job.country)})</p>
+              <p>{job.snippet}</p>
+              <a href={job.apply_url} target="_blank" rel="noopener noreferrer">Apply Here</a>
+              <p>Date detected: {timeAgo(job.detected_at)}</p>
+              {job.api_type && <p>Source: {sourceBadgeLabel(job.api_type)}</p>}
+            </li>
+          ))
+        )}
+      </ul>
+
+   {/* Show 'No jobs found' message if no jobs are available */}
+        {filteredJobs(jobs[activeSector][activeRegion] || []).length === 0 && !loading[activeSector][activeRegion] && (
+          <li>No jobs found. Try clicking Scan to fetch the latest research roles from Adzuna.</li>
+        )}
+    
+}
+     </div>
+   );
+};
+
+export default OpportunityMonitor;
