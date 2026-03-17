@@ -77,7 +77,7 @@ export function OpportunityMonitor() {
   const [search, setSearch] = useState('')
   const [selectedOrg, setSelectedOrg] = useState<string | null>(null)
   const [lastUpdated, setLastUpdated] = useState<string | null>(null)
-
+  const [scanInitiated, setScanInitiated] = useState<boolean>(false);
   const fetchData = useCallback(async (silent = false) => {
     const regions: Region[] = ['de', 'ca', 'sg'];
     const sector = activeSector
@@ -90,6 +90,7 @@ export function OpportunityMonitor() {
     }
 
     try {
+  
       const jobsData = await api.get(`/api/monitor/jobs?sectors=${sector}`); // Backend returns jobs for all regions
 
       setJobs(prev => ({
@@ -100,7 +101,7 @@ export function OpportunityMonitor() {
           sg: jobsData[sector]?.sg
         }
       }));
-
+   
       setError(null);
     } catch (err) {
       setError('Failed to load monitor data');
@@ -111,6 +112,7 @@ export function OpportunityMonitor() {
           [sector]: { de: false, ca: false, sg: false }
         }));
       }
+
     }
   }, [activeSector]);
  
@@ -131,6 +133,7 @@ export function OpportunityMonitor() {
   };
  
 
+  
   useEffect(() => {
     fetchData()
   }, [fetchData])
@@ -140,14 +143,25 @@ export function OpportunityMonitor() {
       .then(res => {
         setStats(res)
         setLastUpdated(timeAgo(res?.last_scan))
+
       })
   }, [])
 
+ const [totalJobs, setTotalJobs] = useState<number>(0);
   useEffect(() => {
     api.get('/api/monitor/orgs')
       .then(res => {
-        setOrgs(res)
+   setOrgs(Array.isArray(res) ? res : res.data || [])
       })
+  
+    api.get('/api/monitor/stats')
+      .then(res => {
+            setTotalJobs((res.sectors || []).reduce((acc, sector) => acc + sector.total_jobs, 0));
+      })
+      .catch(error => {
+        console.error("Error fetching total jobs:", error);
+      });
+    
   }, [])
 
 
@@ -236,7 +250,7 @@ export function OpportunityMonitor() {
       padding: '10px',
       marginBottom: '10px',
     },
-  }
+   }
 
   return (
     <div style={styles.container}>
@@ -247,35 +261,44 @@ export function OpportunityMonitor() {
         </div>
         <div style={styles.headerActions}>
           {lastUpdated && <span style={styles.updatedBadge}>Updated {lastUpdated}</span>}
+           {scanInitiated && <span style={styles.updatedBadge}>{'Scan initiated for 77 organizations...'}</span>}
           <button style={styles.scanButton} onClick={() => {
-            setScanning(true)
+   setScanning(true);
+  setScanInitiated(true);
             api.post('/api/monitor/scan')
               .then(() => {
                 fetchData()
                 api.get('/api/monitor/stats')
                   .then(res => {
                     setStats(res)
-                    setLastUpdated(timeAgo(res?.last_scan))
+  
+                    setLastUpdated(timeAgo(new Date(res?.last_scan).toISOString()))
                   })
+       
                 setScanning(false)
+       setScanInitiated(false);
               })
+      
           }} disabled={scanning}>
             {scanning ? 'Scanning...' : 'Scan'}
           </button>
+  
         </div>
       </header>
 
       <div style={styles.sectorTabs}>
-        {Object.entries(SECTOR_CONFIG).map(([key, sector]) => (
+  {Object.entries(SECTOR_CONFIG).map(([key, sector]) => (
           <div
             key={key}
-            style={{ ...styles.sectorTab, ...(activeSector === key ? styles.activeSectorTab : {}) }}
+   style={{ ...styles.sectorTab, ...(activeSector === key ? styles.activeSectorTab : {}) }}
             onClick={() => setActiveSector(key as Sector)}
+
           >
             {sector.label}
           </div>
         ))}
       </div>
+
 
       <div style={styles.regionTabs}>
         {['de', 'ca', 'sg'].map(region => (
@@ -288,6 +311,8 @@ export function OpportunityMonitor() {
           </div>
         ))}
       </div>
+  
+
 
       <div style={styles.filters}>
         <input
@@ -296,6 +321,7 @@ export function OpportunityMonitor() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
+    
         <select value={selectedOrg || ''} onChange={(e) => setSelectedOrg(e.target.value === '' ? null : e.target.value)}>
          <option value="">All Organizations</option>
           {Array.isArray(orgs) ? orgs.map(org => (
@@ -319,6 +345,7 @@ export function OpportunityMonitor() {
 
       <h2>{SECTOR_CONFIG[activeSector].label} ({SECTOR_CONFIG[activeSector].desc})</h2>
       <ul style={styles.jobList}>
+           {/* Show 'No jobs found' message if no jobs are available */}
         {loading[activeSector][activeRegion] ? (
           <li>Loading jobs...</li>
         ) : (
@@ -338,6 +365,14 @@ export function OpportunityMonitor() {
           ))
         )}
       </ul>
+
+
     </div>
   )
+}
+   {/* Show 'No jobs found' message if no jobs are available */}
+        {filteredJobs(jobs[activeSector][activeRegion] || []).length === 0 && !loading[activeSector][activeRegion] && (
+          <li>No jobs found. Try clicking Scan to fetch the latest research roles from Adzuna.</li>
+        )}
+    
 }
