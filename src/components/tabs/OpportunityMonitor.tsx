@@ -140,7 +140,7 @@ export function OpportunityMonitor() {
     }
   }
 
-  const filteredJobs = jobs
+  const filteredJobs = (jobs || [])
     .filter(j => !newOnly || j.is_new)
     .filter(j => !selectedOrg || j.org_name === selectedOrg)
     .filter(j => 
@@ -180,7 +180,7 @@ export function OpportunityMonitor() {
       <div style={styles.tabs}>
         {(Object.keys(SECTOR_CONFIG) as Sector[]).map(s => {
           const config = SECTOR_CONFIG[s]
-          const sectorStats = stats?.sectors.find(ss => ss.sector === s)
+          const sectorStats = (stats?.sectors || []).find(ss => ss.sector === s)
           const isActive = activeSector === s
           return (
             <button 
@@ -207,7 +207,7 @@ export function OpportunityMonitor() {
       </div>
 
       <div style={styles.orgGrid}>
-        {orgs.map(org => (
+        {(orgs || []).map(org => (
           <div 
             key={org.id} 
             className="glass" 
@@ -249,8 +249,8 @@ export function OpportunityMonitor() {
       </div>
 
       <div style={styles.jobList}>
-        {filteredJobs.length > 0 ? (
-          filteredJobs.map(job => (
+        {(filteredJobs || []).length > 0 ? (
+          (filteredJobs || []).map(job => (
             <div key={job.id} className="glass" style={{
               ...styles.jobCard,
               borderLeft: job.is_new ? '3px solid #f43f5e' : '1px solid rgba(99,102,241,0.12)'

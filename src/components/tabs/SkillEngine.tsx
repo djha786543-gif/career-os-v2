@@ -105,7 +105,7 @@ export function SkillEngine() {
             <h3 style={s.sideTitle}>MARKET RECOMMENDATIONS</h3>
             <div style={s.sideSection}>
               <div style={s.sideSub}>Rising Skills</div>
-              {data.rising.slice(0, 3).map(skill => (
+              {(data.rising || []).slice(0, 3).map(skill => (
                 <div key={skill.skill} style={s.sideItem}>
                   <div style={s.sideName}>{skill.skill}</div>
                   <div style={s.sideMeta}>{skill.signal}</div>
@@ -114,7 +114,7 @@ export function SkillEngine() {
             </div>
             <div style={s.sideSection}>
               <div style={s.sideSub}>Priority Gaps</div>
-              {data.gaps.slice(0, 3).map(skill => (
+              {(data.gaps || []).slice(0, 3).map(skill => (
                 <div key={skill.skill} style={s.sideItem}>
                   <div style={s.sideName}>{skill.skill}</div>
                   <div style={{ ...s.sideMeta, color: '#f59e0b' }}>{skill.signal}</div>

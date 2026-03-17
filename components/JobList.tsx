@@ -1,5 +1,5 @@
 import React from 'react';
-import { Job } from '../models/Job';
+import { Job } from '../../models/Job';
 
 type Props = {
   jobs: Job[];

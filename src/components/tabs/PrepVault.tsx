@@ -12,7 +12,7 @@ export function PrepVault() {
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
   
   // Flashcards state
-  const [flashcards, setFlashcards] = useState<any[]>([...data.flashcards]);
+  const [flashcards, setFlashcards] = useState<any[]>([...(data.flashcards || [])]);
   const [flipped, setFlipped] = useState<Record<number, boolean>>({});
   const revealedCount = Object.keys(flipped).length;
 
@@ -33,7 +33,7 @@ export function PrepVault() {
   });
 
   const shuffleCards = () => {
-    setFlashcards([...flashcards].sort(() => Math.random() - 0.5));
+    setFlashcards([...(flashcards || [])].sort(() => Math.random() - 0.5));
     setFlipped({});
   };
 
@@ -72,7 +72,7 @@ export function PrepVault() {
             ))}
           </div>
           <div style={s.sectionList}>
-            {filteredSections.map(section => (
+            {(filteredSections || []).map(section => (
               <div key={section.id} className="glass" style={s.sectionCard}>
                 <div style={s.sectionHeader} onClick={() => setExpandedSection(expandedSection === section.id ? null : section.id)}>
                   <div style={s.sectionMeta}>
@@ -84,7 +84,7 @@ export function PrepVault() {
                 </div>
                 {expandedSection === section.id && (
                   <div style={s.sectionBody} className="prep-vault-content">
-                    {(section as any).subsections.map((sub: any, idx: number) => (
+                    {((section as any).subsections || []).map((sub: any, idx: number) => (
                       <div key={idx} style={{ marginBottom: 24 }}>
                         <h4 style={{ fontSize: 12, fontWeight: 800, color: 'var(--accent-active)', marginBottom: 12, textTransform: 'uppercase' }}>{sub.heading}</h4>
                         <div dangerouslySetInnerHTML={{ __html: sub.content }} />
@@ -101,14 +101,14 @@ export function PrepVault() {
       {subtab === 'flashcards' && (
         <div style={s.fcWrap}>
           <div style={s.fcHeader}>
-            <div style={s.fcProgress}>Revealed: {revealedCount} / {flashcards.length}</div>
+            <div style={s.fcProgress}>Revealed: {revealedCount} / {(flashcards || []).length}</div>
             <div style={s.fcActions}>
               <button onClick={shuffleCards} style={s.fcBtn}>Shuffle</button>
               <button onClick={() => setFlipped({})} style={s.fcBtn}>Reset</button>
             </div>
           </div>
           <div style={s.fcGrid}>
-            {flashcards.map((card, i) => (
+            {(flashcards || []).map((card, i) => (
               <div key={i} style={s.fcCardOuter} onClick={() => setFlipped({ ...flipped, [i]: !flipped[i] })}>
                 <div style={{ ...s.fcCardInner, transform: flipped[i] ? 'rotateY(180deg)' : 'rotateY(0deg)' }}>
                   <div style={s.fcFront} className="glass">
@@ -148,7 +148,7 @@ export function PrepVault() {
               </button>
             </div>
             <div style={s.quickTopics}>
-              {data.quickTopics.map(t => (
+              {(data.quickTopics || []).map(t => (
                 <button key={t} onClick={() => { setTopic(t); handleGenerate(t); }} style={s.quickBtn}>{t}</button>
               ))}
             </div>

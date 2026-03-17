@@ -1,5 +1,5 @@
 import React from 'react';
-import { Candidate } from '../models/Candidate';
+import { Candidate } from '../../models/Candidate';
 
 type Props = {
   candidates: Candidate[];

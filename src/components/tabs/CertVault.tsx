@@ -45,7 +45,7 @@ export function CertVault() {
             <div key={term} style={s.termSection}>
               <h3 style={s.termTitle}>{term.toUpperCase()} GOALS</h3>
               <div style={s.certGrid}>
-                {(data.vault as any)[term].map((cert: any, i: number) => (
+                {((data.vault as any)[term] || []).map((cert: any, i: number) => (
                   <div key={cert.name} className="glass" style={{ ...s.certCard, border: i === 0 && term === 'immediate' ? '1px solid var(--accent-active)' : '1px solid var(--border-subtle)', boxShadow: i === 0 && term === 'immediate' ? '0 0 20px rgba(34, 211, 238, 0.1)' : 'none' }}>
                     <div style={s.certHeader}>
                       <div>
@@ -62,7 +62,7 @@ export function CertVault() {
                     <div style={s.certWhy}>{cert.why}</div>
                     <div style={s.pathway}>
                       <div style={s.pathTitle}>PATHWAY STEPS</div>
-                      {cert.pathway.map((step: any) => (
+                      {(cert.pathway || []).map((step: any) => (
                         <div key={step.n} style={s.pathStep}>
                           <div style={s.stepNum}>{step.n}</div>
                           <div style={s.stepTask}>{step.task}</div>

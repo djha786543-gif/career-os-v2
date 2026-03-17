@@ -30,7 +30,7 @@ export function TrendRadar() {
       <h2 style={s.title}>TREND RADAR / <span style={{ color: 'var(--accent-active)' }}>MARKET VELOCITY</span></h2>
 
       <div style={s.statGrid}>
-        {data.trendStats.map(stat => (
+        {(data.trendStats || []).map(stat => (
           <div key={stat.lbl} className="glass" style={s.statCard}>
             <div style={s.statVal}>{stat.val}</div>
             <div style={s.statLabel}>{stat.lbl}</div>
@@ -71,7 +71,7 @@ export function TrendRadar() {
           ) : null}
 
           <div style={s.trendGrid}>
-            {data.trends.map(trend => (
+            {(data.trends || []).map(trend => (
               <div key={trend.title} className="glass" style={s.trendCard}>
                 <div style={s.trendHeader}>
                   <div style={s.trendIcon}>{trend.icon}</div>
@@ -94,7 +94,7 @@ export function TrendRadar() {
           <div className="glass" style={s.sideCard}>
             <h3 style={s.sideTitle}>SALARY IMPACT MATRIX</h3>
             <div style={s.salaryTable}>
-              {data.salary.map(row => (
+              {(data.salary || []).map(row => (
                 <div key={row.skill} style={s.salaryRow}>
                   <div style={s.tierBadge}>{row.tier}</div>
                   <div style={s.salarySkill}>{row.skill}</div>
@@ -107,7 +107,7 @@ export function TrendRadar() {
           <div className="glass" style={{ ...s.sideCard, marginTop: 20 }}>
             <h3 style={s.sideTitle}>MARKET TIMING</h3>
             <div style={s.timingList}>
-              {data.timing.map(item => (
+              {(data.timing || []).map(item => (
                 <div key={item.skill} style={s.timingItem}>
                   <div style={s.timingHeader}>
                     <div style={s.timingName}>{item.skill}</div>

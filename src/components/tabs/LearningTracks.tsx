@@ -41,7 +41,7 @@ export function LearningTracks() {
 
       {subtab === 'static' ? (
         <div style={s.trackList}>
-          {data.tracks.map((track) => (
+          {(data.tracks || []).map((track) => (
             <div key={track.title} className="glass" style={s.trackCard}>
               <div style={s.trackHeader} onClick={() => setExpandedTrack(expandedTrack === track.title ? null : track.title)}>
                 <div style={{ ...s.iconCircle, background: track.color }}>{track.icon}</div>
@@ -53,11 +53,11 @@ export function LearningTracks() {
               </div>
               {expandedTrack === track.title && (
                 <div style={s.trackBody}>
-                  {track.weeks.map((week) => (
+                  {(track.weeks || []).map((week) => (
                     <div key={week.lbl} style={s.weekRow}>
                       <div style={s.weekLabel}>{week.lbl}</div>
                       <div style={s.weekTasks}>
-                        {week.tasks.map((task, i) => (
+                        {(week.tasks || []).map((task, i) => (
                           <div key={i} style={s.taskItem}>
                             <div style={s.dot} />
                             {task}
