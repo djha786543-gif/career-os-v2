@@ -44,7 +44,7 @@ export function AppLayout({ activeTab, onTabChange, children }: Props) {
       <header style={styles.header}>
         <div style={styles.headerInner}>
           <div style={styles.brand}>
-            CAREER<span style={{ color: 'var(--accent-active)' }}>_OS</span> / MARKET INTEL
+            CareerOS Market Intel
           </div>
 
           <div style={styles.profileSwitch}>
@@ -178,24 +178,24 @@ const styles: Record<string, React.CSSProperties> = {
   userTitle: { fontSize: 10, color: 'rgba(255,255,255,0.4)', whiteSpace: 'nowrap' },
   navTabs: {
     display: 'flex',
-    flexWrap: 'wrap', // Allow tabs to wrap to the next line
-    gap: 2, // Reduced horizontal gap between tabs
+    flexWrap: 'wrap',
+    gap: 2,
     marginLeft: 'auto',
     height: '100%',
-    minWidth: '200px', // Fixed min-width for navigation area
+    minWidth: '200px',
   },
   ntab: {
-    padding: '0 8px', // Reduced horizontal padding
-    fontSize:      10, // Reduced font size (text-sm equivalent)
+    padding: '0 8px',
+    fontSize:      10,
     fontWeight:    700,
     cursor:        'pointer',
     transition:    'all 0.2s',
-    whiteSpace: 'nowrap', // Prevent text wrapping
-    overflow: 'hidden', // Hide overflow
-    textOverflow: 'ellipsis', // Show ellipsis for truncated text
-    textAlign: 'left', // Align text to the left
-    minWidth: '150px', // Adjusted min-width to allow more tabs per line
-    flexShrink: 0, // Prevent shrinking
+    whiteSpace: 'nowrap',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    textAlign: 'left',
+    minWidth: '150px',
+    flexShrink: 0,
     background: 'transparent',
     border: 'none',
     display:       'flex',
@@ -208,6 +208,6 @@ const styles: Record<string, React.CSSProperties> = {
   wrap: {
     maxWidth: 1400,
     margin:   '0 auto',
-    padding:  '32px 10px 80px', // Reduced horizontal padding from 24px to 10px
+    padding:  '32px 10px 80px',
   },
 };
