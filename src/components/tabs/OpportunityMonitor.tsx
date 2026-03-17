@@ -78,8 +78,15 @@ export function OpportunityMonitor() {
   const [selectedOrg, setSelectedOrg] = useState<string | null>(null)
   const [lastUpdated, setLastUpdated] = useState<string | null>(null)
 
+  const countryToRegion = (country: string): Region => {
+    const europeanCountries = ['Germany', 'UK', 'Sweden', 'Switzerland', 'France', 'Netherlands', 'Europe']
+    const asiaPacificCountries = ['Singapore', 'Australia', 'India', 'Global']
+    if (europeanCountries.some(c => (country || '').includes(c))) return 'de'
+    if (asiaPacificCountries.some(c => (country || '').includes(c))) return 'sg'
+    return 'ca' // USA, Canada, and anything else
+  }
+
   const fetchData = useCallback(async (silent = false) => {
-    const regions: Region[] = ['de', 'ca', 'sg'];
     const sector = activeSector
 
     if (!silent) {
@@ -90,15 +97,18 @@ export function OpportunityMonitor() {
     }
 
     try {
-      const jobsData = await api.get(`/monitor/jobs?sectors=${sector}`); // Backend returns jobs for all regions
+      const response = await api.get(`/monitor/jobs?sector=${sector}&limit=100`);
+      const allJobs: MonitorJob[] = response.jobs || [];
+
+      const grouped: Record<Region, MonitorJob[]> = { de: [], ca: [], sg: [] };
+      for (const job of allJobs) {
+        const region = countryToRegion(job.country || '');
+        grouped[region].push(job);
+      }
 
       setJobs(prev => ({
         ...prev,
-        [sector]: {
-          de: jobsData[sector]?.de,
-          ca: jobsData[sector]?.ca,
-          sg: jobsData[sector]?.sg
-        }
+        [sector]: grouped
       }));
 
       setError(null);
@@ -111,7 +121,7 @@ export function OpportunityMonitor() {
           [sector]: { de: false, ca: false, sg: false }
         }));
       }
-     }
+    }
   }, [activeSector]);
 
   const filteredJobs = (jobsList: any): MonitorJob[] => {
@@ -130,15 +140,33 @@ export function OpportunityMonitor() {
          return 0
       });
   }
+  const fetchStats = useCallback(async () => {
+    try {
+      const response = await api.get('/monitor/stats');
+      setStats({
+        last_scan: response.lastScan,
+        sectors: (response.sectors || []).map((s: any) => ({
+          sector: s.sector as Sector,
+          total_jobs: parseInt(s.total_jobs || '0'),
+          new_jobs: parseInt(s.new_jobs || '0'),
+          last_detected: s.last_detected || ''
+        }))
+      });
+    } catch {
+      // stats are non-critical, fail silently
+    }
+  }, [])
+
   useEffect(() => {
     fetchData()
-  }, [fetchData])
+    fetchStats()
+  }, [fetchData, fetchStats])
 
   // Auto-refresh every 30 mins
   useEffect(() => {
-     const timer = setInterval(() => fetchData(true), 30 * 60 * 1000)
+    const timer = setInterval(() => { fetchData(true); fetchStats(); }, 30 * 60 * 1000)
     return () => clearInterval(timer)
-  }, [fetchData])
+  }, [fetchData, fetchStats])
 
   const handleScan = async () => {
     setScanning(true)
@@ -180,7 +208,9 @@ export function OpportunityMonitor() {
     }
   }
 
-  if (loading && !stats) return <div style={styles.loading}>Loading Monitor...</div>
+  const isInitialLoad = loading[activeSector]['de'] && loading[activeSector]['ca'] && loading[activeSector]['sg'] &&
+    !jobs[activeSector]['de'].length && !jobs[activeSector]['ca'].length && !jobs[activeSector]['sg'].length
+  if (isInitialLoad) return <div style={styles.loading}>Loading Monitor...</div>
 
   return (
     <div style={styles.container}>
