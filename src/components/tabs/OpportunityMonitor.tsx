@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 import React, { useState, useEffect, useCallback } from 'react'
 import { useProfile } from '../../context/ProfileContext'
 import { api } from '../../config/api'
@@ -17,10 +17,7 @@ interface MonitorJob {
   apply_url: string
   snippet: string
   posted_date: string
-  detected_at: string
-  is_new: boolean
-  api_type?: string
- const filteredJobs = (jobs: MonitorJob[]) => {
+    detected_at: string;`n  is_new: boolean;`n  api_type?: string;`n}`n`nconst OpportunityMonitor = () => {`n  const filteredJobs = (jobs: MonitorJob[]) => {
     return (jobs || [])
       .filter(j => j && (!newOnly || j.is_new))
       .filter(j => j && (!selectedOrg || j.org_name === selectedOrg))
@@ -62,10 +59,10 @@ interface GlobalStats {
 }
 
 const SECTOR_CONFIG = {
-  academia: { icon: '🏛️', label: 'Academia', color: '#6366f1', desc: 'Top 20 US research institutions' },
-  industry: { icon: '🏭', label: 'Industry', color: '#10b981', desc: 'Top 20 biotech & pharma companies' },
-  international: { icon: '🌍', label: 'International', color: '#f59e0b', desc: 'Top 10 EU & Asia-Pacific institutes' },
-  india: { icon: '🇮🇳', label: 'India', color: '#ec4899', desc: 'Top 15 Indian research institutes' }
+  academia: { icon: 'ðŸ›ï¸', label: 'Academia', color: '#6366f1', desc: 'Top 20 US research institutions' },
+  industry: { icon: 'ðŸ­', label: 'Industry', color: '#10b981', desc: 'Top 20 biotech & pharma companies' },
+  international: { icon: 'ðŸŒ', label: 'International', color: '#f59e0b', desc: 'Top 10 EU & Asia-Pacific institutes' },
+  india: { icon: 'ðŸ‡®ðŸ‡³', label: 'India', color: '#ec4899', desc: 'Top 15 Indian research institutes' }
 }
 
 export function OpportunityMonitor() {
@@ -200,7 +197,7 @@ export function OpportunityMonitor() {
     <div style={styles.container}>
       <header style={styles.header}>
         <div>
-          <h1 style={styles.title}>🔬 Opportunity Monitor</h1>
+          <h1 style={styles.title}>ðŸ”¬ Opportunity Monitor</h1>
           <p style={styles.subtitle}>Real-time job alerts from 55 target organizations</p>
         </div>
         <div style={styles.headerActions}>
@@ -209,10 +206,10 @@ export function OpportunityMonitor() {
             Last scan: {stats?.last_scan ? timeAgo(stats.last_scan) : 'Never'}
           </span>
           <button onClick={handleScan} disabled={scanning} style={styles.scanBtn}>
-            {scanning ? 'Scanning...' : '▶ Scan Now'}
+            {scanning ? 'Scanning...' : 'â–¶ Scan Now'}
           </button>
           <button onClick={handleMarkSeen} style={styles.seenBtn}>
-            ✓ Mark Sector Seen
+            âœ“ Mark Sector Seen
           </button>
         </div>
       </header>
@@ -272,7 +269,7 @@ export function OpportunityMonitor() {
         <div style={styles.filterGroup}>
           <label style={styles.toggle}>
             <input type="checkbox" checked={newOnly} onChange={e => setNewOnly(e.target.checked)} />
-            <span style={{ color: newOnly ? '#f43f5e' : 'inherit' }}>🔴 New Only</span>
+            <span style={{ color: newOnly ? '#f43f5e' : 'inherit' }}>ðŸ”´ New Only</span>
           </label>
           <select value={sortBy} onChange={e => setSortBy(e.target.value as any)} style={styles.select}>
             <option value="newest">Newest First</option>
@@ -303,23 +300,23 @@ export function OpportunityMonitor() {
                   }}>
                     <div style={styles.jobMain}>
                       <div style={styles.jobHeader}>
-                        {job.is_new && <span className="pulse-badge" style={styles.newBadge}>🆕 NEW</span>}
+                        {job.is_new && <span className="pulse-badge" style={styles.newBadge}>ðŸ†• NEW</span>}
                         <h3 style={styles.jobTitle}>{job?.title}</h3> {/* Defensive access */}
                       </div>
                       <div style={styles.jobSub}>
                         <span style={styles.orgLabel}>{job?.org_name}</span> {/* Defensive access */}
-                        <span style={styles.dot}>•</span>
+                        <span style={styles.dot}>â€¢</span>
                         <span>{job?.location} {countryFlag(job?.country || '')}</span> {/* Defensive access */}
                       </div>
                       <div style={styles.jobMeta}>
                         <span>Detected {timeAgo(job?.detected_at || '')}</span> {/* Defensive access */}
-                        <span style={styles.dot}>•</span>
+                        <span style={styles.dot}>â€¢</span>
                         <span style={styles.sourceBadge}>{sourceBadgeLabel(job?.api_type || 'websearch')}</span> {/* Defensive access */}
                       </div>
                       <p style={styles.snippet}>{job.snippet}</p>
                     </div>
                     <div style={styles.jobActions}>
-                      <button onClick={() => window.open(job.apply_url, '_blank')} style={styles.applyBtn}>Apply →</button>
+                      <button onClick={() => window.open(job.apply_url, '_blank')} style={styles.applyBtn}>Apply â†’</button>
                       <button onClick={() => handleSaveToTracker(job)} style={styles.saveBtn}>+ Save to Tracker</button>
                     </div>
                   </div>
@@ -333,7 +330,7 @@ export function OpportunityMonitor() {
                     </div>
                   ) : (
                     <div style={styles.emptyCaughtUp}>
-                      <span style={{ fontSize: 48 }}>✅</span>
+                      <span style={{ fontSize: 48 }}>âœ…</span>
                       <p>All caught up! No positions match your current filters.</p>
                     </div>
                   )}
@@ -408,3 +405,4 @@ const styles: Record<string, React.CSSProperties> = {
   emptyPulse: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 },
   emptyCaughtUp: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }
 }
+
