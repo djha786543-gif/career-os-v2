@@ -176,19 +176,23 @@ const styles: Record<string, React.CSSProperties> = {
   },
   userName:  { fontSize: 13, fontWeight: 700, whiteSpace: 'nowrap' },
   userTitle: { fontSize: 10, color: 'rgba(255,255,255,0.4)', whiteSpace: 'nowrap' },
-  navTabs: {
-    display:    'flex',
-    gap:        4,
+  navTabs: { // New styles for navigation tabs container
+    display: 'flex',
+    gap: 4,
     marginLeft: 'auto',
     height: '100%',
+    minWidth: '200px', // Fixed min-width for navigation area
   },
   ntab: {
-    padding:       '0 12px',
+    padding: '0 12px',
     fontSize:      11,
     fontWeight:    700,
     cursor:        'pointer',
     transition:    'all 0.2s',
-    whiteSpace:    'nowrap',
+    whiteSpace: 'nowrap', // Prevent text wrapping
+    overflow: 'hidden', // Hide overflow
+    textOverflow: 'ellipsis', // Show ellipsis for truncated text
+    textAlign: 'left', // Align text to the left
     background: 'transparent',
     border: 'none',
     display:       'flex',
@@ -201,6 +205,6 @@ const styles: Record<string, React.CSSProperties> = {
   wrap: {
     maxWidth: 1400,
     margin:   '0 auto',
-    padding:  '32px 24px 80px',
+    padding:  '32px 10px 80px', // Reduced horizontal padding from 24px to 10px
   },
 };
