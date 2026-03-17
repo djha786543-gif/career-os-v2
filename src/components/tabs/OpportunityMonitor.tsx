@@ -143,7 +143,7 @@ export function OpportunityMonitor() {
   const handleScan = async () => {
     setScanning(true)
      try {
-      await api.post('/monitor/scan', {})
+       await api.post('/monitor/scan', {})
       // Wait a bit for scan to progress then refresh
       setTimeout(fetchData, 5000)
       setTimeout(fetchData, 15000)
@@ -357,7 +357,7 @@ const styles: Record<string, React.CSSProperties> = {
   seenBtn: { background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--text-secondary)', padding: '8px 16px', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer' },
   
   tabs: { display: 'flex', gap: 8, borderBottom: '1px solid rgba(255,255,255,0.05)' },
-  tab: { flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '16px', border: 'none', borderBottom: '3px solid transparent', cursor: 'pointer', transition: 'all 0.2s', fontSize: 13, fontWeight: 700 },
+   tab: { flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '16px', border: 'none', borderBottom: '3px solid transparent', cursor: 'pointer', transition: 'all 0.2s', fontSize: 13, fontWeight: 700 },
   tabIcon: { fontSize: 16 },
    tabCount: { fontSize: 11, opacity: 0.6 },
   newTabBadge: { background: 'rgba(244,63,94,0.2)', color: '#f87171', padding: '2px 6px', borderRadius: 4, fontSize: 9 },
