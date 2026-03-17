@@ -5,6 +5,7 @@ import { api } from '../../config/api'
 import { timeAgo, countryFlag, sourceBadgeLabel } from '../../utils/monitorHelpers'
 
 type Sector = 'academia' | 'industry' | 'international' | 'india'
+type Region = 'de' | 'ca' | 'sg';
 
 interface MonitorJob {
   id: string
@@ -19,6 +20,21 @@ interface MonitorJob {
   detected_at: string
   is_new: boolean
   api_type?: string
+ const filteredJobs = (jobs: MonitorJob[]) => {
+    return (jobs || [])
+      .filter(j => j && (!newOnly || j.is_new))
+      .filter(j => j && (!selectedOrg || j.org_name === selectedOrg))
+      .filter(j =>
+        j && ((j.title || '').toLowerCase().includes(search.toLowerCase()) ||
+        (j.org_name || '').toLowerCase().includes(search.toLowerCase()))
+      )
+      .sort((a, b) => {
+        if (sortBy === 'newest') return (new Date(b?.detected_at || 0)).getTime() - (new Date(a?.detected_at || 0)).getTime()
+        if (sortBy === 'oldest') return (new Date(a?.detected_at || 0)).getTime() - (new Date(b?.detected_at || 0)).getTime()
+        if (sortBy === 'org') return (a?.org_name || '').localeCompare(b?.org_name || '')
+        return 0
+      });
+  }
 }
 
 interface MonitorOrg {
@@ -55,10 +71,21 @@ const SECTOR_CONFIG = {
 export function OpportunityMonitor() {
   const { profile } = useProfile()
   const [activeSector, setActiveSector] = useState<Sector>('academia')
+  const [activeRegion, setActiveRegion] = useState<Region>('de')
   const [stats, setStats] = useState<GlobalStats | null>(null)
   const [orgs, setOrgs] = useState<MonitorOrg[]>([])
-  const [jobs, setJobs] = useState<MonitorJob[]>([])
-  const [loading, setLoading] = useState(true)
+  const [jobs, setJobs] = useState<Record<Sector, Record<Region, MonitorJob[]>>>({
+    academia: { de: [], ca: [], sg: [] },
+    industry: { de: [], ca: [], sg: [] },
+    international: { de: [], ca: [], sg: [] },
+    india: { de: [], ca: [], sg: [] }
+  });
+  const [loading, setLoading] = useState<Record<Sector, Record<Region, boolean>>>({
+    academia: { de: true, ca: true, sg: true },
+    industry: { de: true, ca: true, sg: true },
+    international: { de: true, ca: true, sg: true },
+    india: { de: true, ca: true, sg: true }
+  });
   const [scanning, setScanning] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [newOnly, setNewOnly] = useState(false)
@@ -68,27 +95,40 @@ export function OpportunityMonitor() {
   const [lastUpdated, setLastUpdated] = useState<string | null>(null)
 
   const fetchData = useCallback(async (silent = false) => {
-    if (!silent) setLoading(true)
-    try {
-      const [statsData, orgsData, jobsData] = await Promise.all([
-        api.get('/monitor/stats'),
-        api.get(`/monitor/orgs?sector=${activeSector}`),
-        api.get(`/monitor/jobs?sector=${activeSector}&limit=50`)
-      ])
-      setStats(statsData)
-      setOrgs(orgsData)
-      setJobs(jobsData)
-      setError(null)
-      if (silent) {
-        setLastUpdated(new Date().toLocaleTimeString())
-        setTimeout(() => setLastUpdated(null), 10000)
-      }
-    } catch (err) {
-      setError('Failed to load monitor data')
-    } finally {
-      if (!silent) setLoading(false)
+    const regions: Region[] = ['de', 'ca', 'sg'];
+    const sector = activeSector
+
+    if (!silent) {
+      setLoading(prev => ({
+        ...prev,
+        [sector]: { de: true, ca: true, sg: true }
+      }));
     }
-  }, [activeSector])
+
+    try {
+      const jobsData = await api.get(`/monitor/jobs?sectors=${sector}`); // Backend returns jobs for all regions
+
+      setJobs(prev => ({
+        ...prev,
+        [sector]: {
+          de: jobsData[sector]?.de,
+          ca: jobsData[sector]?.ca,
+          sg: jobsData[sector]?.sg
+        }
+      }));
+
+      setError(null);
+    } catch (err) {
+      setError('Failed to load monitor data');
+    } finally {
+      if (!silent) {
+        setLoading(prev => ({
+          ...prev,
+          [sector]: { de: false, ca: false, sg: false }
+        }));
+      }
+    }
+  }, [activeSector]);
 
   useEffect(() => {
     fetchData()
@@ -249,50 +289,59 @@ export function OpportunityMonitor() {
       </div>
 
       <div style={styles.jobList}>
-        {(filteredJobs || []).length > 0 ? ( // Redundant but harmless, filteredJobs is already defensively created
-          (filteredJobs || []).map(job => (
-            <div key={job.id} className="glass" style={{
-              ...styles.jobCard,
-              borderLeft: job.is_new ? '3px solid #f43f5e' : '1px solid rgba(99,102,241,0.12)'
-            }}>
-              <div style={styles.jobMain}>
-                <div style={styles.jobHeader}>
-                  {job.is_new && <span className="pulse-badge" style={styles.newBadge}>🆕 NEW</span>}
-                  <h3 style={styles.jobTitle}>{job?.title}</h3> {/* Defensive access */}
-                </div>
-                <div style={styles.jobSub}>
-                  <span style={styles.orgLabel}>{job?.org_name}</span> {/* Defensive access */}
-                  <span style={styles.dot}>•</span>
-                  <span>{job?.location} {countryFlag(job?.country || '')}</span> {/* Defensive access */}
-                </div>
-                <div style={styles.jobMeta}>
-                  <span>Detected {timeAgo(job?.detected_at || '')}</span> {/* Defensive access */}
-                  <span style={styles.dot}>•</span>
-                  <span style={styles.sourceBadge}>{sourceBadgeLabel(job?.api_type || 'websearch')}</span> {/* Defensive access */}
-                </div>
-                <p style={styles.snippet}>{job.snippet}</p>
-              </div>
-              <div style={styles.jobActions}>
-                <button onClick={() => window.open(job.apply_url, '_blank')} style={styles.applyBtn}>Apply →</button>
-                <button onClick={() => handleSaveToTracker(job)} style={styles.saveBtn}>+ Save to Tracker</button>
-              </div>
-            </div>
-          ))
-        ) : (
-          <div style={styles.empty}>
-            {loading ? (
-              <div style={styles.emptyPulse}>
-                <div className="spinner" />
-                <p>Scan in progress... check back in a few minutes</p>
-              </div>
+        {(['de', 'ca', 'sg'] as Region[]).map(region => (
+          <div key={region}>
+            <h3>{region.toUpperCase()}</h3>
+            {loading[activeSector][region] ? (
+              <div>Loading {region.toUpperCase()} jobs...</div>
             ) : (
-              <div style={styles.emptyCaughtUp}>
-                <span style={{ fontSize: 48 }}>✅</span>
-                <p>All caught up! No positions match your current filters.</p>
-              </div>
+              (filteredJobs(jobs[activeSector][region] || [])).length > 0 ? ( // Redundant but harmless, filteredJobs is already defensively created
+                (filteredJobs(jobs[activeSector][region] || [])).map(job => (
+                  <div key={job.id} className="glass" style={{
+                    ...styles.jobCard,
+                    borderLeft: job.is_new ? '3px solid #f43f5e' : '1px solid rgba(99,102,241,0.12)'
+                  }}>
+                    <div style={styles.jobMain}>
+                      <div style={styles.jobHeader}>
+                        {job.is_new && <span className="pulse-badge" style={styles.newBadge}>🆕 NEW</span>}
+                        <h3 style={styles.jobTitle}>{job?.title}</h3> {/* Defensive access */}
+                      </div>
+                      <div style={styles.jobSub}>
+                        <span style={styles.orgLabel}>{job?.org_name}</span> {/* Defensive access */}
+                        <span style={styles.dot}>•</span>
+                        <span>{job?.location} {countryFlag(job?.country || '')}</span> {/* Defensive access */}
+                      </div>
+                      <div style={styles.jobMeta}>
+                        <span>Detected {timeAgo(job?.detected_at || '')}</span> {/* Defensive access */}
+                        <span style={styles.dot}>•</span>
+                        <span style={styles.sourceBadge}>{sourceBadgeLabel(job?.api_type || 'websearch')}</span> {/* Defensive access */}
+                      </div>
+                      <p style={styles.snippet}>{job.snippet}</p>
+                    </div>
+                    <div style={styles.jobActions}>
+                      <button onClick={() => window.open(job.apply_url, '_blank')} style={styles.applyBtn}>Apply →</button>
+                      <button onClick={() => handleSaveToTracker(job)} style={styles.saveBtn}>+ Save to Tracker</button>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div style={styles.empty}>
+                  {loading[activeSector][region] ? (
+                    <div style={styles.emptyPulse}>
+                      <div className="spinner" />
+                      <p>Scan in progress... check back in a few minutes</p>
+                    </div>
+                  ) : (
+                    <div style={styles.emptyCaughtUp}>
+                      <span style={{ fontSize: 48 }}>✅</span>
+                      <p>All caught up! No positions match your current filters.</p>
+                    </div>
+                  )}
+                </div>
+              )
             )}
           </div>
-        )}
+        ))}
       </div>
 
       <style jsx>{`
