@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test": "jest"
+    "test": "jest",
+    "db:seed:pooja": "ts-node scripts/seed_pooja_research.ts"
   },
   "dependencies": {
     "axios": "^1.6.0",
