@@ -90,7 +90,7 @@ export function OpportunityMonitor() {
     }
 
     try {
-      const jobsData = await api.get(`/monitor/jobs?sectors=${sector}`); // Backend returns jobs for all regions
+      const jobsData = await api.get(`/api/monitor/jobs?sectors=${sector}`); // Backend returns jobs for all regions
 
       setJobs(prev => ({
         ...prev,
@@ -129,268 +129,36 @@ export function OpportunityMonitor() {
         if (sortBy === 'org') return (a?.org_name || '').localeCompare(b?.org_name || '')
          return 0
       });
-  }
-  useEffect(() => {
-    fetchData()
-  }, [fetchData])
+   }
+   useEffect(() => {
+     const fetchDataAsync = async () => {
+       await fetchData();
+     };
+     fetchDataAsync();
+   }, [fetchData])
+ 
+   // Auto-refresh every 30 mins
+   useEffect(() => {
+      const timer = setInterval(() => {
+        const fetchDataAsync = async () => {
+          await fetchData(true);
+        };
+        fetchDataAsync();
+      }, 30 * 60 * 1000);
+     return () => clearInterval(timer)
+   }, [fetchData])
+ 
++
+   const handleScan = async () => {
+     setScanning(true)
+      try {
+@@ -247,7 +247,7 @@
+       <header style={styles.header}>
+         <div>
+           <h1 style={styles.title}>Sup, Opportunity Monitor</h1>
+-          <p style={styles.subtitle}>Real-time job alerts from 55 target organizations</p>
++          <p style={styles.subtitle}>Real-time job alerts</p>
+         </div>
+         <div style={styles.headerActions}>
+           {lastUpdated && <span style={styles.updatedBadge}>Updated {lastUpdated}</span>}
 
-  // Auto-refresh every 30 mins
-  useEffect(() => {
-     const timer = setInterval(() => fetchData(true), 30 * 60 * 1000)
-    return () => clearInterval(timer)
-  }, [fetchData])
-
-  const handleScan = async () => {
-    setScanning(true)
-     try {
-        await api.post('/monitor/scan', {})
-      // Wait a bit for scan to progress then refresh
-      setTimeout(fetchData, 5000)
-      setTimeout(fetchData, 15000)
-       setTimeout(fetchData, 30000)
-     } catch (err) {
-      alert('Scan trigger failed')
-    } finally {
-      setScanning(false)
-    }
-  }
-
-  const handleMarkSeen = async () => {
-    try {
-      await api.post('/monitor/mark-seen', { sector: activeSector })
-      fetchData()
-    } catch (err) {
-      alert('Failed to mark as seen')
-    }
-  }
-
-  const handleSaveToTracker = async (job: MonitorJob) => {
-    try {
-      await api.post('/tracker/pooja', {
-        column: 'Saved',
-        title: job.title,
-        company: job.org_name,
-        location: job.location,
-        applyUrl: job.apply_url,
-        snippet: job.snippet
-      })
-      alert('Saved to Pooja\'s tracker!')
-    } catch (err) {
-      alert('Failed to save to tracker')
-    }
-  }
-
-  if (loading && !stats) return <div style={styles.loading}>Loading Monitor...</div>
-
-  return (
-    <div style={styles.container}>
-      <header style={styles.header}>
-        <div>
-          <h1 style={styles.title}>Sup, Opportunity Monitor</h1>
-          <p style={styles.subtitle}>Real-time job alerts from 55 target organizations</p>
-        </div>
-        <div style={styles.headerActions}>
-          {lastUpdated && <span style={styles.updatedBadge}>Updated {lastUpdated}</span>}
-          <span style={styles.lastScan}>
-            Last scan: {stats?.last_scan ? timeAgo(new Date(stats.last_scan).toISOString()) : 'Never'}
-          </span>
-          <button onClick={handleScan} disabled={scanning} style={styles.scanBtn}>
-            {scanning ? 'Scanning...' : 'Scan Now'}
-          </button>
-          <button onClick={handleMarkSeen} style={styles.seenBtn}>
-            Mark Sector Seen
-          </button>
-        </div>
-      </header>
-
-      <div style={styles.tabs}>
-        {(Object.keys(SECTOR_CONFIG) as Sector[]).map(s => {
-          const config = SECTOR_CONFIG[s]
-          const sectorStats = (stats?.sectors || []).find(ss => ss.sector === s)
-          const isActive = activeSector === s
-          return (
-            <button 
-              key={s} 
-              onClick={() => { setActiveSector(s); setSelectedOrg(null); }}
-              style={{
-                ...styles.tab,
-                borderBottomColor: isActive ? config.color : 'transparent',
-                background: isActive ? `${config.color}15` : 'transparent',
-                color: isActive ? 'white' : 'var(--text-secondary)'
-              }}
-            >
-              <span style={styles.tabIcon}>{config.icon}</span>
-              <span style={styles.tabLabel}>{config.label}</span>
-              <span style={styles.tabCount}>({sectorStats?.total_jobs || 0})</span>
-              {(sectorStats?.new_jobs || 0) > 0 && (
-                <span className="pulse-badge" style={styles.newTabBadge}>
-                  {sectorStats?.new_jobs} NEW
-                </span>
-              )}
-            </button>
-          )
-        })}
-      </div>
-
-      <div style={styles.orgGrid}>
-        {(orgs || []).map(org => (
-          <div 
-            key={org.id} 
-            className="glass" 
-            onClick={() => setSelectedOrg(selectedOrg === org.name ? null : org.name)}
-            style={{
-              ...styles.orgCard,
-              borderLeft: org.new_jobs > 0 ? `3px solid ${SECTOR_CONFIG[activeSector].color}` : '1px solid rgba(255,255,255,0.05)',
-              borderColor: selectedOrg === org.name ? SECTOR_CONFIG[activeSector].color : undefined,
-              background: selectedOrg === org.name ? 'rgba(255,255,255,0.05)' : undefined
-            }}
-          >
-            <div style={styles.orgName}>{org.name}</div>
-            <div style={styles.orgMeta}>
-              <span>{org.total_jobs} jobs</span>
-              {org.new_jobs > 0 && <span style={styles.orgNewCount}>{org.new_jobs} new</span>}
-            </div>
-          </div>
-        ))}
-       </div>
-
-      <div style={styles.filters}>
-        <div style={styles.filterGroup}>
-          <label style={styles.toggle}>
-            <input type="checkbox" checked={newOnly} onChange={e => setNewOnly(e.target.checked)} />
-            <span style={{ color: newOnly ? '#f43f5e' : 'inherit' }}>ðŸ”´ New Only</span>
-          </label>
-          <select value={sortBy} onChange={e => setSortBy(e.target.value as any)} style={styles.select}>
-            <option value="newest">Newest First</option>
-            <option value="oldest">Oldest First</option>
-            <option value="org">By Organization</option>
-          </select>
-        </div>
-        <input 
-          style={styles.search} 
-          placeholder="Filter by title or organization..." 
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-        />
-      </div>
-
-      <div style={styles.jobList}>
-        {(['de', 'ca', 'sg'] as Region[]).map(region => (
-          <div key={region}>
-            <h3>{region.toUpperCase()}</h3>
-            {loading[activeSector][region] ? (
-              <div>Loading {region.toUpperCase()} jobs...</div>
-            ) : (
-               (filteredJobs(jobs[activeSector][region] || [])).length > 0 ? ( // Redundant but harmless, filteredJobs is already defensively created
-                (filteredJobs(jobs[activeSector][region] || [])).map(job => (
-                  <div key={job.id} className="glass" style={{
-                    ...styles.jobCard,
-                    borderLeft: job.is_new ? '3px solid #f43f5e' : '1px solid rgba(99,102,241,0.12)'
-                  }}>
-                    <div style={styles.jobMain}>
-                      <div style={styles.jobHeader}>
-                        {job.is_new && <span className="pulse-badge" style={styles.newBadge}>âœ° NEW</span>}
-                         <h3 style={styles.jobTitle}>{job?.title}</h3> {/* Defensive access */}
-                      </div>
-                      <div style={styles.jobSub}>
-                        <span style={styles.orgLabel}>{job?.org_name}</span> {/* Defensive access */}
-                        <span style={styles.dot}>â€¢</span>
-                        <span>{job?.location} {countryFlag(job?.country || '')}</span> {/* Defensive access */}
-                      </div>
-                      <div style={styles.jobMeta}>
-                        <span>Detected {timeAgo(job?.detected_at || '')}</span> {/* Defensive access */}
-                        <span style={styles.dot}>â€¢</span>
-                        <span style={styles.sourceBadge}>{sourceBadgeLabel(job?.api_type || 'websearch')}</span> {/* Defensive access */}
-                      </div>
-                      <p style={styles.snippet}>{job.snippet}</p>
-                    </div>
-                    <div style={styles.jobActions}>
-                      <button onClick={() => window.open(job.apply_url, '_blank')} style={styles.applyBtn}>Apply â†’</button>
-                      <button onClick={() => handleSaveToTracker(job)} style={styles.saveBtn}>+ Save to Tracker</button>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div style={styles.empty}>
-                  {loading[activeSector][region] ? (
-                    <div style={styles.emptyPulse}>
-                      <div className="spinner" />
-                      <p>Scan in progress... check back in a few minutes</p>
-                    </div>
-                  ) : (
-                    <div style={styles.emptyCaughtUp}>
-                      <span style={{ fontSize: 48 }}>âœ…</span>
-                      <p>All caught up! No positions match your current filters.</p>
-                    </div>
-                  )}
-                </div>
-              )
-            )}
-          </div>
-        ))}
-      </div>
-
-      <style jsx>{`
-        .pulse-badge {
-          animation: pulse 2s infinite;
-        }
-        @keyframes pulse {
-          0% { opacity: 1; transform: scale(1); }
-          50% { opacity: 0.7; transform: scale(0.98); }
-          100% { opacity: 1; transform: scale(1); }
-        }
-      `}</style>
-    </div>
-  )
-}
-
-const styles: Record<string, React.CSSProperties> = {
-  container: { display: 'flex', flexDirection: 'column', gap: 24 },
-  loading: { textAlign: 'center', padding: 100, fontSize: 18, color: 'var(--text-secondary)' },
-  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 },
-  title: { fontSize: 24, fontWeight: 800, margin: 0 },
-  subtitle: { color: 'var(--text-secondary)', margin: '4px 0 0 0' },
-  headerActions: { display: 'flex', gap: 12, alignItems: 'center' },
-  lastScan: { fontSize: 12, color: 'var(--text-muted)' },
-  updatedBadge: { fontSize: 10, background: 'rgba(16,185,129,0.1)', color: '#10b981', padding: '2px 8px', borderRadius: 4 },
-  scanBtn: { background: 'var(--bg-tertiary)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', padding: '8px 16px', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer' },
-  seenBtn: { background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--text-secondary)', padding: '8px 16px', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer' },
-  
-  tabs: { display: 'flex', gap: 8, borderBottom: '1px solid rgba(255,255,255,0.05)' },
-   tab: { flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '16px', border: 'none', borderBottom: '3px solid transparent', cursor: 'pointer', transition: 'all 0.2s', fontSize: 13, fontWeight: 700 },
-  tabIcon: { fontSize: 16 },
-   tabCount: { fontSize: 11, opacity: 0.6 },
-  newTabBadge: { background: 'rgba(244,63,94,0.2)', color: '#f87171', padding: '2px 6px', borderRadius: 4, fontSize: 9 },
-
-  orgGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 },
-  orgCard: { padding: 12, cursor: 'pointer', transition: 'all 0.2s' },
-  orgName: { fontSize: 13, fontWeight: 700, marginBottom: 4 },
-  orgMeta: { display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--text-muted)' },
-  orgNewCount: { color: '#f87171', fontWeight: 800 },
-
-  filters: { display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'center', flexWrap: 'wrap' },
-  filterGroup: { display: 'flex', gap: 20, alignItems: 'center' },
-  toggle: { display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 700, cursor: 'pointer' },
-  select: { background: 'var(--bg-secondary)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', padding: '6px 12px', borderRadius: 6, fontSize: 13 },
-  search: { flex: 1, minWidth: 250, background: 'var(--bg-secondary)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', padding: '8px 16px', borderRadius: 8, fontSize: 13 },
-
-  jobList: { display: 'flex', flexDirection: 'column', gap: 12 },
-  jobCard: { padding: 20, display: 'flex', justifyContent: 'space-between', gap: 24, flexWrap: 'wrap' },
-  jobMain: { flex: 1, minWidth: 300 },
-  jobHeader: { display: 'flex', alignItems: 'center', gap: 12, marginBottom: 4 },
-  newBadge: { background: 'rgba(244,63,94,0.2)', color: '#f87171', border: '1px solid rgba(244,63,94,0.4)', fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 4, letterSpacing: '0.08em' },
-  jobTitle: { fontSize: 16, fontWeight: 800, margin: 0 },
-  jobSub: { display: 'flex', gap: 8, fontSize: 13, color: 'var(--text-secondary)', marginBottom: 4 },
-  orgLabel: { fontWeight: 700, color: 'var(--text-primary)' },
-  dot: { opacity: 0.3 },
-  jobMeta: { display: 'flex', gap: 8, fontSize: 11, color: 'var(--text-muted)', marginBottom: 12 },
-  sourceBadge: { background: 'rgba(255,255,255,0.05)', padding: '1px 6px', borderRadius: 4 },
-  snippet: { fontSize: 13, color: 'var(--text-secondary)', margin: 0, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' },
-  jobActions: { display: 'flex', flexDirection: 'column', gap: 8, minWidth: 140 },
-  applyBtn: { background: 'white', color: 'black', border: 'none', padding: '10px', borderRadius: 6, fontSize: 12, fontWeight: 800, cursor: 'pointer' },
-  saveBtn: { background: 'transparent', color: 'white', border: '1px solid rgba(255,255,255,0.1)', padding: '10px', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer' },
-
-  empty: { textAlign: 'center', padding: '60px 0', color: 'var(--text-muted)' },
-  emptyPulse: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 },
-  emptyCaughtUp: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }
-}

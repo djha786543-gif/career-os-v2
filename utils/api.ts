@@ -1,135 +1,94 @@
 import axios from 'axios';
 
-type ProfileId = 'dj' | 'pj';
+export const API_BASE = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080').replace(/\/$/, '');
+const BASE = API_BASE;
 
-interface Job {
-    company: string;
+// ── Job Hub ───────────────────────────────────────────────────────────────────
+export interface FrontendJob {
+  id:         string;
+  title:      string;
+  company:    string;
+  location:   string;
+  salary:     string;
+  snippet:    string;
+  applyUrl:   string;
+  fitScore:   number;
+  workMode:   string;
+  isRemote:   boolean;
+  source:     string;
+  postedDate: string;
+  keySkills:  string[];
+  fitReason:  string;
+  category?:  string;
+  region:     string;
 }
 
-interface JobsResponse {
-    status: string;
-    candidate: string;
-    jobs: Job[];
-    totalResults: number;
-}
-
-interface FrontendJob {
-    company: string;
-}
-
-const BASE = (process.env.NEXT_PUBLIC_API_URL || 'https://career-os-portal-production.up.railway.app').replace(/\/$/, '');
-
-async function fetchRegions(
-    candidateId: string,
-    track?: string,
-    regions: string[] = ['de', 'ca', 'sg']
-): Promise<JobsResponse> {
-    const requests = regions.map(region =>
-        axios.get(`${BASE}/api/jobs`, {
-            params: {
-                candidate: candidateId,
-                region,
-                track,
-                filter_top_companies: true
-            }
-        }).catch(() => null) // Silently fail individual region requests
-    );
-
-    const responses = await Promise.all(requests);
-    const successful = responses.filter(Boolean).map(r => r?.data);
-
-    return successful.reduce((acc, curr) => ({
-        ...acc,
-        jobs: [...acc.jobs, ...(curr.jobs || [])],
-        totalResults: acc.totalResults + (curr.totalResults || 0)
-    }), { status: 'success', candidate: candidateId, jobs: [], totalResults: 0 });
+export interface JobsResponse {
+  status:       string;
+  candidate:    string;
+  candidateId:  string;
+  track:        string | null;
+  regions:      string[];
+  totalResults: number;
+  source:       string;
+  jobs:         FrontendJob[];
 }
 
 export async function fetchJobs(
-  profileId: ProfileId,
+  profileId: 'dj' | 'pj',
   track?: string,
-  regions?: string[]
+  regions?: string[],
 ): Promise<JobsResponse> {
+  const params: Record<string, string> = { profile: profileId };
+  if (track)   params.track  = track;
+  if (regions) params.region = regions.join(',');
+  const { data } = await axios.get<JobsResponse>(`${BASE}/api/jobs`, { params });
+  return data;
+}
+
+export async function refreshJobs(profileId: 'dj' | 'pj', track?: string): Promise<void> {
   const candidateId = profileId === 'dj' ? 'deobrat' : 'pooja';
-  
-  // Pooja gets international regions by default
-  const targetRegions = regions || (profileId === 'pj' 
-    ? ['de', 'ca', 'sg', 'in'] 
-    : ['us']); // DJ keeps US-only
-
-  try {
-    const results = await fetchRegions(candidateId, track, targetRegions);
-
-        // Retry logic for IT Audit
-        if (results.jobs.length === 0 && track?.includes('IT Audit')) {
-            const retryResults = await fetchRegions(candidateId, 'Internal Audit', regions);
-            return {
-                ...results,
-                jobs: [...results.jobs, ...retryResults.jobs],
-                totalResults: results.totalResults + retryResults.totalResults
-            };
-        }
-
-        return results;
-    } catch (error) {
-        console.error('Fetch jobs error:', error);
-        return {
-            status: 'error',
-            candidate: candidateId,
-            jobs: [],
-            totalResults: 0
-        };
-    }
+  await axios.post(`${BASE}/api/jobs/refresh`, { candidate: candidateId, track });
 }
 
-export async function fetchAdzunaJobs(
-    region: string,
-    keywords: string,
-    sector: 'corporate' | 'academic'
-): Promise<FrontendJob[]> {
-    const ADZUNA_ID = process.env.ADZUNA_APP_ID;
-    const ADZUNA_KEY = process.env.ADZUNA_APP_KEY;
-
-    if (!ADZUNA_ID || !ADZUNA_KEY) {
-        throw new Error('Missing Adzuna credentials');
-    }
-
-    const response = await axios.get(`https://api.adzuna.com/v1/api/jobs/${region}/search/1`, {
-        params: {
-            app_id: ADZUNA_ID,
-            app_key: ADZUNA_KEY,
-            what: keywords,
-            content_type: 'json'
-        }
-    });
-
-    return filterTopCompanies(response.data.results, sector);
+// ── Kanban / Tracker ──────────────────────────────────────────────────────────
+export interface KanbanCard {
+  id?:         string;
+  profile_id:  'dj' | 'pooja';
+  job_id?:     string;
+  title:       string;
+  company:     string;
+  apply_url?:  string;
+  match_score?:number;
+  stage:       'wishlist' | 'applied' | 'phone_screen' | 'interview' | 'offer' | 'rejected' | 'archived';
+  notes?:      string;
+  next_action?:string;
+  deadline?:   string;
+  created_at?: string;
+  updated_at?: string;
 }
 
-function filterTopCompanies(jobs: FrontendJob[], sector: 'corporate' | 'academic' | 'government'): FrontendJob[] {
-  const poojaResearchTargets = [
-    // Academic
-    'Technical University of Munich', 'LMU Munich', 'University of Toronto',
-    'National University of Singapore', 'Indian Institute of Science',
-    // Government
-    'AIIMS Delhi', 'Max Planck Institutes', 'A*STAR Research Institutes'
-  ];
+export async function saveToTracker(card: Omit<KanbanCard, 'id' | 'created_at' | 'updated_at'>): Promise<KanbanCard> {
+  const { data } = await axios.post<KanbanCard>(`${BASE}/api/kanban`, card);
+  return data;
+}
 
-  return jobs.filter(job => {
-    const companyName = job.company?.toLowerCase() || '';
-    return poojaResearchTargets.some(target => 
-      companyName.includes(target.toLowerCase())
-    );
+export async function fetchKanbanCards(profileId: 'dj' | 'pj'): Promise<KanbanCard[]> {
+  const dbProfileId = profileId === 'dj' ? 'dj' : 'pooja';
+  const { data } = await axios.get<KanbanCard[]>(`${BASE}/api/kanban`, {
+    params: { profile_id: dbProfileId },
   });
+  return data;
 }
 
-export async function refreshJobs(profileId: ProfileId, track?: string): Promise<void> {
-  const candidateId = profileId === 'dj' ? 'deobrat' : 'pooja';
-  const regions = profileId === 'pj' ? ['de', 'ca', 'sg', 'in'] : ['us'];
-  
-  await axios.post(`${BASE}/api/jobs/refresh`, {
-    candidate: candidateId,
-    track,
-    regions
-  });
+export async function updateKanbanCard(
+  id: string,
+  patch: Partial<KanbanCard>,
+): Promise<KanbanCard> {
+  const { data } = await axios.patch<KanbanCard>(`${BASE}/api/kanban/${id}`, patch);
+  return data;
+}
+
+export async function deleteKanbanCard(id: string): Promise<void> {
+  await axios.delete(`${BASE}/api/kanban/${id}`);
 }
