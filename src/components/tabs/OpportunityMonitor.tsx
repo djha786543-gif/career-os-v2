@@ -136,22 +136,24 @@ export function OpportunityMonitor() {
   
   useEffect(() => {
     fetchData()
-  }, [fetchData])
+   }, [fetchData])
 
   useEffect(() => {
     api.get('/api/monitor/stats')
       .then(res => {
         setStats(res)
-     const scanDate = res?.last_scan ? new Date(res.last_scan) : null;
+     const rawDate = res?.lastScan || res?.last_scan;
 
+        if (rawDate) {
+          const scanDate = new Date(rawDate);
         if (scanDate && !isNaN(scanDate.getTime())) {
+
           setLastUpdated(timeAgo(scanDate.toISOString()));
         } else {
 
           setLastUpdated('Never');
         }
-
-      })
+      }})
   }, [])
 
  const [totalJobs, setTotalJobs] = useState<number>(0);
@@ -376,13 +378,13 @@ export function OpportunityMonitor() {
       </ul>
 
    {/* Show 'No jobs found' message if no jobs are available */}
-        {filteredJobs(jobs[activeSector][activeRegion] || []).length === 0 && !loading[activeSector][activeRegion] && (
-          <li>No jobs found. Try clicking Scan to fetch the latest research roles from Adzuna.</li>
-        )}
-    
-}
-     </div>
-   );
-};
+         {filteredJobs(jobs[activeSector][activeRegion] || []).length === 0 && !loading[activeSector][activeRegion] && (
+           <li>No jobs found. Try clicking Scan to fetch the latest research roles from Adzuna.</li>
+         )}
+     
+ }
+      </div>
+    );
+ };
 
-export default OpportunityMonitor;
+ export default OpportunityMonitor;
