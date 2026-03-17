@@ -148,231 +148,124 @@ export function OpportunityMonitor() {
   }, [])
 
  const [totalJobs, setTotalJobs] = useState<number>(0);
-  useEffect(() => {
-    api.get('/api/monitor/orgs')
-      .then(res => {
-   setOrgs(Array.isArray(res) ? res : res.data || [])
-      })
-  
-    api.get('/api/monitor/stats')
-      .then(res => {
-            setTotalJobs((res.sectors || []).reduce((acc, sector) => acc + sector.total_jobs, 0));
-      })
-      .catch(error => {
-        console.error("Error fetching total jobs:", error);
-      });
-    
-  }, [])
-
-
-  if (error) return <div>Error: {error}</div>
-
-  const styles = {
-    container: {
-      padding: '20px',
-    },
-    header: {
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: '20px',
-    },
-    title: {
-      fontSize: '24px',
-      fontWeight: 'bold',
-      marginBottom: '5px',
-    },
-    subtitle: {
-      fontSize: '16px',
-      color: '#666',
-    },
-    headerActions: {
-      display: 'flex',
-      gap: '10px',
-      alignItems: 'center'
-    },
-    updatedBadge: {
-      fontSize: '12px',
-      color: '#888',
-      padding: '5px 10px',
-      borderRadius: '5px',
-      backgroundColor: '#eee',
-    },
-    scanButton: {
-      backgroundColor: '#4CAF50',
-      color: 'white',
-      padding: '10px 15px',
-      border: 'none',
-      borderRadius: '5px',
-      cursor: 'pointer',
-    },
-    sectorTabs: {
-      display: 'flex',
-      marginBottom: '20px',
-    },
-    sectorTab: {
-      padding: '10px 15px',
-      border: '1px solid #ccc',
-      cursor: 'pointer',
-      backgroundColor: '#f9f9f9',
-    },
-    activeSectorTab: {
-      backgroundColor: '#4CAF50',
-      color: 'white',
-    },
-    regionTabs: {
-      display: 'flex',
-      marginBottom: '20px',
-    },
-    regionTab: {
-      padding: '10px 15px',
-      border: '1px solid #ccc',
-      cursor: 'pointer',
-      backgroundColor: '#f9f9f9',
-    },
-    activeRegionTab: {
-      backgroundColor: '#4CAF50',
-      color: 'white',
-    },
-    filters: {
-      display: 'flex',
-      gap: '10px',
-      marginBottom: '20px',
-      alignItems: 'center'
-    },
-    jobList: {
-      listStyle: 'none',
-      padding: 0,
-    },
-    jobItem: {
-      border: '1px solid #ccc',
-      borderRadius: '5px',
-      padding: '10px',
-      marginBottom: '10px',
-    },
-   }
-
-  return (
-    <div style={styles.container}>
-      <header style={styles.header}>
-        <div>
-          <h1 style={styles.title}>Sup, Opportunity Monitor</h1>
-          <p style={styles.subtitle}>Real-time job alerts</p>
-        </div>
-        <div style={styles.headerActions}>
-          {lastUpdated && <span style={styles.updatedBadge}>Updated {lastUpdated}</span>}
-           {scanInitiated && <span style={styles.updatedBadge}>{'Scan initiated for 77 organizations...'}</span>}
-          <button style={styles.scanButton} onClick={() => {
-   setScanning(true);
-  setScanInitiated(true);
-            api.post('/api/monitor/scan')
-              .then(() => {
-                fetchData()
-                api.get('/api/monitor/stats')
-                  .then(res => {
-                    setStats(res)
-  
-                    setLastUpdated(timeAgo(new Date(res?.last_scan).toISOString()))
-                  })
-       
-                setScanning(false)
-       setScanInitiated(false);
-              })
-      
-          }} disabled={scanning}>
-            {scanning ? 'Scanning...' : 'Scan'}
-          </button>
-  
-        </div>
-      </header>
-
-      <div style={styles.sectorTabs}>
-  {Object.entries(SECTOR_CONFIG).map(([key, sector]) => (
-          <div
-            key={key}
-   style={{ ...styles.sectorTab, ...(activeSector === key ? styles.activeSectorTab : {}) }}
-            onClick={() => setActiveSector(key as Sector)}
-
-          >
-            {sector.label}
-          </div>
-        ))}
-      </div>
-
-
-      <div style={styles.regionTabs}>
-        {['de', 'ca', 'sg'].map(region => (
-          <div
-            key={region}
-            style={{ ...styles.regionTab, ...(activeRegion === region ? styles.activeRegionTab : {}) }}
-            onClick={() => setActiveRegion(region as Region)}
-          >
-            {region.toUpperCase()}
-          </div>
-        ))}
-      </div>
-  
-
-
-      <div style={styles.filters}>
-        <input
-          type="text"
-          placeholder="Search jobs..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-    
-        <select value={selectedOrg || ''} onChange={(e) => setSelectedOrg(e.target.value === '' ? null : e.target.value)}>
-         <option value="">All Organizations</option>
-          {Array.isArray(orgs) ? orgs.map(org => (
-            <option key={org.id} value={org.name}>{org.name}</option>
-          )) : null}
-        </select>
-        <select value={sortBy} onChange={(e) => setSortBy(e.target.value as any)}>
-          <option value="newest">Newest</option>
-          <option value="oldest">Oldest</option>
-          <option value="org">Organization</option>
-        </select>
-        <label>
-          <input
-            type="checkbox"
-            checked={newOnly}
-            onChange={(e) => setNewOnly(e.target.checked)}
-          />
-          New Only
-        </label>
-      </div>
-
-      <h2>{SECTOR_CONFIG[activeSector].label} ({SECTOR_CONFIG[activeSector].desc})</h2>
-      <ul style={styles.jobList}>
-           {/* Show 'No jobs found' message if no jobs are available */}
-        {loading[activeSector][activeRegion] ? (
-          <li>Loading jobs...</li>
-        ) : (
-          filteredJobs(jobs[activeSector][activeRegion]).map(job => (
-            <li key={job.id} style={styles.jobItem}>
-              <h3>{job.title}</h3>
-              <p>{job.org_name} - {job.location} {countryFlag(job.country)}</p>
-              <p>{job.snippet.substring(0, 200)}...</p>
-              <div>
-                <a href={job.apply_url} target="_blank" rel="noopener noreferrer">Apply Now</a>
-                <small>
-                  &nbsp;
-                  {sourceBadgeLabel(job.api_type)} &bull; Posted {timeAgo(job.posted_date)} &bull; Detected {timeAgo(job.detected_at)}
-                </small>
-              </div>
-            </li>
-          ))
-        )}
-      </ul>
-
-
-    </div>
-  )
-}
-   {/* Show 'No jobs found' message if no jobs are available */}
-        {filteredJobs(jobs[activeSector][activeRegion] || []).length === 0 && !loading[activeSector][activeRegion] && (
-          <li>No jobs found. Try clicking Scan to fetch the latest research roles from Adzuna.</li>
-        )}
-    
-}
+   useEffect(() => {
+     const fetchInitialData = async () => {
+       try {
+         const [orgsResponse, statsResponse] = await Promise.all([
+           api.get('/api/monitor/orgs'),
+           api.get('/api/monitor/stats')
+         ]);
+ 
+         // Setting organizations data
+         setOrgs(Array.isArray(orgsResponse) ? orgsResponse : orgsResponse.data || []);
+ 
+         // Calculating and setting total jobs from stats
+         const sectors = statsResponse.sectors || [];
+         setTotalJobs(sectors.reduce((acc: number, sector: SectorStats) => acc + sector.total_jobs, 0));
+       } catch (error) {
+         console.error("Error fetching initial data:", error);
+       }
+     };
+ 
+     fetchInitialData();
+   }, []);
+ 
+ 
+ 
+ 
+   if (error) return <div>Error: {error}</div>
+ 
+   const styles = {
+     container: {
+       padding: '20px',
+     },
+     header: {
+       display: 'flex',
+       justifyContent: 'space-between',
+       alignItems: 'center',
+       marginBottom: '20px',
+     },
+     title: {
+       fontSize: '24px',
+       fontWeight: 'bold',
+       marginBottom: '5px',
+     },
+     subtitle: {
+       fontSize: '16px',
+       color: '#666',
+     },
+     headerActions: {
+       display: 'flex',
+       gap: '10px',
+       alignItems: 'center'
+     },
+     updatedBadge: {
+       fontSize: '12px',
+       color: '#888',
+       padding: '5px 10px',
+       borderRadius: '5px',
+       backgroundColor: '#eee',
+     },
+     scanButton: {
+       backgroundColor: '#4CAF50',
+       color: 'white',
+       padding: '10px 15px',
+       border: 'none',
+       borderRadius: '5px',
+       cursor: 'pointer',
+     },
+     sectorTabs: {
+       display: 'flex',
+       marginBottom: '20px',
+     },
+     sectorTab: {
+       padding: '10px 15px',
+       border: '1px solid #ccc',
+       cursor: 'pointer',
+       backgroundColor: '#f9f9f9',
+     },
+     activeSectorTab: {
+       backgroundColor: '#4CAF50',
+       color: 'white',
+     },
+     regionTabs: {
+       display: 'flex',
+       marginBottom: '20px',
+     },
+     regionTab: {
+       padding: '10px 15px',
+       border: '1px solid #ccc',
+       cursor: 'pointer',
+       backgroundColor: '#f9f9f9',
+     },
+     activeRegionTab: {
+       backgroundColor: '#4CAF50',
+       color: 'white',
+     },
+     filters: {
+       display: 'flex',
+       gap: '10px',
+       marginBottom: '20px',
+       alignItems: 'center'
+     },
+     jobList: {
+       listStyle: 'none',
+       padding: 0,
+     },
+     jobItem: {
+       border: '1px solid #ccc',
+       borderRadius: '5px',
+       padding: '10px',
+       marginBottom: '10px',
+     },
+    }
+ 
+   return (
+     <div style={styles.container}>
+       <header style={styles.header}>
+         <div>
+-          <h1 style={styles.title}>Sup, Opportunity Monitor</h1>
++          <h1 style={styles.title}>Hey, Opportunity Monitor</h1>
+           <p style={styles.subtitle}>Real-time job alerts</p>
+         </div>
+         <div style={styles.headerActions}>
