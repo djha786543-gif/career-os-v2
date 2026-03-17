@@ -115,13 +115,229 @@ export function OpportunityMonitor() {
   }, [activeSector]);
  
    const filteredJobs = (jobsList: any): MonitorJob[] => {
-@@ -271,7 +271,7 @@
-       <header style={styles.header}>
-         <div>
-           <h1 style={styles.title}>Sup, Opportunity Monitor</h1>
--          <p style={styles.subtitle}>Real-time job alerts from 55 target organizations</p>
-+          <p style={styles.subtitle}>Real-time job alerts</p>
-         </div>
-         <div style={styles.headerActions}>
-           {lastUpdated && <span style={styles.updatedBadge}>Updated {lastUpdated}</span>}
+    console.log('jobsList', jobsList)
+    const safeJobs = Array.isArray(jobsList) ? jobsList : [];
+    return safeJobs.filter((j: any) => j && (!newOnly || j.is_new))
+      .filter((j:any) => j && (!selectedOrg || j.org_name === selectedOrg))
+      .filter((j:any) =>
+        j && ((j.title || '').toLowerCase().includes(search.toLowerCase()) ||
+        (j.org_name || '').toLowerCase().includes(search.toLowerCase()))
+      )
+      .sort((a:any, b:any) => {
+        if (sortBy === 'newest') return (new Date(b?.detected_at || 0)).getTime() - (new Date(a?.detected_at || 0)).getTime()
+        if (sortBy === 'oldest') return (new Date(a?.detected_at || 0)).getTime() - (new Date(b?.detected_at || 0)).getTime()
+        if (sortBy === 'org') return (a?.org_name || '').localeCompare(b?.org_name || '')
+      })
+  };
+ 
 
+  useEffect(() => {
+    fetchData()
+  }, [fetchData])
+
+  useEffect(() => {
+    api.get('/api/monitor/stats')
+      .then(res => {
+        setStats(res)
+        setLastUpdated(timeAgo(res?.last_scan))
+      })
+  }, [])
+
+  useEffect(() => {
+    api.get('/api/monitor/orgs')
+      .then(res => {
+        setOrgs(res)
+      })
+  }, [])
+
+
+  if (error) return <div>Error: {error}</div>
+
+  const styles = {
+    container: {
+      padding: '20px',
+    },
+    header: {
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: '20px',
+    },
+    title: {
+      fontSize: '24px',
+      fontWeight: 'bold',
+      marginBottom: '5px',
+    },
+    subtitle: {
+      fontSize: '16px',
+      color: '#666',
+    },
+    headerActions: {
+      display: 'flex',
+      gap: '10px',
+      alignItems: 'center'
+    },
+    updatedBadge: {
+      fontSize: '12px',
+      color: '#888',
+      padding: '5px 10px',
+      borderRadius: '5px',
+      backgroundColor: '#eee',
+    },
+    scanButton: {
+      backgroundColor: '#4CAF50',
+      color: 'white',
+      padding: '10px 15px',
+      border: 'none',
+      borderRadius: '5px',
+      cursor: 'pointer',
+    },
+    sectorTabs: {
+      display: 'flex',
+      marginBottom: '20px',
+    },
+    sectorTab: {
+      padding: '10px 15px',
+      border: '1px solid #ccc',
+      cursor: 'pointer',
+      backgroundColor: '#f9f9f9',
+    },
+    activeSectorTab: {
+      backgroundColor: '#4CAF50',
+      color: 'white',
+    },
+    regionTabs: {
+      display: 'flex',
+      marginBottom: '20px',
+    },
+    regionTab: {
+      padding: '10px 15px',
+      border: '1px solid #ccc',
+      cursor: 'pointer',
+      backgroundColor: '#f9f9f9',
+    },
+    activeRegionTab: {
+      backgroundColor: '#4CAF50',
+      color: 'white',
+    },
+    filters: {
+      display: 'flex',
+      gap: '10px',
+      marginBottom: '20px',
+      alignItems: 'center'
+    },
+    jobList: {
+      listStyle: 'none',
+      padding: 0,
+    },
+    jobItem: {
+      border: '1px solid #ccc',
+      borderRadius: '5px',
+      padding: '10px',
+      marginBottom: '10px',
+    },
+  }
+
+  return (
+    <div style={styles.container}>
+      <header style={styles.header}>
+        <div>
+          <h1 style={styles.title}>Sup, Opportunity Monitor</h1>
+          <p style={styles.subtitle}>Real-time job alerts</p>
+        </div>
+        <div style={styles.headerActions}>
+          {lastUpdated && <span style={styles.updatedBadge}>Updated {lastUpdated}</span>}
+          <button style={styles.scanButton} onClick={() => {
+            setScanning(true)
+            api.post('/api/monitor/scan')
+              .then(() => {
+                fetchData()
+                api.get('/api/monitor/stats')
+                  .then(res => {
+                    setStats(res)
+                    setLastUpdated(timeAgo(res?.last_scan))
+                  })
+                setScanning(false)
+              })
+          }} disabled={scanning}>
+            {scanning ? 'Scanning...' : 'Scan'}
+          </button>
+        </div>
+      </header>
+
+      <div style={styles.sectorTabs}>
+        {Object.entries(SECTOR_CONFIG).map(([key, sector]) => (
+          <div
+            key={key}
+            style={{ ...styles.sectorTab, ...(activeSector === key ? styles.activeSectorTab : {}) }}
+            onClick={() => setActiveSector(key as Sector)}
+          >
+            {sector.label}
+          </div>
+        ))}
+      </div>
+
+      <div style={styles.regionTabs}>
+        {['de', 'ca', 'sg'].map(region => (
+          <div
+            key={region}
+            style={{ ...styles.regionTab, ...(activeRegion === region ? styles.activeRegionTab : {}) }}
+            onClick={() => setActiveRegion(region as Region)}
+          >
+            {region.toUpperCase()}
+          </div>
+        ))}
+      </div>
+
+      <div style={styles.filters}>
+        <input
+          type="text"
+          placeholder="Search jobs..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+        <select value={selectedOrg || ''} onChange={(e) => setSelectedOrg(e.target.value === '' ? null : e.target.value)}>
+          <option value="">All Organizations</option>
+          {orgs.map(org => (
+            <option key={org.id} value={org.name}>{org.name}</option>
+          ))}
+        </select>
+        <select value={sortBy} onChange={(e) => setSortBy(e.target.value as any)}>
+          <option value="newest">Newest</option>
+          <option value="oldest">Oldest</option>
+          <option value="org">Organization</option>
+        </select>
+        <label>
+          <input
+            type="checkbox"
+            checked={newOnly}
+            onChange={(e) => setNewOnly(e.target.checked)}
+          />
+          New Only
+        </label>
+      </div>
+
+      <h2>{SECTOR_CONFIG[activeSector].label} ({SECTOR_CONFIG[activeSector].desc})</h2>
+      <ul style={styles.jobList}>
+        {loading[activeSector][activeRegion] ? (
+          <li>Loading jobs...</li>
+        ) : (
+          filteredJobs(jobs[activeSector][activeRegion]).map(job => (
+            <li key={job.id} style={styles.jobItem}>
+              <h3>{job.title}</h3>
+              <p>{job.org_name} - {job.location} {countryFlag(job.country)}</p>
+              <p>{job.snippet.substring(0, 200)}...</p>
+              <div>
+                <a href={job.apply_url} target="_blank" rel="noopener noreferrer">Apply Now</a>
+                <small>
+                  &nbsp;
+                  {sourceBadgeLabel(job.api_type)} &bull; Posted {timeAgo(job.posted_date)} &bull; Detected {timeAgo(job.detected_at)}
+                </small>
+              </div>
+            </li>
+          ))
+        )}
+      </ul>
+    </div>
+  )
+}
