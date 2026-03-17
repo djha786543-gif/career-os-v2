@@ -111,48 +111,11 @@ export function OpportunityMonitor() {
           [sector]: { de: false, ca: false, sg: false }
         }));
       }
-     }
-  }, [activeSector]);
-
-  const filteredJobs = (jobsList: any): MonitorJob[] => {
-    console.log('jobsList', jobsList)
-    const safeJobs = Array.isArray(jobsList) ? jobsList : [];
-    return safeJobs.filter((j: any) => j && (!newOnly || j.is_new))
-      .filter((j:any) => j && (!selectedOrg || j.org_name === selectedOrg))
-      .filter((j:any) =>
-        j && ((j.title || '').toLowerCase().includes(search.toLowerCase()) ||
-        (j.org_name || '').toLowerCase().includes(search.toLowerCase()))
-      )
-      .sort((a:any, b:any) => {
-        if (sortBy === 'newest') return (new Date(b?.detected_at || 0)).getTime() - (new Date(a?.detected_at || 0)).getTime()
-        if (sortBy === 'oldest') return (new Date(a?.detected_at || 0)).getTime() - (new Date(b?.detected_at || 0)).getTime()
-        if (sortBy === 'org') return (a?.org_name || '').localeCompare(b?.org_name || '')
-         return 0
-      });
-   }
-   useEffect(() => {
-     const fetchDataAsync = async () => {
-       await fetchData();
-     };
-     fetchDataAsync();
-   }, [fetchData])
++    }
+   }, [activeSector]);
  
-   // Auto-refresh every 30 mins
-   useEffect(() => {
-      const timer = setInterval(() => {
-        const fetchDataAsync = async () => {
-          await fetchData(true);
-        };
-        fetchDataAsync();
-      }, 30 * 60 * 1000);
-     return () => clearInterval(timer)
-   }, [fetchData])
- 
-+
-   const handleScan = async () => {
-     setScanning(true)
-      try {
-@@ -247,7 +247,7 @@
+   const filteredJobs = (jobsList: any): MonitorJob[] => {
+@@ -271,7 +271,7 @@
        <header style={styles.header}>
          <div>
            <h1 style={styles.title}>Sup, Opportunity Monitor</h1>
