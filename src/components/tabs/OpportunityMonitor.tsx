@@ -141,16 +141,16 @@ export function OpportunityMonitor() {
   }
 
   const filteredJobs = (jobs || [])
-    .filter(j => !newOnly || j.is_new)
-    .filter(j => !selectedOrg || j.org_name === selectedOrg)
-    .filter(j => 
-      j.title.toLowerCase().includes(search.toLowerCase()) || 
-      j.org_name.toLowerCase().includes(search.toLowerCase())
+    .filter(j => j && (!newOnly || j.is_new)) // Check if j is defined before accessing its properties
+    .filter(j => j && (!selectedOrg || j.org_name === selectedOrg)) // Check if j is defined
+    .filter(j =>
+      j && ((j.title || '').toLowerCase().includes(search.toLowerCase()) || // Defensive access to j.title
+      (j.org_name || '').toLowerCase().includes(search.toLowerCase()))     // Defensive access to j.org_name
     )
     .sort((a, b) => {
-      if (sortBy === 'newest') return new Date(b.detected_at).getTime() - new Date(a.detected_at).getTime()
-      if (sortBy === 'oldest') return new Date(a.detected_at).getTime() - new Date(b.detected_at).getTime()
-      if (sortBy === 'org') return a.org_name.localeCompare(b.org_name)
+      if (sortBy === 'newest') return (new Date(b?.detected_at || 0)).getTime() - (new Date(a?.detected_at || 0)).getTime() // Defensive date creation
+      if (sortBy === 'oldest') return (new Date(a?.detected_at || 0)).getTime() - (new Date(b?.detected_at || 0)).getTime() // Defensive date creation
+      if (sortBy === 'org') return (a?.org_name || '').localeCompare(b?.org_name || '') // Defensive access to org_name
       return 0
     })
 
@@ -249,7 +249,7 @@ export function OpportunityMonitor() {
       </div>
 
       <div style={styles.jobList}>
-        {(filteredJobs || []).length > 0 ? (
+        {(filteredJobs || []).length > 0 ? ( // Redundant but harmless, filteredJobs is already defensively created
           (filteredJobs || []).map(job => (
             <div key={job.id} className="glass" style={{
               ...styles.jobCard,
@@ -258,17 +258,17 @@ export function OpportunityMonitor() {
               <div style={styles.jobMain}>
                 <div style={styles.jobHeader}>
                   {job.is_new && <span className="pulse-badge" style={styles.newBadge}>🆕 NEW</span>}
-                  <h3 style={styles.jobTitle}>{job.title}</h3>
+                  <h3 style={styles.jobTitle}>{job?.title}</h3> {/* Defensive access */}
                 </div>
                 <div style={styles.jobSub}>
-                  <span style={styles.orgLabel}>{job.org_name}</span>
+                  <span style={styles.orgLabel}>{job?.org_name}</span> {/* Defensive access */}
                   <span style={styles.dot}>•</span>
-                  <span>{job.location} {countryFlag(job.country)}</span>
+                  <span>{job?.location} {countryFlag(job?.country || '')}</span> {/* Defensive access */}
                 </div>
                 <div style={styles.jobMeta}>
-                  <span>Detected {timeAgo(job.detected_at)}</span>
+                  <span>Detected {timeAgo(job?.detected_at || '')}</span> {/* Defensive access */}
                   <span style={styles.dot}>•</span>
-                  <span style={styles.sourceBadge}>{sourceBadgeLabel(job.api_type || 'websearch')}</span>
+                  <span style={styles.sourceBadge}>{sourceBadgeLabel(job?.api_type || 'websearch')}</span> {/* Defensive access */}
                 </div>
                 <p style={styles.snippet}>{job.snippet}</p>
               </div>

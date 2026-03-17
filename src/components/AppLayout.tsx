@@ -193,6 +193,8 @@ const styles: Record<string, React.CSSProperties> = {
     overflow: 'hidden', // Hide overflow
     textOverflow: 'ellipsis', // Show ellipsis for truncated text
     textAlign: 'left', // Align text to the left
+    minWidth: '220px', // Increased min-width for tab labels
+    flexShrink: 0, // Prevent shrinking
     background: 'transparent',
     border: 'none',
     display:       'flex',
