@@ -7,6 +7,16 @@ import { timeAgo, countryFlag, sourceBadgeLabel } from '../../utils/monitorHelpe
 type Sector = 'academia' | 'industry' | 'international' | 'india'
 type Region = 'de' | 'ca' | 'sg';
 
+interface UsageData {
+  available_balance:    number | null
+  total_spent:          number
+  estimated_monthly_cost: number
+  monthly_ai_calls:     number
+  jobs_found_month:     number
+  cost_per_scan_cycle:  number
+  source:               'anthropic_api' | 'estimated'
+}
+
 const SECTOR_CONFIG: Record<Sector, { icon: string; label: string; color: string; desc: string }> = {
   academia: { icon: '🔬', label: 'Academia', color: '#2563eb', desc: 'University, Postdoc, Research Assistant positions' },
   industry: { icon: '🏢', label: 'Industry', color: '#059669', desc: 'Corporate research and development roles' },
@@ -71,6 +81,7 @@ export function OpportunityMonitor() {
     india: { de: true, ca: true, sg: true }
   });
   const [scanning, setScanning] = useState(false)
+  const [usage, setUsage] = useState<UsageData | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [newOnly, setNewOnly] = useState(false)
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'org'>('newest')
@@ -160,6 +171,7 @@ export function OpportunityMonitor() {
   useEffect(() => {
     fetchData()
     fetchStats()
+    api.get('/admin/usage').then(setUsage).catch(() => { /* non-critical */ })
   }, [fetchData, fetchStats])
 
   // Auto-refresh every 30 mins
@@ -218,6 +230,35 @@ export function OpportunityMonitor() {
         <div>
           <h1 style={styles.title}>Sup, Opportunity Monitor</h1>
           <p style={styles.subtitle}>Real-time job alerts from 55 target organizations</p>
+          {usage && (
+            <div style={styles.healthRow}>
+              {(() => {
+                const bal   = usage.available_balance
+                const spent = usage.estimated_monthly_cost
+                const runsLeft = bal != null
+                  ? Math.floor(bal / usage.cost_per_scan_cycle)
+                  : null
+                const pillColor = bal == null
+                  ? '#f59e0b'
+                  : bal > 5 ? '#22c55e' : '#f59e0b'
+                const label = bal != null
+                  ? `$${bal.toFixed(2)} remaining`
+                  : `~$${spent.toFixed(3)} used this month`
+                return (
+                  <>
+                    <span style={{ ...styles.creditPill, borderColor: pillColor, color: pillColor }}>
+                      💳 {label}
+                    </span>
+                    <span style={styles.runsLeft}>
+                      {runsLeft != null
+                        ? `~${runsLeft.toLocaleString()} runs left`
+                        : `~${Math.round(spent / usage.cost_per_scan_cycle)} cycles run`}
+                    </span>
+                  </>
+                )
+              })()}
+            </div>
+          )}
         </div>
         <div style={styles.headerActions}>
           {lastUpdated && <span style={styles.updatedBadge}>Updated {lastUpdated}</span>}
@@ -381,7 +422,10 @@ const styles: Record<string, React.CSSProperties> = {
   title: { fontSize: 24, fontWeight: 800, margin: 0 },
   subtitle: { color: 'var(--text-secondary)', margin: '4px 0 0 0' },
   headerActions: { display: 'flex', gap: 12, alignItems: 'center' },
-  lastScan: { fontSize: 12, color: 'var(--text-muted)' },
+  lastScan:   { fontSize: 12, color: 'var(--text-muted)' },
+  healthRow:  { display: 'flex', alignItems: 'center', gap: 10, marginTop: 8 },
+  creditPill: { fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 20, border: '1px solid', background: 'transparent' },
+  runsLeft:   { fontSize: 10, color: 'var(--text-muted)' },
   updatedBadge: { fontSize: 10, background: 'rgba(16,185,129,0.1)', color: '#10b981', padding: '2px 8px', borderRadius: 4 },
   scanBtn: { background: 'var(--bg-tertiary)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', padding: '8px 16px', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer' },
   seenBtn: { background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--text-secondary)', padding: '8px 16px', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer' },
