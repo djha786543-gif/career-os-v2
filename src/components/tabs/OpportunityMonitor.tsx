@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 import React, { useState, useEffect, useCallback } from 'react'
 import { useProfile } from '../../context/ProfileContext'
 import { api } from '../../config/api'
@@ -17,31 +17,9 @@ interface MonitorJob {
   apply_url: string
   snippet: string
   posted_date: string
-    detected_at: string;`n  is_new: boolean;`n  api_type?: string;`n}`n`nconst OpportunityMonitor = () => {`n  const filteredJobs = (jobs: MonitorJob[]) => {
-    return (jobs || [])
-      .filter(j => j && (!newOnly || j.is_new))
-      .filter(j => j && (!selectedOrg || j.org_name === selectedOrg))
-      .filter(j =>
-        j && ((j.title || '').toLowerCase().includes(search.toLowerCase()) ||
-        (j.org_name || '').toLowerCase().includes(search.toLowerCase()))
-      )
-      .sort((a, b) => {
-        if (sortBy === 'newest') return (new Date(b?.detected_at || 0)).getTime() - (new Date(a?.detected_at || 0)).getTime()
-        if (sortBy === 'oldest') return (new Date(a?.detected_at || 0)).getTime() - (new Date(b?.detected_at || 0)).getTime()
-        if (sortBy === 'org') return (a?.org_name || '').localeCompare(b?.org_name || '')
-        return 0
-      });
-  }
-}
-
-interface MonitorOrg {
-  id: string
-  name: string
-  sector: Sector
-  country: string
-  total_jobs: number
-  new_jobs: number
-  last_scanned_at: string
+  detected_at: string;
+  is_new: boolean;
+  api_type?: string;
 }
 
 interface SectorStats {
@@ -58,11 +36,14 @@ interface GlobalStats {
   sectors: SectorStats[]
 }
 
-const SECTOR_CONFIG = {
-  academia: { icon: 'ðŸ›ï¸', label: 'Academia', color: '#6366f1', desc: 'Top 20 US research institutions' },
-  industry: { icon: 'ðŸ­', label: 'Industry', color: '#10b981', desc: 'Top 20 biotech & pharma companies' },
-  international: { icon: 'ðŸŒ', label: 'International', color: '#f59e0b', desc: 'Top 10 EU & Asia-Pacific institutes' },
-  india: { icon: 'ðŸ‡®ðŸ‡³', label: 'India', color: '#ec4899', desc: 'Top 15 Indian research institutes' }
+interface MonitorOrg {
+  id: string
+  name: string
+  sector: Sector
+  country: string
+  total_jobs: number
+  new_jobs: number
+  last_scanned_at: string
 }
 
 export function OpportunityMonitor() {
@@ -127,6 +108,21 @@ export function OpportunityMonitor() {
     }
   }, [activeSector]);
 
+  const filteredJobs = (jobs: MonitorJob[]) => {
+    return (jobs || [])
+      .filter(j => j && (!newOnly || j.is_new))
+      .filter(j => j && (!selectedOrg || j.org_name === selectedOrg))
+      .filter(j =>
+        j && ((j.title || '').toLowerCase().includes(search.toLowerCase()) ||
+        (j.org_name || '').toLowerCase().includes(search.toLowerCase()))
+      )
+      .sort((a, b) => {
+        if (sortBy === 'newest') return (new Date(b?.detected_at || 0)).getTime() - (new Date(a?.detected_at || 0)).getTime()
+        if (sortBy === 'oldest') return (new Date(a?.detected_at || 0)).getTime() - (new Date(b?.detected_at || 0)).getTime()
+        if (sortBy === 'org') return (a?.org_name || '').localeCompare(b?.org_name || '')
+        return 0
+      });
+  }
   useEffect(() => {
     fetchData()
   }, [fetchData])
@@ -177,7 +173,7 @@ export function OpportunityMonitor() {
     }
   }
 
-  const filteredJobs = (jobs || [])
+  const filteredJobsList = (jobs || [])
     .filter(j => j && (!newOnly || j.is_new)) // Check if j is defined before accessing its properties
     .filter(j => j && (!selectedOrg || j.org_name === selectedOrg)) // Check if j is defined
     .filter(j =>
@@ -197,7 +193,7 @@ export function OpportunityMonitor() {
     <div style={styles.container}>
       <header style={styles.header}>
         <div>
-          <h1 style={styles.title}>ðŸ”¬ Opportunity Monitor</h1>
+          <h1 style={styles.title}>Yo, Opportunity Monitor</h1>
           <p style={styles.subtitle}>Real-time job alerts from 55 target organizations</p>
         </div>
         <div style={styles.headerActions}>
@@ -370,7 +366,7 @@ const styles: Record<string, React.CSSProperties> = {
   tabs: { display: 'flex', gap: 8, borderBottom: '1px solid rgba(255,255,255,0.05)' },
   tab: { flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '16px', border: 'none', borderBottom: '3px solid transparent', cursor: 'pointer', transition: 'all 0.2s', fontSize: 13, fontWeight: 700 },
   tabIcon: { fontSize: 16 },
-  tabCount: { fontSize: 11, opacity: 0.6 },
+   tabCount: { fontSize: 11, opacity: 0.6 },
   newTabBadge: { background: 'rgba(244,63,94,0.2)', color: '#f87171', padding: '2px 6px', borderRadius: 4, fontSize: 9 },
 
   orgGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 },
@@ -405,4 +401,3 @@ const styles: Record<string, React.CSSProperties> = {
   emptyPulse: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 },
   emptyCaughtUp: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }
 }
-
