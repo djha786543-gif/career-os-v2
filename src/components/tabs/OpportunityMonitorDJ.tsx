@@ -1,86 +1,140 @@
 /**
  * OpportunityMonitorDJ.tsx
  * ─────────────────────────────────────────────────────────────────────────────
- * DJ (Deobrat Jha) Opportunity Monitor — completely isolated from Pooja's tab.
- * Profile: IT Audit Manager | CISA | AWS Cloud Practitioner
+ * DJ (Deobrat Jha) — Dedicated Opportunity Monitor.
+ * Architecturally isolated from Pooja's OpportunityMonitor.tsx.
+ *
+ * Profile DNA: IT Audit Manager · CISA · AWS Certified Cloud Practitioner
+ * Core Keywords: SOX 404, ITGC/ITAC, Cloud Security, SAP S/4HANA, NIST,
+ *                AI/ML Governance, SOC1/SOC2, GRC
+ *
+ * MULTI-LAYER FALLBACK:
+ *   Primary  → /api/monitor/dj/jobs?sector=<sector>
+ *   Layer 1  → /api/jobs?q=IT+Audit+Manager&country=US      (if DJ table empty)
+ *   Layer 2  → /api/jobs?q=Cloud+Risk+Audit&country=India   (if US yields zero)
+ *
+ * SECTOR TABS: Big 4 | Banking | Tech/Cloud | Manufacturing
+ * VISUAL TAGS: 'EAD Friendly' (US roles) · 'Managerial Grade' (India roles)
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { api } from '../../config/api';
 
-// ── DJ Profile DNA ─────────────────────────────────────────────────────────────
-const DJ_CORE_KEYWORDS = [
-  'sox', 'sox 404', 'itgc', 'itac', 'cloud security', 'sap s/4hana', 's4hana',
-  'nist', 'ai governance', 'ai/ml governance', 'soc1', 'soc2', 'soc 1', 'soc 2',
-  'grc', 'cisa', 'aws cloud audit', 'cloud audit', 'pcaob', 'icfr', 'erp audit',
-  'sap grc', 'identity access', 'iam', 'data governance', 'sox testing',
-  'it audit', 'it risk', 'technology risk', 'cyber risk', 'it compliance',
-  'internal audit', 'information security audit',
+// ─── DJ Scoring — keywords ───────────────────────────────────────────────────
+
+const DJ_RANK1_TITLES = [
+  'it audit manager', 'it audit director', 'head of it audit', 'director of it audit',
+  'vp internal audit', 'avp it audit', 'senior manager it audit', 'technology risk manager',
+  'technology risk director', 'cloud risk manager', 'cloud audit manager',
+  'sox audit manager', 'it compliance manager', 'cloud security manager',
+  'grc manager', 'it risk manager', 'information security manager',
 ];
 
-const DJ_EAD_SIGNALS = [
-  'contract', 'consultant', 'w2', 'ead', 'immediate start', '1099',
-  'project-based', 'temporary', 'contract-to-hire', 'sox testing cycle',
+const DJ_TECHNICAL_ANCHORS = [
+  'sox', 'itgc', 'itac', 'cloud security', 'cloud audit', 'sap s/4hana', 'sap s4hana',
+  'nist', 'ai governance', 'ml governance', 'soc1', 'soc 1', 'soc2', 'soc 2',
+  'grc', 'cisa', 'cissp', 'aws cloud', 'azure security', 'cloud risk', 'it audit',
 ];
 
-const DJ_MANAGER_TERMS = [
-  'manager', 'director', 'avp', 'vp', 'vice president', 'head of', 'lead', 'principal',
+const DJ_SENIORITY_KW = [
+  'manager', 'senior manager', 'director', 'avp', 'vp', 'vice president',
+  'head of', 'principal', 'lead',
 ];
 
-type DJSector = 'all' | 'us-big4' | 'us-finance' | 'us-tech' | 'us-manufacturing'
-              | 'india-gcc' | 'india-bank' | 'india-tech';
-type DJRegion = 'all' | 'us' | 'india';
-type Tier = 'high' | 'good' | 'broad';
+const DJ_TIER1_ORGS = new Set([
+  'EY US Technology Risk', 'EY India GDS', 'Deloitte US Risk Advisory', 'Deloitte India',
+  'KPMG US Technology Risk', 'KPMG India', 'PwC US Digital Assurance', 'PwC India',
+  'Goldman Sachs', 'Goldman Sachs India', 'JPMorgan Chase', 'JPMorgan India GCC',
+  'Public Storage', 'Western Digital', 'Investar Bank',
+  'Amazon Web Services', 'Amazon India GCC', 'Microsoft', 'Microsoft India GCC',
+  'Google Cloud', 'Google India GCC',
+]);
 
-interface ScoredDJJob {
-  raw: any;
-  score: number;
-  tier: Tier;
-  isEadFriendly: boolean;
-  isManagerialGrade: boolean;
-  matchedKeywords: string[];
+// ─── Hard filter — same as backend ───────────────────────────────────────────
+
+const DJ_GLOBAL_HARD = ['intern', 'entry level', 'staff auditor', 'junior', 'graduate', 'trainee'];
+const DJ_INDIA_HARD  = ['senior associate', 'associate', 'analyst'];
+
+function passesHardFilter(title: string, country: string): boolean {
+  const t = title.toLowerCase();
+  if (DJ_GLOBAL_HARD.some(term => t.includes(term))) return false;
+  if (country === 'India' && DJ_INDIA_HARD.some(term => t.includes(term))) return false;
+  return true;
 }
 
-function djJobText(job: any): string {
+// ─── DJ Suitability Scoring ───────────────────────────────────────────────────
+
+type DJTier = 'elite' | 'strong' | 'potential';
+
+interface DJScoredJob {
+  raw: any;
+  score: number;
+  tier: DJTier;
+  matchedTitles: string[];
+  matchedAnchors: string[];
+  hasSeniority: boolean;
+  eadFriendly: boolean;
+  managerialGrade: boolean;
+}
+
+function jobText(job: any): string {
   return `${job.title} ${job.org_name || job.company || ''} ${job.snippet || ''} ${job.description || ''}`.toLowerCase();
 }
 
-function scoreDJJob(job: any): ScoredDJJob | null {
-  const text = djJobText(job);
-  const serverScore = job.high_suitability ? 25 : 0;
+function scoreDJJob(job: any): DJScoredJob | null {
+  const title = job.title || '';
+  const country = job.country || '';
+  if (!passesHardFilter(title, country)) return null;
 
-  const matchedCore = DJ_CORE_KEYWORDS.filter(kw => text.includes(kw));
-  const isEad = DJ_EAD_SIGNALS.some(s => text.includes(s));
-  const isMgr = DJ_MANAGER_TERMS.some(t => (job.title || '').toLowerCase().includes(t));
+  const text = jobText(job);
+  const matchedTitles   = DJ_RANK1_TITLES.filter(kw => text.includes(kw));
+  const matchedAnchors  = DJ_TECHNICAL_ANCHORS.filter(a => text.includes(a));
+  const hasSeniority    = DJ_SENIORITY_KW.some(kw => text.includes(kw));
 
-  const localScore =
-    matchedCore.length * 12 +
-    (isMgr ? 25 : 0) +
-    (isEad ? 10 : 0);
+  // Score ≥ 4 gate (mirrors backend scoring)
+  let score = 0;
+  if (text.includes('aws cloud audit') || text.includes('cloud audit') ||
+      text.includes('ai governance') || text.includes('ml governance')) score += 2;
+  if (text.includes('manager') || text.includes('director') ||
+      text.includes('avp') || text.includes('vp') || text.includes('head of')) score += 2;
+  const orgName = job.org_name || job.company || '';
+  if (DJ_TIER1_ORGS.has(orgName)) score += 1;
 
-  const blended = Math.min(serverScore + localScore, 100);
+  // Boost from suitability_score if available from DB
+  const dbScore = job.suitability_score ?? 0;
+  const finalScore = dbScore > 0 ? Math.max(dbScore, score) : score;
 
-  // Gate: must have at least 1 keyword match or high_suitability flag
-  if (blended < 20 && matchedCore.length === 0) return null;
+  // Must meet minimum threshold or have strong title/anchor signal
+  if (finalScore < 2 && matchedTitles.length === 0 && matchedAnchors.length < 2) return null;
 
-  const tier: Tier = blended >= 70 ? 'high' : blended >= 45 ? 'good' : 'broad';
+  const tier: DJTier = finalScore >= 5 ? 'elite' : finalScore >= 4 ? 'strong' : 'potential';
 
   return {
     raw: job,
-    score: blended,
+    score: finalScore,
     tier,
-    isEadFriendly: isEad,
-    isManagerialGrade: isMgr,
-    matchedKeywords: matchedCore.slice(0, 4),
+    matchedTitles,
+    matchedAnchors,
+    hasSeniority,
+    eadFriendly: job.ead_friendly === true || job.org_ead_friendly === true,
+    managerialGrade: job.managerial_grade === true || job.org_managerial_grade === true ||
+                     (country === 'India' && hasSeniority),
   };
 }
 
-// ── Score Ring ─────────────────────────────────────────────────────────────────
-const ScoreRing = ({ score, tier }: { score: number; tier: Tier }) => {
-  const color = tier === 'high' ? '#22d3ee' : tier === 'good' ? '#f59e0b' : '#64748b';
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+type DJSector = 'all' | 'big4' | 'banking' | 'tech-cloud' | 'manufacturing';
+type DJCountry = 'all' | 'USA' | 'India';
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
+
+const ScoreRing = ({ score, tier }: { score: number; tier: DJTier }) => {
+  const color = tier === 'elite' ? '#22d3ee' : tier === 'strong' ? '#10b981' : '#f59e0b';
   const r = 14, circ = 2 * Math.PI * r;
-  const offset = circ - (Math.min(score, 100) / 100) * circ;
+  const pct = Math.min((score / 5) * 100, 100);
+  const offset = circ - (pct / 100) * circ;
   return (
     <div style={{ position: 'relative', width: 36, height: 36, flexShrink: 0 }}>
       <svg width="36" height="36" style={{ transform: 'rotate(-90deg)' }}>
@@ -89,49 +143,51 @@ const ScoreRing = ({ score, tier }: { score: number; tier: Tier }) => {
           strokeDasharray={circ} strokeDashoffset={offset} strokeLinecap="round"
           style={{ transition: 'stroke-dashoffset 0.8s ease-out' }} />
       </svg>
-      <span style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', fontSize: 9, fontWeight: 900, color }}>
+      <span style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
+        fontSize: 9, fontWeight: 900, color }}>
         {score}
       </span>
     </div>
   );
 };
 
-// ── Badges ─────────────────────────────────────────────────────────────────────
-const TierBadge = ({ tier }: { tier: Tier }) => {
+const TierBadge = ({ tier }: { tier: DJTier }) => {
   const cfg = {
-    high:  { label: 'High Signal', bg: 'rgba(34,211,238,0.10)', color: '#22d3ee' },
-    good:  { label: 'Good Match',  bg: 'rgba(245,158,11,0.10)', color: '#f59e0b' },
-    broad: { label: 'Broad Match', bg: 'rgba(100,116,139,0.08)', color: '#64748b' },
+    elite:    { label: 'Elite Match', bg: 'rgba(34,211,238,0.12)', color: '#22d3ee' },
+    strong:   { label: 'Strong Fit',  bg: 'rgba(16,185,129,0.12)', color: '#10b981' },
+    potential:{ label: 'Potential',   bg: 'rgba(245,158,11,0.12)', color: '#f59e0b' },
   }[tier];
   return (
-    <span style={{ fontSize: 9, fontWeight: 900, padding: '2px 8px', background: cfg.bg, color: cfg.color, borderRadius: 4, flexShrink: 0 }}>
+    <span style={{ fontSize: 9, fontWeight: 900, padding: '2px 8px',
+      background: cfg.bg, color: cfg.color, borderRadius: 4, flexShrink: 0 }}>
       {cfg.label}
     </span>
   );
 };
 
-const EadBadge = () => (
-  <span style={{ fontSize: 9, fontWeight: 900, padding: '2px 8px',
-    background: 'rgba(34,211,238,0.12)', color: '#22d3ee',
-    border: '1px solid rgba(34,211,238,0.3)', borderRadius: 4, flexShrink: 0 }}>
-    ✓ EAD Friendly
+const EADBadge = () => (
+  <span style={{ fontSize: 9, fontWeight: 900, padding: '2px 7px',
+    background: 'rgba(99,102,241,0.14)', color: '#818cf8',
+    border: '1px solid rgba(99,102,241,0.3)', borderRadius: 4, flexShrink: 0 }}>
+    EAD Friendly
   </span>
 );
 
 const ManagerialBadge = () => (
-  <span style={{ fontSize: 9, fontWeight: 900, padding: '2px 8px',
+  <span style={{ fontSize: 9, fontWeight: 900, padding: '2px 7px',
     background: 'rgba(251,191,36,0.12)', color: '#fbbf24',
     border: '1px solid rgba(251,191,36,0.3)', borderRadius: 4, flexShrink: 0 }}>
-    ⭐ Managerial Grade
+    Managerial Grade
   </span>
 );
 
-// ── Job Card ───────────────────────────────────────────────────────────────────
-const DJJobCard = ({ scored }: { scored: ScoredDJJob }) => {
-  const { raw: job, score, tier, isEadFriendly, isManagerialGrade, matchedKeywords } = scored;
-  const borderColor = tier === 'high' ? '#22d3ee' : tier === 'good' ? '#f59e0b' : '#334155';
-  const orgName = job.org_name || job.company || 'Unknown';
+const JobCard = ({ scored }: { scored: DJScoredJob }) => {
+  const { raw: job, score, tier, matchedAnchors, eadFriendly, managerialGrade } = scored;
+  const borderColor = tier === 'elite' ? '#22d3ee' : tier === 'strong' ? '#10b981' : '#f59e0b';
+  const orgName = job.org_name || job.company || '';
   const applyUrl = job.apply_url || job.applyUrl || '#';
+
+  const visibleTags = matchedAnchors.slice(0, 4).map(a => a.toUpperCase());
 
   return (
     <div style={{
@@ -141,282 +197,303 @@ const DJJobCard = ({ scored }: { scored: ScoredDJJob }) => {
     }}>
       <div style={{ paddingTop: 2 }}><ScoreRing score={score} tier={tier} /></div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        {/* Title row */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 5, flexWrap: 'wrap' }}>
           <span style={{ fontWeight: 800, fontSize: 13.5, color: '#f8fafc' }}>{job.title}</span>
-          {isManagerialGrade && <ManagerialBadge />}
-          {isEadFriendly && <EadBadge />}
           <TierBadge tier={tier} />
+          {eadFriendly  && <EADBadge />}
+          {managerialGrade && <ManagerialBadge />}
         </div>
-        {/* Org + location */}
-        <div style={{ fontSize: 11.5, color: '#94a3b8', marginBottom: 6 }}>
-          {orgName}
-          {job.location && <span style={{ color: '#64748b' }}> · {job.location}</span>}
-          {job.posted_date && <span style={{ color: '#475569' }}> · {job.posted_date}</span>}
+        <div style={{ fontSize: 12, color: '#94a3b8', marginBottom: 5 }}>
+          <span style={{ fontWeight: 700, color: '#e2e8f0' }}>{orgName}</span>
+          &nbsp;&middot;&nbsp;
+          <span style={{ color: '#22d3ee' }}>{job.location || job.country}</span>
+          {job.country && (
+            <span style={{ marginLeft: 8, fontSize: 10, color: '#475569',
+              padding: '1px 6px', background: 'rgba(255,255,255,0.04)', borderRadius: 3 }}>
+              {job.country}
+            </span>
+          )}
         </div>
-        {/* Snippet */}
         {job.snippet && (
-          <p style={{ fontSize: 12, color: '#cbd5e1', margin: '0 0 8px 0', lineHeight: 1.5 }}>
+          <div style={{ fontSize: 11, color: '#64748b', lineHeight: 1.5,
+            display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
             {job.snippet}
-          </p>
+          </div>
         )}
-        {/* Matched keywords */}
-        {matchedKeywords.length > 0 && (
-          <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 8 }}>
-            {matchedKeywords.map(kw => (
-              <span key={kw} style={{
-                fontSize: 9, fontWeight: 700, padding: '2px 7px',
-                background: 'rgba(34,211,238,0.08)', color: '#67e8f9', borderRadius: 4,
-              }}>{kw.toUpperCase()}</span>
+        {visibleTags.length > 0 && (
+          <div style={{ display: 'flex', gap: 5, marginTop: 8, flexWrap: 'wrap' }}>
+            {visibleTags.map(tag => (
+              <span key={tag} style={{ fontSize: 9, fontWeight: 700, padding: '2px 7px',
+                background: 'rgba(34,211,238,0.07)', color: '#22d3ee', borderRadius: 10 }}>
+                {tag}
+              </span>
             ))}
           </div>
         )}
-        {/* Apply button */}
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 7, flexShrink: 0 }}>
+        {job.posted_date && job.posted_date !== 'Recent' && (
+          <span style={{ fontSize: 10, color: '#475569' }}>{job.posted_date}</span>
+        )}
+        {job.is_new && (
+          <span style={{ fontSize: 9, fontWeight: 900, padding: '2px 7px',
+            background: 'rgba(16,185,129,0.12)', color: '#10b981', borderRadius: 4 }}>
+            NEW
+          </span>
+        )}
         {applyUrl && applyUrl !== '#' && (
-          <a href={applyUrl} target="_blank" rel="noopener noreferrer"
-            style={{ display: 'inline-block', fontSize: 10, fontWeight: 800,
-              padding: '4px 12px', background: '#22d3ee', color: '#000',
-              borderRadius: 6, textDecoration: 'none' }}>
+          <button onClick={() => window.open(applyUrl, '_blank')}
+            style={{ fontSize: 10, fontWeight: 800, padding: '5px 14px', background: '#22d3ee',
+              color: '#000', border: 'none', borderRadius: 6, cursor: 'pointer', whiteSpace: 'nowrap' }}>
             Apply →
-          </a>
+          </button>
         )}
       </div>
     </div>
   );
 };
 
-// ── Summary Bar ───────────────────────────────────────────────────────────────
-const DJSummaryBar = ({ jobs }: { jobs: ScoredDJJob[] }) => {
-  if (jobs.length === 0) return null;
-  const high = jobs.filter(j => j.tier === 'high').length;
-  const good = jobs.filter(j => j.tier === 'good').length;
-  const broad = jobs.filter(j => j.tier === 'broad').length;
-  const ead = jobs.filter(j => j.isEadFriendly).length;
-  const mgr = jobs.filter(j => j.isManagerialGrade).length;
+const SummaryBar = ({ jobs }: { jobs: DJScoredJob[] }) => {
+  const elite    = jobs.filter(j => j.tier === 'elite').length;
+  const strong   = jobs.filter(j => j.tier === 'strong').length;
+  const potential= jobs.filter(j => j.tier === 'potential').length;
+  const ead      = jobs.filter(j => j.eadFriendly).length;
+  const mgr      = jobs.filter(j => j.managerialGrade).length;
+  if (!jobs.length) return null;
   return (
     <div style={{ display: 'flex', gap: 10, marginBottom: 14, flexWrap: 'wrap' }}>
-      {[
-        { label: `${high} High Signal`, color: '#22d3ee', bg: 'rgba(34,211,238,0.08)' },
-        { label: `${good} Good Match`,  color: '#f59e0b', bg: 'rgba(245,158,11,0.08)' },
-        { label: `${broad} Broad`,      color: '#475569', bg: 'rgba(71,85,105,0.06)' },
-        { label: `${ead} EAD Friendly`, color: '#22d3ee', bg: 'rgba(34,211,238,0.05)' },
-        { label: `${mgr} Managerial`,   color: '#fbbf24', bg: 'rgba(251,191,36,0.05)' },
-      ].map(({ label, color, bg }) => (
-        <span key={label} style={{ fontSize: 10.5, fontWeight: 700, padding: '4px 10px', background: bg, color, borderRadius: 20 }}>
-          {label}
-        </span>
-      ))}
+      {elite > 0 && <span style={{ fontSize: 11, fontWeight: 700, padding: '4px 12px',
+        background: 'rgba(34,211,238,0.08)', color: '#22d3ee', borderRadius: 20 }}>
+        ⚡ {elite} Elite
+      </span>}
+      {strong > 0 && <span style={{ fontSize: 11, fontWeight: 700, padding: '4px 12px',
+        background: 'rgba(16,185,129,0.08)', color: '#10b981', borderRadius: 20 }}>
+        ✓ {strong} Strong
+      </span>}
+      {potential > 0 && <span style={{ fontSize: 11, fontWeight: 700, padding: '4px 12px',
+        background: 'rgba(245,158,11,0.08)', color: '#f59e0b', borderRadius: 20 }}>
+        ~ {potential} Potential
+      </span>}
+      {ead > 0 && <span style={{ fontSize: 11, fontWeight: 700, padding: '4px 12px',
+        background: 'rgba(99,102,241,0.08)', color: '#818cf8', borderRadius: 20 }}>
+        🛂 {ead} EAD Friendly
+      </span>}
+      {mgr > 0 && <span style={{ fontSize: 11, fontWeight: 700, padding: '4px 12px',
+        background: 'rgba(251,191,36,0.08)', color: '#fbbf24', borderRadius: 20 }}>
+        🏅 {mgr} Managerial Grade
+      </span>}
     </div>
   );
 };
 
-// ── Sector tab configs ────────────────────────────────────────────────────────
-const US_SECTOR_TABS: { key: DJSector; label: string }[] = [
-  { key: 'us-big4',          label: 'Big 4'         },
-  { key: 'us-finance',       label: 'Banking'       },
-  { key: 'us-tech',          label: 'Tech/Cloud'    },
-  { key: 'us-manufacturing', label: 'Manufacturing' },
-];
-const INDIA_SECTOR_TABS: { key: DJSector; label: string }[] = [
-  { key: 'india-gcc',  label: 'GCC'     },
-  { key: 'india-bank', label: 'Banking' },
-  { key: 'india-tech', label: 'IT/Tech' },
-];
+// ─── Main Component ───────────────────────────────────────────────────────────
 
-// ── Main Component ────────────────────────────────────────────────────────────
-export const OpportunityMonitorDJ = () => {
-  const [region, setRegion] = useState<DJRegion>('us');
-  const [sector, setSector] = useState<DJSector>('all');
-  const [tierFilter, setTierFilter] = useState<Tier | 'all'>('all');
-  const [jobs, setJobs] = useState<ScoredDJJob[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [scanning, setScanning] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
+export const OpportunityMonitorDJ: React.FC = () => {
+  const [sector,       setSector]       = useState<DJSector>('all');
+  const [country,      setCountry]      = useState<DJCountry>('all');
+  const [jobs,         setJobs]         = useState<DJScoredJob[]>([]);
+  const [loading,      setLoading]      = useState(false);
+  const [scanning,     setScanning]     = useState(false);
+  const [error,        setError]        = useState<string | null>(null);
   const [totalFetched, setTotalFetched] = useState(0);
-  const [lastScan, setLastScan] = useState<string | null>(null);
+  const [lastScan,     setLastScan]     = useState<string | null>(null);
+  const [tierFilter,   setTierFilter]   = useState<DJTier | 'all'>('all');
+  const [fallbackUsed, setFallbackUsed] = useState<string | null>(null);
   const seenIds = useRef(new Set<string>());
 
-  const fetchJobs = useCallback(async (djSector: DJSector, djRegion: DJRegion) => {
+  const fetchJobs = useCallback(async (s: DJSector, c: DJCountry) => {
     setLoading(true);
     setError(null);
-    setNotice(null);
+    setFallbackUsed(null);
     seenIds.current.clear();
 
-    const tryFetch = async (path: string): Promise<any[]> => {
-      try {
-        const data = await api.get(path);
-        if (data?.broadened) setNotice(data.broadenedReason || 'Showing broadened results');
-        if (data?.scanPending) setNotice(data.scanPendingMessage || 'Scan pending — results loading soon');
-        return Array.isArray(data?.jobs) ? data.jobs : Array.isArray(data) ? data : [];
-      } catch {
-        return [];
-      }
-    };
-
     try {
-      // ── Primary: DJ monitor endpoint ──────────────────────────────────────
-      const params = new URLSearchParams();
-      if (djSector !== 'all') params.set('sector', djSector);
-      if (djRegion !== 'all') params.set('region', djRegion);
+      // Build primary URL
+      const primaryParams = new URLSearchParams();
+      if (s !== 'all') primaryParams.set('sector', s);
+      if (c !== 'all') primaryParams.set('country', c);
+      primaryParams.set('limit', '80');
 
-      let rawJobs = await tryFetch(`/monitor/dj/jobs?${params.toString()}`);
+      const primaryPath = `/monitor/dj/jobs?${primaryParams.toString()}`;
+      const raw: any[] = [];
 
-      // ── Layer 1 fallback: /api/jobs?q=IT+Audit+Manager ───────────────────
-      if (rawJobs.length === 0) {
-        setNotice('Monitor DB empty — falling back to live job search (Layer 1)');
-        const q = djRegion === 'india' ? 'IT+Audit+Manager+India' : 'IT+Audit+Manager+SOX+ITGC';
-        const country = djRegion === 'india' ? 'india' : 'usa';
-        rawJobs = await tryFetch(`/jobs?q=${q}&country=${country}&candidate=dj`);
+      try {
+        const data = await api.get(primaryPath);
+        const list: any[] = Array.isArray(data?.jobs) ? data.jobs : [];
+        list.forEach(job => {
+          const key = job.id ?? `${job.title}__${job.org_name}`;
+          if (!seenIds.current.has(key)) { seenIds.current.add(key); raw.push(job); }
+        });
+      } catch { /* fallback below */ }
+
+      // Layer 1 fallback: /api/jobs with IT Audit Manager query (US)
+      if (raw.length === 0) {
+        setFallbackUsed('Layer 1: Broadening to live IT Audit Manager search (US)');
+        try {
+          const data = await api.get('/jobs?q=IT+Audit+Manager&country=US&candidate=dj');
+          const list: any[] = Array.isArray(data?.jobs) ? data.jobs : Array.isArray(data) ? data : [];
+          list.forEach(job => {
+            const key = job.id ?? `${job.title}__${job.company}`;
+            if (!seenIds.current.has(key)) { seenIds.current.add(key); raw.push({ ...job, country: 'USA', ead_friendly: true }); }
+          });
+        } catch { /* continue to layer 2 */ }
       }
 
-      // ── Layer 2 fallback: broaden to cloud risk ──────────────────────────
-      if (rawJobs.length === 0) {
-        setNotice('Layer 1 empty — broadening to Cloud Risk Audit search (Layer 2)');
-        const country = djRegion === 'india' ? 'India' : 'US';
-        rawJobs = await tryFetch(`/jobs?q=Cloud+Risk+Audit+GRC&country=${country}&candidate=dj`);
+      // Layer 2 fallback: Cloud Risk Audit — India
+      if (raw.length === 0) {
+        setFallbackUsed('Layer 2: Broadening to Cloud Risk Audit search (India)');
+        try {
+          const data = await api.get('/jobs?q=Cloud+Risk+Audit&country=India&candidate=dj');
+          const list: any[] = Array.isArray(data?.jobs) ? data.jobs : Array.isArray(data) ? data : [];
+          list.forEach(job => {
+            const key = job.id ?? `${job.title}__${job.company}`;
+            if (!seenIds.current.has(key)) { seenIds.current.add(key); raw.push({ ...job, country: 'India', managerial_grade: true }); }
+          });
+        } catch { /* give up */ }
       }
 
-      // Deduplicate
-      const unique: any[] = [];
-      rawJobs.forEach(job => {
-        const key = job.id ?? `${job.title}__${job.org_name || job.company}`;
-        if (!seenIds.current.has(key)) { seenIds.current.add(key); unique.push(job); }
-      });
+      if (raw.length > 0) setFallbackUsed(null);
 
-      setTotalFetched(unique.length);
-      const scored = unique.map(scoreDJJob).filter(Boolean) as ScoredDJJob[];
+      setTotalFetched(raw.length);
+      const scored = raw.map(scoreDJJob).filter(Boolean) as DJScoredJob[];
       scored.sort((a, b) => b.score - a.score);
       setJobs(scored);
     } catch {
-      setError('Failed to fetch DJ jobs. Check connection or try again.');
+      setError('Failed to fetch. Check connection or try again.');
       setJobs([]);
     } finally {
       setLoading(false);
     }
   }, []);
 
-  // Auto-load on mount
-  useEffect(() => { fetchJobs('all', 'us'); }, [fetchJobs]);
+  useEffect(() => { fetchJobs('all', 'all'); }, [fetchJobs]);
 
   const handleScan = async () => {
     setScanning(true);
     setError(null);
-    try { await api.post('/monitor/dj/scan', {}); } catch { /* scan runs in BG */ }
-    await fetchJobs(sector, region);
+    try {
+      await api.post('/monitor/dj/scan', {});
+    } catch { /* non-fatal — scan runs in background */ }
+    await fetchJobs(sector, country);
     setLastScan(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
     setScanning(false);
-  };
-
-  const handleRegionChange = (r: DJRegion) => {
-    setRegion(r);
-    setSector('all');
-    setTierFilter('all');
-    fetchJobs('all', r);
   };
 
   const handleSectorChange = (s: DJSector) => {
     setSector(s);
     setTierFilter('all');
-    fetchJobs(s, region);
+    fetchJobs(s, country);
   };
+
+  const handleCountryChange = (c: DJCountry) => {
+    setCountry(c);
+    fetchJobs(sector, c);
+  };
+
+  const SECTORS: { key: DJSector; label: string }[] = [
+    { key: 'all',           label: 'All Sectors' },
+    { key: 'big4',          label: 'Big 4'       },
+    { key: 'banking',       label: 'Banking'     },
+    { key: 'tech-cloud',    label: 'Tech/Cloud'  },
+    { key: 'manufacturing', label: 'Manufacturing'},
+  ];
+
+  const COUNTRIES: { key: DJCountry; label: string }[] = [
+    { key: 'all',   label: 'All' },
+    { key: 'USA',   label: '🇺🇸 USA'   },
+    { key: 'India', label: '🇮🇳 India'  },
+  ];
 
   const visibleJobs = jobs.filter(j => tierFilter === 'all' || j.tier === tierFilter);
 
-  const currentSectorTabs = region === 'us' ? US_SECTOR_TABS
-    : region === 'india' ? INDIA_SECTOR_TABS : [];
-
   return (
     <div style={{ color: 'white', fontFamily: 'var(--font-sans, sans-serif)' }}>
+
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
         <div>
           <h1 style={{ fontSize: 21, fontWeight: 900, margin: 0, color: '#22d3ee' }}>
-            DJ Opportunity Monitor
+            Opportunity Monitor
           </h1>
-          <p style={{ fontSize: 11.5, color: '#64748b', margin: '4px 0 0 0', lineHeight: 1.6 }}>
-            Deobrat Jha · IT Audit Manager · CISA · AWS Cloud Practitioner
+          <p style={{ fontSize: 11.5, color: '#475569', margin: '4px 0 0 0', lineHeight: 1.6 }}>
+            Deobrat Jha · IT Audit / Cloud Risk · CISA · AWS Certified
             {lastScan && <span style={{ color: '#22d3ee', marginLeft: 10 }}>↻ {lastScan}</span>}
           </p>
+          <div style={{ display: 'flex', gap: 6, marginTop: 6, flexWrap: 'wrap' }}>
+            {['SOX 404', 'ITGC/ITAC', 'Cloud Security', 'SAP S/4HANA', 'AI Governance', 'GRC', 'SOC1/SOC2'].map(kw => (
+              <span key={kw} style={{ fontSize: 9, fontWeight: 700, padding: '2px 7px',
+                background: 'rgba(34,211,238,0.07)', color: '#67e8f9', borderRadius: 10 }}>
+                {kw}
+              </span>
+            ))}
+          </div>
         </div>
-        <button
-          onClick={handleScan}
-          disabled={scanning || loading}
+        <button onClick={handleScan} disabled={scanning || loading}
           style={{
-            padding: '10px 20px', background: scanning ? '#1e293b' : 'rgba(34,211,238,0.1)',
-            border: '1px solid #22d3ee', color: '#22d3ee', borderRadius: 8,
-            fontSize: 12, fontWeight: 800, cursor: scanning ? 'default' : 'pointer',
+            padding: '9px 22px', background: (scanning || loading) ? '#334155' : '#22d3ee',
+            color: (scanning || loading) ? '#94a3b8' : '#000', border: 'none', borderRadius: 8,
+            cursor: (scanning || loading) ? 'default' : 'pointer',
+            fontWeight: 900, fontSize: 12.5, flexShrink: 0,
           }}>
-          {scanning ? '⚡ Scanning...' : '⚡ Run DJ Scan'}
+          {scanning ? 'Scanning...' : '⚡ Run Scan'}
         </button>
       </div>
 
-      {/* Region tabs: US | India | All */}
-      <div style={{ display: 'flex', gap: 2, marginBottom: 6 }}>
-        {([
-          { key: 'us' as DJRegion, label: '🇺🇸 United States', sub: 'EAD / Contract / Big4' },
-          { key: 'india' as DJRegion, label: '🇮🇳 India', sub: 'Manager+ / GCC / Banking' },
-          { key: 'all' as DJRegion, label: '🌐 All Regions', sub: '' },
-        ]).map(({ key, label, sub }) => (
-          <button key={key} onClick={() => handleRegionChange(key)} style={{
-            padding: '10px 18px', textAlign: 'left',
-            background: region === key ? 'rgba(34,211,238,0.12)' : '#1e293b',
-            border: `1px solid ${region === key ? '#22d3ee' : '#334155'}`,
-            color: region === key ? '#22d3ee' : '#94a3b8',
-            cursor: 'pointer', borderRadius: 8, transition: 'all 0.2s',
+      {/* Sector Tabs */}
+      <div style={{ display: 'flex', gap: 2, marginBottom: 6, flexWrap: 'wrap' }}>
+        {SECTORS.map(({ key, label }) => (
+          <button key={key} onClick={() => handleSectorChange(key)} style={{
+            padding: '8px 16px',
+            background: sector === key ? '#1e3a4a' : '#1e293b',
+            border: `1px solid ${sector === key ? '#22d3ee' : '#334155'}`,
+            color: sector === key ? '#22d3ee' : '#94a3b8',
+            cursor: 'pointer', fontWeight: sector === key ? 800 : 500, fontSize: 12.5, borderRadius: 6,
+            transition: 'all 0.15s',
+          }}>{label}</button>
+        ))}
+      </div>
+
+      {/* Country Toggle */}
+      <div style={{ display: 'flex', gap: 2, marginBottom: 14 }}>
+        {COUNTRIES.map(({ key, label }) => (
+          <button key={key} onClick={() => handleCountryChange(key)} style={{
+            padding: '6px 14px',
+            background: country === key ? 'rgba(34,211,238,0.1)' : 'transparent',
+            border: `1px solid ${country === key ? '#22d3ee' : '#334155'}`,
+            color: country === key ? '#22d3ee' : '#64748b',
+            cursor: 'pointer', fontWeight: 700, fontSize: 11.5, borderRadius: 5,
           }}>
-            <div style={{ fontWeight: 800, fontSize: 12.5 }}>{label}</div>
-            {sub && <div style={{ fontSize: 9.5, opacity: 0.7, marginTop: 2 }}>{sub}</div>}
+            {label}
+            {key === 'USA'   && <span style={{ marginLeft: 5, fontSize: 9, color: '#818cf8' }}>EAD</span>}
+            {key === 'India' && <span style={{ marginLeft: 5, fontSize: 9, color: '#fbbf24' }}>Mgr+</span>}
           </button>
         ))}
       </div>
 
-      {/* Sector sub-tabs */}
-      {currentSectorTabs.length > 0 && (
-        <div style={{ display: 'flex', gap: 2, marginBottom: 6 }}>
-          <button onClick={() => handleSectorChange('all')} style={{
-            padding: '6px 14px',
-            background: sector === 'all' ? 'rgba(34,211,238,0.1)' : 'transparent',
-            border: `1px solid ${sector === 'all' ? '#22d3ee' : '#334155'}`,
-            color: sector === 'all' ? '#22d3ee' : '#64748b',
-            cursor: 'pointer', fontWeight: 700, fontSize: 11.5, borderRadius: 5,
-          }}>All</button>
-          {currentSectorTabs.map(({ key, label }) => (
-            <button key={key} onClick={() => handleSectorChange(key)} style={{
-              padding: '6px 14px',
-              background: sector === key ? 'rgba(34,211,238,0.1)' : 'transparent',
-              border: `1px solid ${sector === key ? '#22d3ee' : '#334155'}`,
-              color: sector === key ? '#22d3ee' : '#64748b',
-              cursor: 'pointer', fontWeight: 700, fontSize: 11.5, borderRadius: 5,
-            }}>{label}</button>
-          ))}
+      {/* Fallback notice */}
+      {fallbackUsed && (
+        <div style={{ padding: '8px 14px', background: 'rgba(245,158,11,0.07)',
+          border: '1px solid rgba(245,158,11,0.2)', borderRadius: 8,
+          fontSize: 11.5, color: '#f59e0b', marginBottom: 10 }}>
+          ⚡ {fallbackUsed}
         </div>
       )}
 
-      {/* Notice banner (broadened / scan-pending / layer fallback) */}
-      {notice && (
-        <div style={{ padding: '8px 14px', background: 'rgba(34,211,238,0.06)',
-          border: '1px solid rgba(34,211,238,0.2)', borderRadius: 8,
-          fontSize: 11.5, color: '#67e8f9', marginBottom: 8 }}>
-          ⚡ {notice}
-        </div>
-      )}
-
-      {/* Tier filter row */}
+      {/* Tier filter */}
       {jobs.length > 0 && (
-        <div style={{ display: 'flex', gap: 2, marginBottom: 14, marginTop: 10 }}>
-          {(['all', 'high', 'good', 'broad'] as const).map(t => (
+        <div style={{ display: 'flex', gap: 2, marginBottom: 14, flexWrap: 'wrap' }}>
+          {(['all', 'elite', 'strong', 'potential'] as const).map(t => (
             <button key={t} onClick={() => setTierFilter(t)} style={{
               padding: '5px 12px',
-              background: tierFilter === t ? 'rgba(255,255,255,0.07)' : 'transparent',
+              background: tierFilter === t ? 'rgba(255,255,255,0.08)' : 'transparent',
               border: `1px solid ${tierFilter === t ? 'rgba(255,255,255,0.15)' : '#334155'}`,
               color: tierFilter === t ? '#f8fafc' : '#64748b',
               cursor: 'pointer', fontWeight: 700, fontSize: 11, borderRadius: 5,
             }}>
-              {t === 'all'   ? `All (${jobs.length})`
-               : t === 'high' ? `High Signal (${jobs.filter(j=>j.tier==='high').length})`
-               : t === 'good' ? `Good (${jobs.filter(j=>j.tier==='good').length})`
-               : `Broad (${jobs.filter(j=>j.tier==='broad').length})`}
+              {t === 'all'       ? `All (${jobs.length})`
+               : t === 'elite'  ? `⚡ Elite (${jobs.filter(j => j.tier === 'elite').length})`
+               : t === 'strong' ? `✓ Strong (${jobs.filter(j => j.tier === 'strong').length})`
+               : `~ Potential (${jobs.filter(j => j.tier === 'potential').length})`}
             </button>
           ))}
           <span style={{ marginLeft: 'auto', fontSize: 10.5, color: '#475569', alignSelf: 'center' }}>
@@ -425,38 +502,43 @@ export const OpportunityMonitorDJ = () => {
         </div>
       )}
 
-      {/* Summary */}
-      {!loading && <DJSummaryBar jobs={visibleJobs} />}
+      {/* Summary bar */}
+      {!loading && <SummaryBar jobs={visibleJobs} />}
 
-      {/* Results */}
+      {/* Job list */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
         {loading ? (
           <div style={{ padding: 48, textAlign: 'center', color: '#64748b', fontSize: 13 }}>
-            Scanning {region === 'us' ? 'US' : region === 'india' ? 'India' : 'all'} IT Audit opportunities...
+            Scanning {sector === 'all' ? 'all sectors' : sector} across{' '}
+            {country === 'all' ? 'USA + India' : country}...
           </div>
         ) : error ? (
-          <div style={{ padding: 24, background: 'rgba(239,68,68,0.06)',
-            border: '1px solid rgba(239,68,68,0.2)', borderRadius: 10, color: '#f87171', fontSize: 12 }}>
+          <div style={{ padding: 20, background: 'rgba(244,63,94,0.07)',
+            border: '1px solid rgba(244,63,94,0.18)', borderRadius: 10,
+            color: '#f43f5e', fontSize: 13, textAlign: 'center' }}>
             {error}
           </div>
-        ) : visibleJobs.length === 0 ? (
-          <div style={{ padding: 48, textAlign: 'center' }}>
-            <div style={{ fontSize: 32, marginBottom: 12 }}>⚡</div>
-            <div style={{ fontSize: 14, fontWeight: 700, color: '#22d3ee', marginBottom: 8 }}>
-              DJ Monitor Warming Up
+        ) : visibleJobs.length > 0 ? (
+          visibleJobs.map((scored, idx) => (
+            <JobCard key={scored.raw.id ?? idx} scored={scored} />
+          ))
+        ) : (
+          <div style={{ padding: '44px 24px', textAlign: 'center',
+            background: 'rgba(255,255,255,0.02)',
+            border: '1px dashed rgba(34,211,238,0.15)', borderRadius: 12, color: '#64748b' }}>
+            <div style={{ fontSize: 24, marginBottom: 10 }}>⚙️</div>
+            <div style={{ fontWeight: 700, marginBottom: 6, fontSize: 14, color: '#94a3b8' }}>
+              No matches yet.
             </div>
-            <div style={{ fontSize: 12, color: '#64748b', maxWidth: 380, margin: '0 auto', lineHeight: 1.6 }}>
-              The DJ scan pipeline is seeding 96 IT Audit orgs across US and India.
-              Click <strong style={{ color: '#22d3ee' }}>Run DJ Scan</strong> to populate immediately,
-              or wait for the daily cron at 10:00 UTC.
+            <div style={{ fontSize: 12 }}>
+              Click{' '}<strong style={{ color: '#22d3ee' }}>⚡ Run Scan</strong>{' '}
+              to populate the DJ monitor table from 85 target organizations.
             </div>
           </div>
-        ) : (
-          visibleJobs.map((scored, i) => (
-            <DJJobCard key={scored.raw.id ?? `${scored.raw.title}_${i}`} scored={scored} />
-          ))
         )}
       </div>
     </div>
   );
 };
+
+export default OpportunityMonitorDJ;
