@@ -1,11 +1,11 @@
-﻿FROM node:18-alpine
+﻿FROM node:20-alpine
 WORKDIR /app
 
 # 1. Copy everything (Now including the updated package.json)
 COPY . .
 
-# 2. Install EVERYTHING at the root
-RUN npm install
+# 2. Install EVERYTHING at the root (legacy-peer-deps required for React/Next peer conflicts)
+RUN npm install --legacy-peer-deps
 
 # 3. Build the Next.js site
 RUN npm run build
