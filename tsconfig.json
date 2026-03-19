@@ -25,6 +25,9 @@
     "**/*.tsx"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "backend",
+    "career-os-backend",
+    "scripts"
   ]
 }
