@@ -109,7 +109,7 @@ function scoreJob(job: any): ScoredJob | null {
 type Sector = 'all' | 'academia' | 'industry' | 'india' | 'international';
 
 // India uses the monitor endpoint (/monitor/jobs?sector=india) — not /jobs.
-// Other sectors use the general /jobs endpoint as before.
+// Industry now also queries monitor DB for Europe + Asia scanned orgs.
 function buildApiPaths(sector: Sector, region: string | null): string[] {
   const base = (params: Record<string, string>) =>
     `/jobs?${new URLSearchParams({ candidate: 'pooja', ...params }).toString()}`;
@@ -118,10 +118,14 @@ function buildApiPaths(sector: Sector, region: string | null): string[] {
     base({ track: 'Academic' }),
     base({ track: 'Industry' }),
     '/monitor/jobs?sector=india',       // India via monitor DB
+    '/monitor/jobs?sector=industry',    // Industry Europe/Asia via monitor DB
     base({ region: 'international' }),
   ];
   if (sector === 'academia') return [base({ track: 'Academic' })];
-  if (sector === 'industry') return [base({ track: 'Industry' })];
+  if (sector === 'industry') return [
+    base({ track: 'Industry' }),
+    '/monitor/jobs?sector=industry',    // scanned Europe + Asia + US industry orgs
+  ];
   if (sector === 'india') return ['/monitor/jobs?sector=india'];   // ← correct endpoint
   if (sector === 'international') {
     const country = region === 'US' ? 'usa'
@@ -141,6 +145,24 @@ function normaliseMonitorJob(job: any): any {
     return { ...job, company: job.org_name, applyUrl: job.apply_url };
   }
   return job;
+}
+
+// ── Industry region filter ────────────────────────────────────────────────────
+type IndustryRegion = 'All' | 'North America' | 'Europe' | 'Asia';
+const INDUSTRY_REGIONS: IndustryRegion[] = ['All', 'North America', 'Europe', 'Asia'];
+
+const INDUSTRY_REGION_COUNTRIES: Record<Exclude<IndustryRegion, 'All'>, string[]> = {
+  'North America': ['usa', 'united states', 'canada', 'us,'],
+  'Europe': ['uk', 'united kingdom', 'germany', 'switzerland', 'france',
+             'denmark', 'ireland', 'netherlands', 'belgium', 'sweden', 'europe'],
+  'Asia': ['japan', 'singapore', 'south korea', 'korea', 'china',
+           'shanghai', 'tokyo', 'india'],
+};
+
+function matchesIndustryRegion(job: any, region: IndustryRegion): boolean {
+  if (region === 'All') return true;
+  const text = `${job.country || ''} ${job.location || ''}`.toLowerCase();
+  return INDUSTRY_REGION_COUNTRIES[region].some(c => text.includes(c));
 }
 
 // ── India sub-sector constants ────────────────────────────────────────────────
@@ -328,6 +350,7 @@ export const OpportunityMonitor = () => {
   const [lastScan, setLastScan] = useState<string | null>(null);
   const [tierFilter, setTierFilter] = useState<Tier | 'all'>('all');
   const [indiaSubsector, setIndiaSubsector] = useState<IndiaSubsector>('All');
+  const [industryRegion, setIndustryRegion] = useState<IndustryRegion>('All');
   const [broadenedNotice, setBroadenedNotice] = useState<string | null>(null);
   const seenIds = useRef(new Set<string>());
 
@@ -373,8 +396,8 @@ export const OpportunityMonitor = () => {
     setScanning(true);
     setError(null);
     try {
-      if (sector === 'india') {
-        // Trigger the monitor scan pipeline for India orgs
+      if (sector === 'india' || sector === 'industry') {
+        // Trigger the monitor scan pipeline for India + global industry orgs
         await api.post('/monitor/scan', {});
       } else {
         await api.post('/jobs/refresh', { candidate: 'pooja' });
@@ -390,6 +413,7 @@ export const OpportunityMonitor = () => {
     setRegion(null);
     setTierFilter('all');
     setIndiaSubsector('All');
+    setIndustryRegion('All');
     setBroadenedNotice(null);
     fetchJobs(s, null);
   };
@@ -412,7 +436,8 @@ export const OpportunityMonitor = () => {
   const visibleJobs = jobs
     .filter(j => tierFilter === 'all' || j.tier === tierFilter)
     .filter(j => sector !== 'india' || indiaSubsector === 'All' ||
-      (INDIA_ORG_SUBSECTOR[j.raw.org_name ?? j.raw.company] ?? 'Govt Research') === indiaSubsector);
+      (INDIA_ORG_SUBSECTOR[j.raw.org_name ?? j.raw.company] ?? 'Govt Research') === indiaSubsector)
+    .filter(j => sector !== 'industry' || matchesIndustryRegion(j.raw, industryRegion));
 
   return (
     <div style={{ color: 'white', fontFamily: 'var(--font-sans, sans-serif)' }}>
@@ -445,6 +470,26 @@ export const OpportunityMonitor = () => {
           }}>{label}</button>
         ))}
       </div>
+
+      {/* Industry region filter — North America / Europe / Asia */}
+      {sector === 'industry' && (
+        <div style={{ display: 'flex', gap: 2, marginBottom: 6 }}>
+          {INDUSTRY_REGIONS.map(r => (
+            <button key={r} onClick={() => setIndustryRegion(r)} style={{
+              padding: '6px 14px',
+              background: industryRegion === r ? 'rgba(52,211,153,0.15)' : '#1e293b',
+              border: `1px solid ${industryRegion === r ? '#34d399' : '#334155'}`,
+              color: industryRegion === r ? '#34d399' : '#94a3b8',
+              cursor: 'pointer', fontWeight: industryRegion === r ? 800 : 500, fontSize: 12, borderRadius: 5,
+            }}>
+              {r === 'North America' ? '🌎 N. America'
+               : r === 'Europe'       ? '🌍 Europe'
+               : r === 'Asia'         ? '🌏 Asia'
+               : r}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* India sub-sector filter */}
       {sector === 'india' && (
