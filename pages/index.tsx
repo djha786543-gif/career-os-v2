@@ -8,18 +8,27 @@ import { CertVault }       from '../src/components/tabs/CertVault';
 import { TrendRadar }      from '../src/components/tabs/TrendRadar';
 import { Tracker }         from '../src/components/tabs/Tracker';
 import { LearningTracks }  from '../src/components/tabs/LearningTracks';
-import { OpportunityMonitor } from '../src/components/tabs/OpportunityMonitor';
+import { OpportunityMonitor }   from '../src/components/tabs/OpportunityMonitor';
+import { OpportunityMonitorDJ } from '../src/components/tabs/OpportunityMonitorDJ';
+import { useProfile } from '../src/context/ProfileContext';
+
+// Profile-aware router: renders DJ monitor for DJ, Pooja monitor for Pooja.
+// Zero crossover — each component owns its own data-fetch chain.
+function OpportunityMonitorRouter() {
+  const { profile } = useProfile();
+  return profile === 'dj' ? <OpportunityMonitorDJ /> : <OpportunityMonitor />;
+}
 
 const TAB_VIEWS: Record<TabId, React.ReactElement> = {
-  'heatmap':         <MarketHeatmap />,
-  'skill-engine':    <SkillEngine />,
-  'cert-vault':      <CertVault />,
-  'learning-tracks': <LearningTracks />,
-  'trend-radar':     <TrendRadar />,
-  'prep-vault':      <PrepVault />,
-  'job-hub':         <JobHub />,
-  'tracker':         <Tracker />,
-  'opportunity-monitor': <OpportunityMonitor />,
+  'heatmap':             <MarketHeatmap />,
+  'skill-engine':        <SkillEngine />,
+  'cert-vault':          <CertVault />,
+  'learning-tracks':     <LearningTracks />,
+  'trend-radar':         <TrendRadar />,
+  'prep-vault':          <PrepVault />,
+  'job-hub':             <JobHub />,
+  'tracker':             <Tracker />,
+  'opportunity-monitor': <OpportunityMonitorRouter />,
 };
 
 export default function Home() {
