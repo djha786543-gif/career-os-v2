@@ -5,3 +5,5 @@ export async function fetchJobs() {
   if (!response.ok) throw new Error('Failed to fetch jobs');
   return response.json();
 }
+
+// sync-trigger

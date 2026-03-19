@@ -12,3 +12,9 @@ yarn-error.log*
 tsconfig.tsbuildinfo
 *.tsbuildinfo
 .aider*
+
+.env*
+.aider*
+node_modules/
+.next/
+out/
