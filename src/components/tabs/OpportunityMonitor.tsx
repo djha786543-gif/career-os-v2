@@ -108,6 +108,8 @@ function scoreJob(job: any): ScoredJob | null {
 // ── API path builder ────────────────────────────────────────────────────────────
 type Sector = 'all' | 'academia' | 'industry' | 'india' | 'international';
 
+// India uses the monitor endpoint (/monitor/jobs?sector=india) — not /jobs.
+// Other sectors use the general /jobs endpoint as before.
 function buildApiPaths(sector: Sector, region: string | null): string[] {
   const base = (params: Record<string, string>) =>
     `/jobs?${new URLSearchParams({ candidate: 'pooja', ...params }).toString()}`;
@@ -115,12 +117,12 @@ function buildApiPaths(sector: Sector, region: string | null): string[] {
   if (sector === 'all') return [
     base({ track: 'Academic' }),
     base({ track: 'Industry' }),
-    base({ country: 'india' }),
+    '/monitor/jobs?sector=india',       // India via monitor DB
     base({ region: 'international' }),
   ];
   if (sector === 'academia') return [base({ track: 'Academic' })];
   if (sector === 'industry') return [base({ track: 'Industry' })];
-  if (sector === 'india') return [base({ country: 'india' })];
+  if (sector === 'india') return ['/monitor/jobs?sector=india'];   // ← correct endpoint
   if (sector === 'international') {
     const country = region === 'US' ? 'usa'
       : region === 'UK' ? 'uk'
@@ -131,6 +133,45 @@ function buildApiPaths(sector: Sector, region: string | null): string[] {
     return [base(country ? { region: 'international', country } : { region: 'international' })];
   }
   return [base({})];
+}
+
+// Normalise monitor-API jobs (org_name / apply_url) → scoreJob-compatible shape
+function normaliseMonitorJob(job: any): any {
+  if (!job.company && job.org_name) {
+    return { ...job, company: job.org_name, applyUrl: job.apply_url };
+  }
+  return job;
+}
+
+// ── India sub-sector constants ────────────────────────────────────────────────
+type IndiaSubsector = 'All' | 'Academic' | 'Govt Research' | 'Industry';
+const INDIA_SUBSECTORS: IndiaSubsector[] = ['All', 'Academic', 'Govt Research', 'Industry'];
+const INDIA_ORG_SUBSECTOR: Record<string, IndiaSubsector> = {
+  'IISc Bangalore': 'Academic', 'IISER Pune': 'Academic',
+  'IIT Bombay Biology': 'Academic', 'IIT Bombay Biosciences': 'Academic',
+  'IIT Delhi Biochemical Engineering': 'Academic', 'JNU School of Life Sciences': 'Academic',
+  'IISER Kolkata': 'Academic', 'IISER Bhopal': 'Academic',
+  'IISER Mohali': 'Academic', 'IISER Thiruvananthapuram': 'Academic',
+  'ICMR HQ': 'Govt Research', 'CSIR-IGIB Delhi': 'Govt Research',
+  'DBT-THSTI Faridabad': 'Govt Research', 'AIIMS New Delhi': 'Govt Research',
+  'JNCASR Bangalore': 'Govt Research', 'NCBS Bangalore': 'Govt Research',
+  'TIFR Mumbai': 'Govt Research', 'CCMB Hyderabad': 'Govt Research',
+  'IGIB Delhi': 'Govt Research', 'inStem Bangalore': 'Govt Research',
+  'NII Delhi': 'Govt Research', 'RCB Faridabad': 'Govt Research',
+  'RGCB Trivandrum': 'Govt Research',
+  'Biocon Biologics': 'Industry', 'Biocon Research': 'Industry',
+  'Syngene International': 'Industry', 'AstraZeneca India': 'Industry',
+};
+
+// ── Elite Match — senior India roles ─────────────────────────────────────────
+const ELITE_TERMS = [
+  'assistant professor', 'associate professor', 'scientist c', 'scientist d',
+  'scientist e', 'group leader', 'staff scientist', 'principal scientist',
+  'senior scientist',
+];
+function isEliteMatch(title: string): boolean {
+  const t = title.toLowerCase();
+  return ELITE_TERMS.some(term => t.includes(term));
 }
 
 // ── Score Ring ──────────────────────────────────────────────────────────────────
@@ -187,6 +228,13 @@ const JobCard = ({ scored }: { scored: ScoredJob }) => {
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
           <span style={{ fontWeight: 800, fontSize: 13.5, color: '#f8fafc' }}>{job.title}</span>
+          {isEliteMatch(job.title) && (
+            <span style={{ fontSize: 9, fontWeight: 900, padding: '2px 8px',
+              background: 'rgba(251,191,36,0.15)', color: '#fbbf24',
+              border: '1px solid rgba(251,191,36,0.4)', borderRadius: 4 }}>
+              ⭐ Elite Match
+            </span>
+          )}
           <TierBadge tier={tier} />
           {job.category && (
             <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 7px',
@@ -279,11 +327,14 @@ export const OpportunityMonitor = () => {
   const [totalFetched, setTotalFetched] = useState(0);
   const [lastScan, setLastScan] = useState<string | null>(null);
   const [tierFilter, setTierFilter] = useState<Tier | 'all'>('all');
+  const [indiaSubsector, setIndiaSubsector] = useState<IndiaSubsector>('All');
+  const [broadenedNotice, setBroadenedNotice] = useState<string | null>(null);
   const seenIds = useRef(new Set<string>());
 
   const fetchJobs = useCallback(async (s: Sector, r: string | null) => {
     setLoading(true);
     setError(null);
+    setBroadenedNotice(null);
     seenIds.current.clear();
     try {
       const paths = buildApiPaths(s, r);
@@ -292,11 +343,14 @@ export const OpportunityMonitor = () => {
       results.forEach(res => {
         if (res.status === 'fulfilled') {
           const data = res.value;
+          // Surface broadened-search notice from monitor API
+          if (data?.broadened) setBroadenedNotice(data.broadenedReason ?? 'Showing broadened results');
           const list: any[] = Array.isArray(data?.jobs) ? data.jobs
             : Array.isArray(data) ? data : [];
           list.forEach(job => {
-            const key = job.id ?? `${job.title}__${job.company}`;
-            if (!seenIds.current.has(key)) { seenIds.current.add(key); raw.push(job); }
+            const normalised = normaliseMonitorJob(job);
+            const key = normalised.id ?? `${normalised.title}__${normalised.company}`;
+            if (!seenIds.current.has(key)) { seenIds.current.add(key); raw.push(normalised); }
           });
         }
       });
@@ -318,7 +372,14 @@ export const OpportunityMonitor = () => {
   const handleScan = async () => {
     setScanning(true);
     setError(null);
-    try { await api.post('/jobs/refresh', { candidate: 'pooja' }); } catch { /* non-fatal */ }
+    try {
+      if (sector === 'india') {
+        // Trigger the monitor scan pipeline for India orgs
+        await api.post('/monitor/scan', {});
+      } else {
+        await api.post('/jobs/refresh', { candidate: 'pooja' });
+      }
+    } catch { /* non-fatal — scan runs in background */ }
     await fetchJobs(sector, region);
     setLastScan(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
     setScanning(false);
@@ -328,6 +389,8 @@ export const OpportunityMonitor = () => {
     setSector(s);
     setRegion(null);
     setTierFilter('all');
+    setIndiaSubsector('All');
+    setBroadenedNotice(null);
     fetchJobs(s, null);
   };
 
@@ -346,7 +409,10 @@ export const OpportunityMonitor = () => {
 
   const INT_REGIONS = [null, 'US', 'UK', 'DE', 'CA', 'SG'];
 
-  const visibleJobs = tierFilter === 'all' ? jobs : jobs.filter(j => j.tier === tierFilter);
+  const visibleJobs = jobs
+    .filter(j => tierFilter === 'all' || j.tier === tierFilter)
+    .filter(j => sector !== 'india' || indiaSubsector === 'All' ||
+      (INDIA_ORG_SUBSECTOR[j.raw.org_name ?? j.raw.company] ?? 'Govt Research') === indiaSubsector);
 
   return (
     <div style={{ color: 'white', fontFamily: 'var(--font-sans, sans-serif)' }}>
@@ -379,6 +445,30 @@ export const OpportunityMonitor = () => {
           }}>{label}</button>
         ))}
       </div>
+
+      {/* India sub-sector filter */}
+      {sector === 'india' && (
+        <div style={{ display: 'flex', gap: 2, marginBottom: 6 }}>
+          {INDIA_SUBSECTORS.map(sub => (
+            <button key={sub} onClick={() => setIndiaSubsector(sub)} style={{
+              padding: '6px 14px',
+              background: indiaSubsector === sub ? 'rgba(236,72,153,0.15)' : '#1e293b',
+              border: `1px solid ${indiaSubsector === sub ? '#ec4899' : '#334155'}`,
+              color: indiaSubsector === sub ? '#ec4899' : '#94a3b8',
+              cursor: 'pointer', fontWeight: indiaSubsector === sub ? 800 : 500, fontSize: 12, borderRadius: 5,
+            }}>{sub}</button>
+          ))}
+        </div>
+      )}
+
+      {/* Broadened-search notice */}
+      {broadenedNotice && (
+        <div style={{ padding: '8px 14px', background: 'rgba(245,158,11,0.07)',
+          border: '1px solid rgba(245,158,11,0.2)', borderRadius: 8,
+          fontSize: 11.5, color: '#f59e0b', marginBottom: 8 }}>
+          ⚡ {broadenedNotice}
+        </div>
+      )}
 
       {/* International region sub-tabs */}
       {sector === 'international' && (
