@@ -23,6 +23,12 @@ const INSTITUTIONS = {
     'astrazeneca', 'novartis', 'roche', 'pfizer', 'sanofi', 'gsk',
     'abbvie', 'merck', 'lilly', 'amgen', 'biogen', 'gilead', 'bayer',
     'boehringer', 'novo nordisk', 'takeda', 'bristol myers', 'regeneron',
+    // Asia pharma
+    'daiichi sankyo', 'astellas', 'eisai', 'samsung biologics', 'celltrion',
+    'chugai', 'ono pharmaceutical', 'shionogi', 'mitsubishi tanabe',
+    // Indian industry
+    'dr reddy', 'sun pharma', 'cipla', 'zydus', 'lupin', 'piramal',
+    'glenmark', 'aurobindo', 'alembic',
   ],
 };
 const ALL_INSTITUTIONS = [
@@ -139,12 +145,13 @@ function buildApiPaths(sector: Sector, region: string | null): string[] {
   return [base({})];
 }
 
-// Normalise monitor-API jobs (org_name / apply_url) → scoreJob-compatible shape
+// Normalise monitor-API jobs (org_name / apply_url / fit_score) → scoreJob-compatible shape
 function normaliseMonitorJob(job: any): any {
-  if (!job.company && job.org_name) {
-    return { ...job, company: job.org_name, applyUrl: job.apply_url };
-  }
-  return job;
+  const out = { ...job };
+  if (!out.company && out.org_name)   out.company  = out.org_name;
+  if (!out.applyUrl && out.apply_url) out.applyUrl = out.apply_url;
+  if (out.fitScore == null && out.fit_score != null) out.fitScore = out.fit_score;
+  return out;
 }
 
 // ── Industry region filter ────────────────────────────────────────────────────
