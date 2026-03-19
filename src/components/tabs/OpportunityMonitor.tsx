@@ -1,170 +1,86 @@
-'use client'
-import React, { useState, useEffect, useCallback } from 'react'
-import { useProfile } from '../../context/ProfileContext'
-import { api } from '../../config/api'
-import { timeAgo, countryFlag, sourceBadgeLabel } from '../../utils/monitorHelpers'
+import React, { useState, useEffect } from 'react';
 
-type Sector = 'academia' | 'industry' | 'international' | 'india'
-type Region = 'de' | 'ca' | 'sg';
+export const OpportunityMonitor = () => {
+  const [activeSector, setActiveSector] = useState('academia');
+  const [activeRegion, setActiveRegion] = useState(null); // Null = Show all for sector
+  const [jobs, setJobs] = useState([]);
+  const [scanning, setScanning] = useState(false);
 
-const SECTOR_CONFIG: Record<Sector, { icon: string; label: string; color: string; desc: string }> = {
-  academia: { icon: 'ðŸ“', label: 'Academia', color: '#2563eb', desc: 'University, Postdoc, Research Assistant positions' },
-  industry: { icon: 'ðŸ°', label: 'Industry', color: '#059669', desc: 'Corporate research and development roles' },
-  international: { icon: 'âš§ï¸', label: 'International Orgs', color: '#8b5cf6', desc: 'Positions at CERN, EMBO, NIH, etc.' },
-  india: { icon: 'ðŸ‡®ðŸ‡³', label: 'India', color: '#ec4899', desc: 'Top 15 Indian research institutes' }
-}
-
-interface SectorStats {
-  sector: Sector
-  total_jobs: number
-  new_jobs: number
-  last_detected: string
-}
-
-interface GlobalStats {
-  last_scan?: string | Date
-  sectors: SectorStats[]
-}
-
-interface MonitorJob {
-  id: string
-  title: string
-  org_name: string
-  location: string
-  country: string
-  sector: Sector
-  apply_url: string
-  snippet: string
-  posted_date: string
-  detected_at: string;
-  is_new: boolean;
-  api_type?: string;
-}
-
-
-interface MonitorOrg {
-  id: string
-  name: string
-  sector: Sector
-  country: string
-  total_jobs: number
-  new_jobs: number
-  last_scanned_at: string
-}
-
-export function OpportunityMonitor() {
-  const { profile } = useProfile()
-  const [activeSector, setActiveSector] = useState<Sector>('academia')
-  const [activeRegion, setActiveRegion] = useState<Region>('de')
-  const [stats, setStats] = useState<GlobalStats | null>(null)
-  const [orgs, setOrgs] = useState<MonitorOrg[]>([])
-   const [jobs, setJobs] = useState<Record<Sector, Record<Region, MonitorJob[]>>>({
-    academia: { de: [], ca: [], sg: [] },
-    industry: { de: [], ca: [], sg: [] },
-    international: { de: [], ca: [], sg: [] },
-    india: { de: [], ca: [], sg: [] }
-  });
-  const [loading, setLoading] = useState<Record<Sector, Record<Region, boolean>>>({
-    academia: { de: true, ca: true, sg: true },
-    industry: { de: true, ca: true, sg: true },
-    international: { de: true, ca: true, sg: true },
-    india: { de: true, ca: true, sg: true }
-  });
-  const [scanning, setScanning] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [newOnly, setNewOnly] = useState(false)
-  const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'org'>('newest')
-  const [search, setSearch] = useState('')
-  const [selectedOrg, setSelectedOrg] = useState<string | null>(null)
-  const [lastUpdated, setLastUpdated] = useState<string | null>(null)
-  const [scanInitiated, setScanInitiated] = useState<boolean>(false);
-  const fetchData = useCallback(async (silent = false) => {
-    const regions: Region[] = ['de', 'ca', 'sg'];
-    const sector = activeSector
-
-    if (!silent) {
-      setLoading(prev => ({
-        ...prev,
-        [sector]: { de: true, ca: true, sg: true }
-      }));
-    }
-
+  const fetchData = async () => {
     try {
-  
-      const jobsData = await api.get(`/api/monitor/jobs?sectors=${sector}`); // Backend returns jobs for all regions
+      // Step 1: Fetch all jobs for the sector
+      const res = await fetch(`http://localhost:8080/api/monitor/jobs?sector=${activeSector}`);
+      const data = await res.json();
+      
+      let allJobs = Array.isArray(data) ? data : [];
 
-      setJobs(prev => ({
-        ...prev,
-        [sector]: {
-          de: jobsData[sector]?.de,
-          ca: jobsData[sector]?.ca,
-          sg: jobsData[sector]?.sg
-        }
-      }));
-   
-      setError(null);
-    } catch (err) {
-      setError('Failed to load monitor data');
-    } finally {
-      if (!silent) {
-        setLoading(prev => ({
-          ...prev,
-          [sector]: { de: false, ca: false, sg: false }
-        }));
+      // Step 2: Apply Region Filter ONLY if one is selected
+      if (activeRegion) {
+        allJobs = allJobs.filter(job => 
+          job.location?.toUpperCase().includes(activeRegion) || 
+          job.organization_name?.toUpperCase().includes(activeRegion)
+        );
       }
-
-    }
-  }, [activeSector]);
- 
-   const filteredJobs = (jobsList: any): MonitorJob[] => {
-    console.log('jobsList', jobsList)
-    const safeJobs = Array.isArray(jobsList) ? jobsList : [];
-    return safeJobs.filter((j: any) => j && (!newOnly || j.is_new))
-      .filter((j:any) => j && (!selectedOrg || j.org_name === selectedOrg))
-      .filter((j:any) =>
-        j && ((j.title || '').toLowerCase().includes(search.toLowerCase()) ||
-        (j.org_name || '').toLowerCase().includes(search.toLowerCase()))
-      )
-      .sort((a:any, b:any) => {
-        if (sortBy === 'newest') return (new Date(b?.detected_at || 0)).getTime() - (new Date(a?.detected_at || 0)).getTime()
-        if (sortBy === 'oldest') return (new Date(a?.detected_at || 0)).getTime() - (new Date(b?.detected_at || 0)).getTime()
-        if (sortBy === 'org') return (a?.org_name || '').localeCompare(b?.org_name || '')
-      })
+      
+      setJobs(allJobs);
+    } catch (err) { console.error("Fetch Error:", err); }
   };
- 
 
-  
-  useEffect(() => {
-    fetchData()
-   }, [fetchData])
+  useEffect(() => { fetchData(); }, [activeSector, activeRegion]);
 
-  useEffect(() => {
-    api.get('/api/monitor/stats')
-      .then(res => {
-        setStats(res);
-        const rawDate = res?.lastScan || res?.last_scan;
-        if (rawDate) {
-          const d = new Date(rawDate);
-          if (!isNaN(d.getTime())) {
-            setLastUpdated(timeAgo(d.toISOString()));
-          } else {
-            setLastUpdated('Just now');
-          }
-        } else {
-          setLastUpdated('Never');
-        }
-      })
-  }, [])
- 
-  const [totalJobs, setTotalJobs] = useState<number>(0);
-    useEffect(() => {
-@@ -358,7 +358,7 @@
-      <div style={styles.container}>
-        <header style={styles.header}>
-          <div>
--          <h1 style={styles.title}>Hey, Opportunity Monitor</h1>
-+          <h1 style={styles.title}>Yo, Opportunity Monitor</h1>
-             <p style={styles.subtitle}>Real-time job alerts</p>
-           </div>
-           <div style={styles.headerActions}>
+  const handleScan = async () => {
+    setScanning(true);
+    try {
+      await fetch('http://localhost:8080/api/monitor/scan', { method: 'POST' });
+      await fetchData();
+    } catch (err) { console.error("Scan Error:", err); }
+    setScanning(false);
+  };
 
+  return (
+    <div style={{ padding: '20px', color: 'white', minHeight: '100vh', background: '#0f172a', fontFamily: 'sans-serif' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '30px', alignItems: 'center' }}>
+        <h1 style={{ fontSize: '24px', fontWeight: 'bold' }}>Sup, Opportunity Monitor</h1>
+        <button onClick={handleScan} disabled={scanning} style={{ padding: '10px 20px', background: '#22c55e', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>
+          {scanning ? 'Scanning...' : 'Run Scan'}
+        </button>
+      </div>
+
+      {/* Sectors */}
+      <div style={{ display: 'flex', gap: '2px', marginBottom: '10px' }}>
+        {['academia', 'industry', 'international', 'india'].map(s => (
+          <button key={s} onClick={() => {setActiveSector(s); setActiveRegion(null);}} style={{ padding: '10px 20px', background: activeSector === s ? '#334155' : '#1e293b', border: '1px solid #334155', color: 'white', cursor: 'pointer', textTransform: 'capitalize' }}>
+            {s}
+          </button>
+        ))}
+      </div>
+
+      {/* Regions (Optional) */}
+      <div style={{ display: 'flex', gap: '2px', marginBottom: '30px' }}>
+        <button onClick={() => setActiveRegion(null)} style={{ padding: '10px 20px', background: !activeRegion ? '#22c55e' : '#1e293b', border: '1px solid #334155', color: 'white', cursor: 'pointer' }}>ALL</button>
+        {['DE', 'CA', 'SG'].map(r => (
+          <button key={r} onClick={() => setActiveRegion(r)} style={{ padding: '10px 20px', background: activeRegion === r ? '#22c55e' : '#1e293b', border: '1px solid #334155', color: 'white', cursor: 'pointer' }}>
+            {r}
+          </button>
+        ))}
+      </div>
+
+      {/* Results Section */}
+      <div style={{ display: 'grid', gap: '15px' }}>
+        {jobs.length > 0 ? jobs.map((job, idx) => (
+          <div key={idx} style={{ padding: '20px', background: '#1e293b', borderRadius: '12px', borderLeft: '4px solid #22c55e' }}>
+            <h3 style={{ margin: '0 0 8px 0', color: '#f8fafc' }}>{job.title}</h3>
+            <p style={{ margin: 0, color: '#94a3b8' }}>{job.organization_name} • <span style={{ color: '#22c55e' }}>{job.location}</span></p>
+          </div>
+        )) : (
+          <div style={{ padding: '40px', textAlign: 'center', background: '#1e293b', borderRadius: '12px', border: '1px dashed #334155', color: '#94a3b8' }}>
+            No jobs found for {activeSector} {activeRegion ? `in ${activeRegion}` : ''}. <br/>
+            <span style={{ fontSize: '12px' }}>Try selecting "ALL" or clicking "Run Scan".</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default OpportunityMonitor;
