@@ -1,97 +1,143 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { api } from '../../config/api';
 
-// ── Pooja-specific filter constants ────────────────────────────────────────────
-const POOJA_SIGNAL_KEYWORDS = [
-  'postdoctoral', 'postdoc', 'iiser', 'iit', 'astrazeneca', 'novartis',
-  'scientist', 'research', 'pharma', 'biotech', 'molecular biology',
-  'cardiovascular', 'cancer biology', 'drug discovery',
+// ── Pooja Holistic Profile ──────────────────────────────────────────────────────
+// Weighted scoring: institution hits (×20), expertise hits (×15), role hits (×10)
+// Gate threshold: computed score ≥ 30 → show; tier label drives card styling.
+
+const INSTITUTIONS = {
+  // Indian premier research & academic
+  india: [
+    'iit ', 'iit,', 'iit-', 'iisc', 'aiims', 'iiser', 'csir', 'ccmb', 'icmr',
+    'tifr', 'jncasr', 'nii ', 'dbt ', 'dst ', 'ncbs', 'niser', 'jnu',
+    'inmas', 'nimhans', 'pgimer', 'sgpgi', 'sctimst', 'actrec',
+  ],
+  // Indian biotech/pharma industry
+  indiaIndustry: [
+    'biocon', 'syngene', 'dr reddy', 'sun pharma', 'cipla',
+    'serum institute', 'zydus', 'lupin', 'wockhardt', 'piramal',
+    'glenmark', 'aurobindo', 'cadila', 'alembic',
+  ],
+  // International pharma/biotech (high Pooja alignment)
+  international: [
+    'astrazeneca', 'novartis', 'roche', 'pfizer', 'sanofi', 'gsk',
+    'abbvie', 'merck', 'lilly', 'amgen', 'biogen', 'gilead', 'bayer',
+    'boehringer', 'novo nordisk', 'takeda', 'bristol myers', 'regeneron',
+  ],
+};
+const ALL_INSTITUTIONS = [
+  ...INSTITUTIONS.india,
+  ...INSTITUTIONS.indiaIndustry,
+  ...INSTITUTIONS.international,
 ];
 
-const ACADEMIA_KEYWORDS = [
-  'iit', 'iiser', 'university', 'postdoc', 'postdoctoral', 'academic',
-  'institute', 'college', 'school of', 'professor', 'faculty',
-  'research fellow', 'tifr', 'ncbs', 'jnu', 'niser',
+const EXPERTISE = {
+  // Core Pooja expertise — highest weight
+  core: [
+    'cardiovascular', 'cardiomyopathy', 'heart failure', 'cardiac',
+    'molecular biology', 'cell biology', 'heme', 'hemoglobin',
+    'senescence', 'aging', 'epigenetics',
+    'rna-seq', 'rnaseq', 'single cell', 'single-cell',
+    'echocardiography', 'echo', 'in vivo', 'mouse model',
+    'zebrafish', 'drosophila',
+  ],
+  // Adjacent expertise — medium weight
+  adjacent: [
+    'translational research', 'translational medicine',
+    'genetics', 'genomics', 'proteomics', 'metabolomics',
+    'drug discovery', 'target identification', 'preclinical',
+    'biomarker', 'clinical research', 'oncology',
+    'stem cell', 'regenerative', 'gene editing', 'crispr',
+    'flow cytometry', 'western blot', 'pcr', 'confocal',
+    'cancer biology', 'tumor', 'immunology', 'inflammation',
+  ],
+};
+
+const ROLES = [
+  'postdoctoral', 'postdoc', 'post-doc', 'research scientist',
+  'scientist', 'researcher', 'research associate', 'research fellow',
+  'principal scientist', 'senior scientist', 'staff scientist',
+  'faculty', 'professor', 'associate professor',
 ];
 
-const INDUSTRY_PHARMA_KEYWORDS = [
-  'astrazeneca', 'novartis', 'pharma', 'biotech', 'pharmaceutical',
-  'drug discovery', 'roche', 'pfizer', 'sanofi', 'gsk', 'abbvie',
-  'merck', 'lilly', 'amgen', 'biogen', 'gilead', 'bayer', 'boehringer',
-  'clinical', 'therapeutics', 'biologics',
-];
+type Tier = 'high' | 'good' | 'broad';
+
+interface ScoredJob {
+  raw: any;
+  score: number;
+  tier: Tier;
+  matchedInstitutions: string[];
+  matchedExpertise: string[];
+  matchedRole: string;
+}
 
 function jobText(job: any): string {
-  return `${job.title} ${job.company} ${job.snippet || ''} ${(job.keySkills || []).join(' ')}`.toLowerCase();
+  return `${job.title} ${job.company} ${job.snippet || ''} ${job.description || ''} ${(job.keySkills || []).join(' ')}`.toLowerCase();
 }
 
-function countMatches(text: string, keywords: string[]): number {
-  return keywords.filter(kw => text.includes(kw)).length;
+function scoreJob(job: any): ScoredJob | null {
+  const text = jobText(job);
+  const serverScore = job.fitScore ?? 0;
+
+  const matchedInstitutions = ALL_INSTITUTIONS.filter(k => text.includes(k));
+  const matchedCoreExp = EXPERTISE.core.filter(k => text.includes(k));
+  const matchedAdjExp = EXPERTISE.adjacent.filter(k => text.includes(k));
+  const matchedExpertise = [...matchedCoreExp, ...matchedAdjExp];
+  const matchedRole = ROLES.find(r => text.includes(r)) ?? '';
+
+  // Weighted local score
+  const localScore =
+    matchedInstitutions.length * 20 +
+    matchedCoreExp.length * 15 +
+    matchedAdjExp.length * 8 +
+    (matchedRole ? 10 : 0);
+
+  // Blend: server score dominates if present, local boosts if high
+  const blended = serverScore > 0
+    ? Math.max(serverScore, Math.min(localScore, 100))
+    : Math.min(localScore, 100);
+
+  // Gate: must have some signal
+  if (blended < 30 && matchedInstitutions.length === 0 && matchedExpertise.length === 0) return null;
+
+  const tier: Tier = blended >= 75 ? 'high' : blended >= 50 ? 'good' : 'broad';
+
+  return { raw: job, score: blended, tier, matchedInstitutions, matchedExpertise, matchedRole };
 }
 
-/** Core Pooja-match gate: fitScore > 85 OR ≥ 2 signal keyword hits */
-function isPoojaMatch(job: any): boolean {
-  if ((job.fitScore ?? 0) > 85) return true;
-  return countMatches(jobText(job), POOJA_SIGNAL_KEYWORDS) >= 2;
-}
+// ── API path builder ────────────────────────────────────────────────────────────
+type Sector = 'all' | 'academia' | 'industry' | 'india' | 'international';
 
-function isAcademiaJob(job: any): boolean {
-  if (job.category === 'ACADEMIA') return true;
-  return countMatches(jobText(job), ACADEMIA_KEYWORDS) >= 1;
-}
+function buildApiPaths(sector: Sector, region: string | null): string[] {
+  const base = (params: Record<string, string>) =>
+    `/jobs?${new URLSearchParams({ candidate: 'pooja', ...params }).toString()}`;
 
-function isIndustryJob(job: any): boolean {
-  if (job.category === 'INDUSTRY') return true;
-  return countMatches(jobText(job), INDUSTRY_PHARMA_KEYWORDS) >= 1;
-}
-
-function isIndiaLocation(job: any): boolean {
-  const loc = (job.location || '').toLowerCase();
-  return loc.includes('india') || loc.includes('mumbai') || loc.includes('delhi') ||
-    loc.includes('bangalore') || loc.includes('bengaluru') || loc.includes('pune') ||
-    loc.includes('hyderabad') || loc.includes('chennai') || loc.includes('kolkata') ||
-    job.region === 'India';
-}
-
-function matchesRegionFilter(job: any, region: string | null): boolean {
-  if (!region) return true;
-  const loc = (job.location || '').toLowerCase();
-  if (region === 'DE') return loc.includes('german') || loc.includes('berlin') || loc.includes('munich') || loc.includes('hamburg');
-  if (region === 'CA') return loc.includes('canada') || loc.includes('toronto') || loc.includes('vancouver') || loc.includes('montreal');
-  if (region === 'SG') return loc.includes('singapore') || job.region === 'Asia';
-  return true;
-}
-
-function buildApiPath(sector: string, region: string | null): string {
-  const params = new URLSearchParams({ candidate: 'pooja' });
-  if (sector === 'academia') params.set('track', 'Academic');
-  else if (sector === 'industry') params.set('track', 'Industry');
-  else if (sector === 'india') params.set('country', 'india');
-  else if (sector === 'international') {
-    if (region === 'DE') params.set('country', 'germany');
-    else if (region === 'CA') params.set('country', 'canada');
-    else if (region === 'SG') params.set('country', 'singapore');
+  if (sector === 'all') return [
+    base({ track: 'Academic' }),
+    base({ track: 'Industry' }),
+    base({ country: 'india' }),
+    base({ region: 'international' }),
+  ];
+  if (sector === 'academia') return [base({ track: 'Academic' })];
+  if (sector === 'industry') return [base({ track: 'Industry' })];
+  if (sector === 'india') return [base({ country: 'india' })];
+  if (sector === 'international') {
+    const country = region === 'US' ? 'usa'
+      : region === 'UK' ? 'uk'
+      : region === 'DE' ? 'germany'
+      : region === 'CA' ? 'canada'
+      : region === 'SG' ? 'singapore'
+      : undefined;
+    return [base(country ? { region: 'international', country } : { region: 'international' })];
   }
-  return `/jobs?${params.toString()}`;
-}
-
-function applyPoojaFilter(jobs: any[], sector: string, region: string | null): any[] {
-  let filtered = jobs.filter(isPoojaMatch);
-  if (sector === 'academia') filtered = filtered.filter(isAcademiaJob);
-  else if (sector === 'industry') filtered = filtered.filter(isIndustryJob);
-  else if (sector === 'india') filtered = filtered.filter(isIndiaLocation);
-  else if (sector === 'international') {
-    filtered = filtered.filter(j => !isIndiaLocation(j));
-    if (region) filtered = filtered.filter(j => matchesRegionFilter(j, region));
-  }
-  return filtered.sort((a, b) => (b.fitScore ?? 0) - (a.fitScore ?? 0)).slice(0, 10);
+  return [base({})];
 }
 
 // ── Score Ring ──────────────────────────────────────────────────────────────────
-const ScoreRing = ({ score }: { score: number }) => {
-  const color = score >= 85 ? '#10b981' : score >= 70 ? '#f59e0b' : '#f43f5e';
+const ScoreRing = ({ score, tier }: { score: number; tier: Tier }) => {
+  const color = tier === 'high' ? '#10b981' : tier === 'good' ? '#f59e0b' : '#94a3b8';
   const r = 14, circ = 2 * Math.PI * r;
-  const offset = circ - (score / 100) * circ;
+  const offset = circ - (Math.min(score, 100) / 100) * circ;
   return (
     <div style={{ position: 'relative', width: 36, height: 36, flexShrink: 0 }}>
       <svg width="36" height="36" style={{ transform: 'rotate(-90deg)' }}>
@@ -107,201 +153,293 @@ const ScoreRing = ({ score }: { score: number }) => {
   );
 };
 
+// ── Tier Badge ──────────────────────────────────────────────────────────────────
+const TierBadge = ({ tier }: { tier: Tier }) => {
+  const cfg = {
+    high:  { label: 'High Signal', bg: 'rgba(16,185,129,0.12)', color: '#10b981' },
+    good:  { label: 'Good Match',  bg: 'rgba(245,158,11,0.12)', color: '#f59e0b' },
+    broad: { label: 'Broad Match', bg: 'rgba(148,163,184,0.08)', color: '#94a3b8' },
+  }[tier];
+  return (
+    <span style={{ fontSize: 9, fontWeight: 900, padding: '2px 8px', background: cfg.bg, color: cfg.color, borderRadius: 4, flexShrink: 0 }}>
+      {cfg.label}
+    </span>
+  );
+};
+
 // ── Job Card ────────────────────────────────────────────────────────────────────
-const JobCard = ({ job }: { job: any }) => {
-  const isAcademia = job.category === 'ACADEMIA';
-  const categoryColor = isAcademia ? '#818cf8' : '#34d399';
-  const categoryLabel = isAcademia ? '🎓 Academia' : '🏭 Industry';
+const JobCard = ({ scored }: { scored: ScoredJob }) => {
+  const { raw: job, score, tier, matchedInstitutions, matchedExpertise, matchedRole } = scored;
+  const borderColor = tier === 'high' ? '#10b981' : tier === 'good' ? '#f59e0b' : '#334155';
+  const visibleKeywords = [
+    ...matchedInstitutions.slice(0, 2).map(k => k.trim()),
+    ...matchedExpertise.slice(0, 3),
+  ].filter(Boolean);
+  const displaySkills = visibleKeywords.length > 0 ? visibleKeywords : (job.keySkills ?? []).slice(0, 5);
+
   return (
     <div style={{
-      padding: '16px 20px', background: 'rgba(255,255,255,0.03)', borderRadius: 12,
-      border: '1px solid rgba(255,255,255,0.07)', borderLeft: `3px solid ${categoryColor}`,
-      display: 'flex', alignItems: 'center', gap: 16,
+      padding: '14px 18px', background: 'rgba(255,255,255,0.025)', borderRadius: 12,
+      border: '1px solid rgba(255,255,255,0.07)', borderLeft: `3px solid ${borderColor}`,
+      display: 'flex', alignItems: 'flex-start', gap: 14,
     }}>
-      <ScoreRing score={job.fitScore ?? 0} />
+      <div style={{ paddingTop: 2 }}><ScoreRing score={score} tier={tier} /></div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-          <span style={{ fontWeight: 800, fontSize: 14, color: '#f8fafc', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            {job.title}
-          </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
+          <span style={{ fontWeight: 800, fontSize: 13.5, color: '#f8fafc' }}>{job.title}</span>
+          <TierBadge tier={tier} />
           {job.category && (
-            <span style={{ fontSize: 9, fontWeight: 900, padding: '2px 7px', background: isAcademia ? 'rgba(129,140,248,0.12)' : 'rgba(52,211,153,0.12)', color: categoryColor, borderRadius: 4, flexShrink: 0 }}>
-              {categoryLabel}
+            <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 7px',
+              background: job.category === 'ACADEMIA' ? 'rgba(129,140,248,0.1)' : 'rgba(52,211,153,0.1)',
+              color: job.category === 'ACADEMIA' ? '#818cf8' : '#34d399', borderRadius: 4 }}>
+              {job.category === 'ACADEMIA' ? 'Academia' : 'Industry'}
             </span>
           )}
         </div>
-        <div style={{ fontSize: 12, color: '#94a3b8', marginBottom: 6 }}>
-          {job.company} &middot; <span style={{ color: '#22d3ee' }}>{job.location}</span>
+        <div style={{ fontSize: 12, color: '#94a3b8', marginBottom: 5 }}>
+          <span style={{ fontWeight: 600 }}>{job.company}</span>
+          &nbsp;&middot;&nbsp;
+          <span style={{ color: '#22d3ee' }}>{job.location}</span>
+          {matchedRole && (
+            <span style={{ marginLeft: 8, fontSize: 10, color: '#64748b' }}>({matchedRole})</span>
+          )}
         </div>
         {job.snippet && (
-          <div style={{ fontSize: 11, color: '#64748b', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+          <div style={{ fontSize: 11, color: '#64748b', lineHeight: 1.5,
+            display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
             {job.snippet}
           </div>
         )}
-        {job.keySkills?.length > 0 && (
-          <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
-            {job.keySkills.slice(0, 5).map((sk: string) => (
-              <span key={sk} style={{ fontSize: 9, fontWeight: 700, padding: '2px 8px', background: 'rgba(255,255,255,0.05)', color: '#94a3b8', borderRadius: 10 }}>
+        {displaySkills.length > 0 && (
+          <div style={{ display: 'flex', gap: 5, marginTop: 8, flexWrap: 'wrap' }}>
+            {displaySkills.map((sk: string) => (
+              <span key={sk} style={{ fontSize: 9, fontWeight: 700, padding: '2px 7px',
+                background: matchedExpertise.includes(sk) || matchedInstitutions.map(k=>k.trim()).includes(sk)
+                  ? 'rgba(34,211,238,0.08)' : 'rgba(255,255,255,0.04)',
+                color: matchedExpertise.includes(sk) || matchedInstitutions.map(k=>k.trim()).includes(sk)
+                  ? '#22d3ee' : '#64748b', borderRadius: 10 }}>
                 {sk}
               </span>
             ))}
           </div>
         )}
       </div>
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8, flexShrink: 0 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 7, flexShrink: 0 }}>
         {job.salary && job.salary !== 'Market Rate' && (
           <span style={{ fontSize: 11, fontWeight: 800, color: '#10b981' }}>{job.salary}</span>
         )}
-        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-          {job.workMode && (
-            <span style={{
-              fontSize: 9, fontWeight: 900, padding: '2px 7px', borderRadius: 4,
-              color: job.workMode === 'Remote' ? '#22d3ee' : job.workMode === 'Hybrid' ? '#f59e0b' : '#94a3b8',
-              background: job.workMode === 'Remote' ? 'rgba(34,211,238,0.08)' : job.workMode === 'Hybrid' ? 'rgba(245,158,11,0.08)' : 'rgba(148,163,184,0.08)',
-            }}>
-              {job.workMode}
-            </span>
-          )}
-          {job.applyUrl && job.applyUrl !== '#' && (
-            <button onClick={() => window.open(job.applyUrl, '_blank')}
-              style={{ fontSize: 10, fontWeight: 800, padding: '4px 12px', background: 'white', color: '#000', border: 'none', borderRadius: 6, cursor: 'pointer' }}>
-              Apply →
-            </button>
-          )}
-        </div>
+        {job.workMode && (
+          <span style={{ fontSize: 9, fontWeight: 900, padding: '2px 7px', borderRadius: 4,
+            color: job.workMode === 'Remote' ? '#22d3ee' : job.workMode === 'Hybrid' ? '#f59e0b' : '#94a3b8',
+            background: job.workMode === 'Remote' ? 'rgba(34,211,238,0.07)' : job.workMode === 'Hybrid' ? 'rgba(245,158,11,0.07)' : 'rgba(148,163,184,0.07)' }}>
+            {job.workMode}
+          </span>
+        )}
+        {job.applyUrl && job.applyUrl !== '#' && (
+          <button onClick={() => window.open(job.applyUrl, '_blank')}
+            style={{ fontSize: 10, fontWeight: 800, padding: '4px 12px', background: 'white',
+              color: '#000', border: 'none', borderRadius: 6, cursor: 'pointer' }}>
+            Apply →
+          </button>
+        )}
       </div>
     </div>
   );
 };
 
-// ── Main Component ──────────────────────────────────────────────────────────────
-export const OpportunityMonitor = () => {
-  const [activeSector, setActiveSector] = useState<'academia' | 'industry' | 'international' | 'india'>('academia');
-  const [activeRegion, setActiveRegion] = useState<string | null>(null);
-  const [jobs, setJobs] = useState<any[]>([]);
-  const [scanning, setScanning] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [lastScan, setLastScan] = useState<string | null>(null);
-  const [totalFetched, setTotalFetched] = useState(0);
+// ── Summary bar ─────────────────────────────────────────────────────────────────
+const SummaryBar = ({ jobs }: { jobs: ScoredJob[] }) => {
+  const high = jobs.filter(j => j.tier === 'high').length;
+  const good = jobs.filter(j => j.tier === 'good').length;
+  const broad = jobs.filter(j => j.tier === 'broad').length;
+  if (jobs.length === 0) return null;
+  return (
+    <div style={{ display: 'flex', gap: 12, marginBottom: 14, flexWrap: 'wrap' }}>
+      {[
+        { label: `${high} High Signal`, color: '#10b981', bg: 'rgba(16,185,129,0.08)' },
+        { label: `${good} Good Match`,  color: '#f59e0b', bg: 'rgba(245,158,11,0.08)' },
+        { label: `${broad} Broad`,      color: '#64748b', bg: 'rgba(100,116,139,0.06)' },
+      ].map(({ label, color, bg }) => (
+        <span key={label} style={{ fontSize: 11, fontWeight: 700, padding: '4px 12px', background: bg, color, borderRadius: 20 }}>
+          {label}
+        </span>
+      ))}
+    </div>
+  );
+};
 
-  const fetchJobs = useCallback(async (sector: typeof activeSector, region: string | null) => {
+// ── Main ────────────────────────────────────────────────────────────────────────
+export const OpportunityMonitor = () => {
+  const [sector, setSector] = useState<Sector>('academia');
+  const [region, setRegion] = useState<string | null>(null);
+  const [jobs, setJobs] = useState<ScoredJob[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [scanning, setScanning] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [totalFetched, setTotalFetched] = useState(0);
+  const [lastScan, setLastScan] = useState<string | null>(null);
+  const [tierFilter, setTierFilter] = useState<Tier | 'all'>('all');
+  const seenIds = useRef(new Set<string>());
+
+  const fetchJobs = useCallback(async (s: Sector, r: string | null) => {
     setLoading(true);
     setError(null);
+    seenIds.current.clear();
     try {
-      const data = await api.get(buildApiPath(sector, region));
-      const rawJobs: any[] = Array.isArray(data?.jobs) ? data.jobs : [];
-      setTotalFetched(rawJobs.length);
-      setJobs(applyPoojaFilter(rawJobs, sector, region));
-    } catch (err: any) {
-      setError('Failed to fetch jobs. Check your connection or try again.');
+      const paths = buildApiPaths(s, r);
+      const results = await Promise.allSettled(paths.map(p => api.get(p)));
+      const raw: any[] = [];
+      results.forEach(res => {
+        if (res.status === 'fulfilled') {
+          const data = res.value;
+          const list: any[] = Array.isArray(data?.jobs) ? data.jobs
+            : Array.isArray(data) ? data : [];
+          list.forEach(job => {
+            const key = job.id ?? `${job.title}__${job.company}`;
+            if (!seenIds.current.has(key)) { seenIds.current.add(key); raw.push(job); }
+          });
+        }
+      });
+      setTotalFetched(raw.length);
+      const scored = raw.map(scoreJob).filter(Boolean) as ScoredJob[];
+      scored.sort((a, b) => b.score - a.score);
+      setJobs(scored);
+    } catch {
+      setError('Failed to fetch. Check connection or try again.');
       setJobs([]);
     } finally {
       setLoading(false);
     }
   }, []);
 
+  // Auto-load on mount
+  useEffect(() => { fetchJobs('academia', null); }, [fetchJobs]);
+
   const handleScan = async () => {
     setScanning(true);
     setError(null);
     try { await api.post('/jobs/refresh', { candidate: 'pooja' }); } catch { /* non-fatal */ }
-    await fetchJobs(activeSector, activeRegion);
+    await fetchJobs(sector, region);
     setLastScan(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
     setScanning(false);
   };
 
-  const handleSectorChange = (sector: typeof activeSector) => {
-    setActiveSector(sector);
-    setActiveRegion(null);
-    fetchJobs(sector, null);
+  const handleSectorChange = (s: Sector) => {
+    setSector(s);
+    setRegion(null);
+    setTierFilter('all');
+    fetchJobs(s, null);
   };
 
-  const handleRegionChange = (region: string | null) => {
-    setActiveRegion(region);
-    fetchJobs(activeSector, region);
+  const handleRegionChange = (r: string | null) => {
+    setRegion(r);
+    fetchJobs(sector, r);
   };
 
-  const SECTOR_LABELS: Record<string, string> = {
-    academia: 'Academia', industry: 'Industry', international: 'International', india: 'India',
-  };
+  const SECTORS: { key: Sector; label: string }[] = [
+    { key: 'all',           label: 'All' },
+    { key: 'academia',      label: 'Academia' },
+    { key: 'industry',      label: 'Industry' },
+    { key: 'india',         label: 'India' },
+    { key: 'international', label: 'International' },
+  ];
+
+  const INT_REGIONS = [null, 'US', 'UK', 'DE', 'CA', 'SG'];
+
+  const visibleJobs = tierFilter === 'all' ? jobs : jobs.filter(j => j.tier === tierFilter);
 
   return (
     <div style={{ color: 'white', fontFamily: 'var(--font-sans, sans-serif)' }}>
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
         <div>
-          <h1 style={{ fontSize: 22, fontWeight: 900, margin: 0 }}>Sup, Opportunity Monitor</h1>
-          <p style={{ fontSize: 12, color: '#64748b', margin: '4px 0 0 0' }}>
-            Pooja-optimized · High-precision filter active
-            {lastScan && <span style={{ color: '#10b981', marginLeft: 8 }}>Last scan: {lastScan}</span>}
+          <h1 style={{ fontSize: 21, fontWeight: 900, margin: 0 }}>Opportunity Monitor</h1>
+          <p style={{ fontSize: 11.5, color: '#64748b', margin: '4px 0 0 0', lineHeight: 1.6 }}>
+            Pooja Choubey · Life Sciences · Holistic match engine active
+            {lastScan && <span style={{ color: '#10b981', marginLeft: 10 }}>↻ {lastScan}</span>}
           </p>
         </div>
         <button onClick={handleScan} disabled={scanning || loading}
-          style={{ padding: '10px 24px', background: (scanning || loading) ? '#334155' : '#22c55e', color: 'white', border: 'none', borderRadius: 8, cursor: (scanning || loading) ? 'default' : 'pointer', fontWeight: 900, fontSize: 13 }}>
+          style={{ padding: '9px 22px', background: (scanning || loading) ? '#334155' : '#22c55e',
+            color: 'white', border: 'none', borderRadius: 8, cursor: (scanning||loading) ? 'default' : 'pointer',
+            fontWeight: 900, fontSize: 12.5, flexShrink: 0 }}>
           {scanning ? 'Scanning...' : 'Run Scan'}
         </button>
       </div>
 
-      {/* Sector Tabs */}
-      <div style={{ display: 'flex', gap: 2, marginBottom: 8 }}>
-        {(['academia', 'industry', 'international', 'india'] as const).map(s => (
-          <button key={s} onClick={() => handleSectorChange(s)} style={{
-            padding: '9px 18px',
-            background: activeSector === s ? '#334155' : '#1e293b',
-            border: `1px solid ${activeSector === s ? '#475569' : '#334155'}`,
-            color: activeSector === s ? '#f8fafc' : '#94a3b8',
-            cursor: 'pointer', fontWeight: activeSector === s ? 800 : 500, fontSize: 13, borderRadius: 6,
-          }}>
-            {SECTOR_LABELS[s]}
-          </button>
+      {/* Sector tabs */}
+      <div style={{ display: 'flex', gap: 2, marginBottom: 6 }}>
+        {SECTORS.map(({ key, label }) => (
+          <button key={key} onClick={() => handleSectorChange(key)} style={{
+            padding: '8px 16px',
+            background: sector === key ? '#334155' : '#1e293b',
+            border: `1px solid ${sector === key ? '#475569' : '#334155'}`,
+            color: sector === key ? '#f8fafc' : '#94a3b8',
+            cursor: 'pointer', fontWeight: sector === key ? 800 : 500, fontSize: 12.5, borderRadius: 6,
+          }}>{label}</button>
         ))}
       </div>
 
-      {/* Region Sub-filters — International only */}
-      {activeSector === 'international' && (
-        <div style={{ display: 'flex', gap: 2, marginBottom: 20 }}>
-          {([null, 'DE', 'CA', 'SG'] as const).map(r => (
+      {/* International region sub-tabs */}
+      {sector === 'international' && (
+        <div style={{ display: 'flex', gap: 2, marginBottom: 6 }}>
+          {INT_REGIONS.map(r => (
             <button key={r ?? 'ALL'} onClick={() => handleRegionChange(r)} style={{
-              padding: '7px 16px',
-              background: activeRegion === r ? '#22c55e' : '#1e293b',
-              border: `1px solid ${activeRegion === r ? '#22c55e' : '#334155'}`,
-              color: activeRegion === r ? '#000' : '#94a3b8',
-              cursor: 'pointer', fontWeight: 700, fontSize: 12, borderRadius: 6,
-            }}>
-              {r ?? 'ALL'}
-            </button>
+              padding: '6px 13px',
+              background: region === r ? '#6366f1' : '#1e293b',
+              border: `1px solid ${region === r ? '#6366f1' : '#334155'}`,
+              color: region === r ? 'white' : '#94a3b8',
+              cursor: 'pointer', fontWeight: 700, fontSize: 11.5, borderRadius: 5,
+            }}>{r ?? 'ALL'}</button>
           ))}
         </div>
       )}
 
-      {/* Status line */}
-      {(jobs.length > 0 || totalFetched > 0) && (
-        <div style={{ fontSize: 11, color: '#64748b', marginBottom: 12, marginTop: activeSector !== 'international' ? 16 : 0 }}>
-          Showing {jobs.length} curated matches from {totalFetched} fetched &middot; {SECTOR_LABELS[activeSector]}
-          {activeRegion ? ` · ${activeRegion}` : ''} &middot; Pooja profile alignment applied
+      {/* Tier filter row */}
+      {jobs.length > 0 && (
+        <div style={{ display: 'flex', gap: 2, marginBottom: 14, marginTop: 10 }}>
+          {(['all', 'high', 'good', 'broad'] as const).map(t => (
+            <button key={t} onClick={() => setTierFilter(t)} style={{
+              padding: '5px 12px',
+              background: tierFilter === t ? 'rgba(255,255,255,0.08)' : 'transparent',
+              border: `1px solid ${tierFilter === t ? 'rgba(255,255,255,0.15)' : '#334155'}`,
+              color: tierFilter === t ? '#f8fafc' : '#64748b',
+              cursor: 'pointer', fontWeight: 700, fontSize: 11, borderRadius: 5,
+            }}>
+              {t === 'all' ? `All (${jobs.length})`
+               : t === 'high' ? `High Signal (${jobs.filter(j=>j.tier==='high').length})`
+               : t === 'good' ? `Good (${jobs.filter(j=>j.tier==='good').length})`
+               : `Broad (${jobs.filter(j=>j.tier==='broad').length})`}
+            </button>
+          ))}
+          <span style={{ marginLeft: 'auto', fontSize: 10.5, color: '#475569', alignSelf: 'center' }}>
+            {totalFetched} fetched · {jobs.length} matched
+          </span>
         </div>
       )}
 
+      {/* Summary */}
+      {!loading && <SummaryBar jobs={visibleJobs} />}
+
       {/* Results */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 4 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
         {loading ? (
           <div style={{ padding: 48, textAlign: 'center', color: '#64748b', fontSize: 13 }}>
-            Fetching opportunities...
+            Scanning across{sector === 'all' ? ' all tracks' : ` ${sector}`}...
           </div>
         ) : error ? (
-          <div style={{ padding: 24, background: 'rgba(244,63,94,0.08)', border: '1px solid rgba(244,63,94,0.2)', borderRadius: 10, color: '#f43f5e', fontSize: 13, textAlign: 'center' }}>
-            {error}
-          </div>
-        ) : jobs.length > 0 ? (
-          jobs.map((job, idx) => <JobCard key={job.id ?? idx} job={job} />)
+          <div style={{ padding: 20, background: 'rgba(244,63,94,0.07)', border: '1px solid rgba(244,63,94,0.18)',
+            borderRadius: 10, color: '#f43f5e', fontSize: 13, textAlign: 'center' }}>{error}</div>
+        ) : visibleJobs.length > 0 ? (
+          visibleJobs.map((scored, idx) => <JobCard key={scored.raw.id ?? idx} scored={scored} />)
         ) : (
-          <div style={{ padding: '48px 24px', textAlign: 'center', background: 'rgba(255,255,255,0.02)', border: '1px dashed rgba(255,255,255,0.08)', borderRadius: 12, color: '#64748b' }}>
-            <div style={{ fontSize: 24, marginBottom: 12 }}>🔍</div>
-            <div style={{ fontWeight: 700, marginBottom: 6 }}>
-              No jobs found for {SECTOR_LABELS[activeSector]}{activeRegion ? ` · ${activeRegion}` : ''}.
-            </div>
+          <div style={{ padding: '44px 24px', textAlign: 'center', background: 'rgba(255,255,255,0.02)',
+            border: '1px dashed rgba(255,255,255,0.07)', borderRadius: 12, color: '#64748b' }}>
+            <div style={{ fontSize: 24, marginBottom: 10 }}>🔬</div>
+            <div style={{ fontWeight: 700, marginBottom: 6, fontSize: 14 }}>No matches for current filters.</div>
             <div style={{ fontSize: 12 }}>
-              Click <strong style={{ color: '#22c55e' }}>Run Scan</strong> to fetch fresh listings from the live backend.
+              Try <strong style={{ color: '#94a3b8' }}>All</strong> tier or click{' '}
+              <strong style={{ color: '#22c55e' }}>Run Scan</strong> to refresh from the live backend.
             </div>
           </div>
         )}
