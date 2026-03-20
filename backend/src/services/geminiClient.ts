@@ -61,7 +61,8 @@ export async function geminiGroundedSearch(
   const genAI = getGenAI();
   const model = genAI.getGenerativeModel({
     model: GEMINI_MODEL,
-    tools: [{ googleSearch: {} }],
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    tools: [{ googleSearch: {} } as any],
     generationConfig: { maxOutputTokens: maxTokens },
   });
 
