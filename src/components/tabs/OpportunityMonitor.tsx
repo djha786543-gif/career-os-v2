@@ -1,6 +1,76 @@
 import React, { useState, useEffect } from 'react';
 import { API_BASE } from '../../config/api';
 
+// ─── Client-side Pooja Match Scorer ──────────────────────────────────────────
+// Mirrors backend poojaMatchScore() so scores work even if backend deploy lags.
+// This runs in the browser on every data fetch — no DB round-trip needed.
+const WET_LAB_RE = /\b(genotyping|pcr|qpcr|rt.?pcr|western blot|protein analysis|protein expression|immunohistochemistry|ihc|elisa|cell culture|primary cell|flow cytometry|immunofluorescence|confocal|microscopy|molecular biology|biochemistry|cloning|rna.?seq|transcriptomics|crispr|gene expression|sequencing|rna isolation|dna isolation|immunoprecipitation|chromatin|chip.?seq|atac.?seq|single.cell)\b/i;
+const IN_VIVO_RE  = /\b(animal model|mouse model|in.?vivo|transgenic|knockout|knock.?in|conditional knockout|animal surgery|echocardiography|langendorff|cardiac perfusion|animal handling|rodent|murine|rat model|zebrafish|drosophila|genetically modified|cre.?lox)\b/i;
+const PRIMARY_DOMAIN_RE   = /\b(cardiovascular|cardiomyopathy|peripartum|cardiac|heart failure|heart disease|cardiomyocyte|cardio|vascular|heme|haemo|hemoglobin|haematology|hematology|molecular genetics|genomics|genetics|gene|transcriptomics|rna.?seq)\b/i;
+const SECONDARY_DOMAIN_RE = /\b(cancer|oncology|tumor|tumour|immunology|immune|inflammation|inflammatory|metabolism|metabolic|liver|fibrosis|neuroscience|neurological|pulmonary|renal|kidney|diabetes|obesity)\b/i;
+const SENIOR_TITLE_RE  = /\b(senior scientist|principal scientist|staff scientist|group leader|team leader|associate investigator|lead scientist|scientist [2-9]|scientist ii|scientist iii|scientist iv)\b/i;
+const FACULTY_TITLE_RE = /\b(assistant professor|associate professor|professor|faculty|tenure.?track|principal investigator|pi\b)\b/i;
+const SCIENTIST_TITLE_RE = /\b(research scientist|scientist\b|r&d scientist|r&d|investigator)\b/i;
+const POSTDOC_TITLE_RE   = /\b(postdoc|postdoctoral|research fellow|research associate)\b/i;
+const LIFESCI_PHD_RE  = /\b(ph\.?d|doctorate|life science|biology|biochemistry|molecular|genetics|biomedical|bioscience)\b/i;
+const MOLBIO_CONTEXT_RE = /\b(molecular biology|molecular|biochemistry|cell biology|genetics|genomics|protein|rna|dna|assay|experiment|laboratory|research)\b/i;
+const LIFESCI_ANCHOR_RE = /\b(metabolism|molecular|biotech|cardiovascular|immunology|ph\.?d|biology|biological|biochem(?:istry|ical)?|genomics|genetics|genetic|research|faculty|staff|science|sciences|investigator|oncology|neuroscience|microbiology|virology|pharmacology|pharma(?:ceutical)?|proteomics|transcriptomics|bioinformatics|crispr|rna|sequencing|cancer|cardiac|immunobiology|epigenetics|haematology|hematology|cell biology|molecular genetics)\b/i;
+const GARBAGE_TITLE_RE = /^\$|^\d+\s+(job|position|opening|result|postdoc|researcher)|\s+jobs(,\s+employment)?\s*$|^(careers?|admissions?|home|about\s+us?|open\s+positions?|join\s+our\s+team|our\s+team|opportunities|apply\s+now|contact\s+us?|sitemap|menu|navigation|explore|learn\s+more|vacancies)\s*$/i;
+
+const TIER1_ORGS = new Set([
+  'Harvard Medical School','Stanford Medicine','MIT Biology','UCSF','Broad Institute',
+  'Johns Hopkins Medicine','Mayo Clinic Research','Salk Institute','Columbia University Medical Center',
+  'Yale School of Medicine','Gladstone Institutes','Scripps Research','UT Southwestern Medical Center',
+  'Baylor College of Medicine','Washington University St Louis','Weill Cornell Medicine',
+  'Duke University Medical Center','University of Michigan Medical School',
+  'Vanderbilt University Medical Center','University of Pennsylvania Perelman',
+  'Northwestern University Feinberg','NIH NHLBI','NIH NIGMS','NIH NCI',
+  'Karolinska Institute','ETH Zurich','EMBL Jobs','Francis Crick Institute',
+  'Wellcome Sanger Institute','Max Planck Heart and Lung',
+  'Genentech','Regeneron','Amgen','Pfizer Research','Merck Research',
+  'Roche','GlaxoSmithKline GSK','AstraZeneca US','Novartis US','Moderna',
+  'NCBS Bangalore','IISc Bangalore','TIFR Mumbai',
+]);
+
+function clientScore(title: string, snippet: string, orgName: string, sector: string): number {
+  const text = (title + ' ' + snippet).toLowerCase();
+  const tl = title.toLowerCase();
+  let score = 0;
+
+  // 1. Technical mastery (40 pts)
+  if (WET_LAB_RE.test(text) || IN_VIVO_RE.test(text)) score += 40;
+  else if (LIFESCI_PHD_RE.test(text)) score += 20;
+
+  // 2. Domain alignment (30 / 15 pts)
+  if (PRIMARY_DOMAIN_RE.test(text)) score += 30;
+  else if (SECONDARY_DOMAIN_RE.test(text)) score += 15;
+
+  // 3. Seniority (20 / 18 / 12 / 8 pts)
+  if (FACULTY_TITLE_RE.test(tl) || SENIOR_TITLE_RE.test(tl)) score += 20;
+  else if (SCIENTIST_TITLE_RE.test(tl)) score += 18;
+  else if (POSTDOC_TITLE_RE.test(tl)) {
+    score += (TIER1_ORGS.has(orgName) || sector === 'academia' || sector === 'international') ? 12 : 8;
+  }
+
+  // 4. Institutional prestige (10 pts)
+  if (TIER1_ORGS.has(orgName)) score += 10;
+
+  // Floor: PhD life-sci + molecular context → min 50
+  if (LIFESCI_PHD_RE.test(text) && MOLBIO_CONTEXT_RE.test(text) &&
+      (LIFESCI_ANCHOR_RE.test(title) || SCIENTIST_TITLE_RE.test(title) || FACULTY_TITLE_RE.test(title)) &&
+      score < 50) score = 50;
+
+  return Math.min(Math.round(score), 100);
+}
+
+function isGarbageTitle(title: string): boolean {
+  if (!title || title.trim().length < 6) return true;
+  if (GARBAGE_TITLE_RE.test(title.trim())) return true;
+  if (/\d+\s+(cardiovascular|postdoc|molecular|research)\s+jobs?\b/i.test(title)) return true;
+  if (/\bjobs?\s+in\s+(north america|united states|usa|uk|europe|global)\b/i.test(title)) return true;
+  return false;
+}
+
 interface Job {
   title: string;
   org_name: string;
@@ -86,8 +156,6 @@ export const OpportunityMonitor = () => {
   const [showNewOnly, setShowNewOnly] = useState(false);
   const [minScore, setMinScore] = useState(0);
   const [scanNote, setScanNote] = useState('');
-  const [rescoring, setRescoring] = useState(false);
-  const [purging, setPurging] = useState(false);
 
   // allJobs holds the full server response for the active sector (unfiltered by score)
   // Slider filtering is done client-side so it's instant
@@ -104,7 +172,14 @@ export const OpportunityMonitor = () => {
       if (!res.ok) throw new Error(`Server error: ${res.status}`);
       const data = await res.json();
 
-      let fetched: Job[] = Array.isArray(data?.jobs) ? data.jobs : [];
+      // Filter garbage titles and apply client-side scoring (overrides backend 0s)
+      const fetched: Job[] = (Array.isArray(data?.jobs) ? data.jobs : [])
+        .filter((j: Job) => !isGarbageTitle(j.title))
+        .map((j: Job) => ({
+          ...j,
+          match_score: clientScore(j.title, j.snippet || '', j.org_name, j.sector),
+        }))
+        .sort((a: Job, b: Job) => b.match_score - a.match_score);
       setAllJobs(fetched);
       setCounts(Array.isArray(data?.counts) ? data.counts : []);
     } catch (err) {
@@ -131,35 +206,7 @@ export const OpportunityMonitor = () => {
 
   useEffect(() => { fetchData(); }, [activeSector, showNewOnly]);
 
-  const handlePurge = async () => {
-    setPurging(true);
-    setScanNote('');
-    try {
-      const res = await fetch(`${API_BASE}/monitor/purge`, { method: 'POST' });
-      if (!res.ok) throw new Error(`Server returned ${res.status} — deploy may still be in progress, try again in 1 min`);
-      const data = await res.json();
-      setScanNote(`Purged ${data.deleted ?? 0} garbage entries — refreshing in 10s...`);
-      setTimeout(() => { fetchData(); setScanNote(''); }, 10000);
-    } catch (err) {
-      setError('Purge failed: ' + (err as Error).message);
-    } finally {
-      setPurging(false);
-    }
-  };
-
-  const handleRescore = async () => {
-    setRescoring(true);
-    setScanNote('');
-    try {
-      await fetch(`${API_BASE}/monitor/rescore`, { method: 'POST' });
-      setScanNote('Rescoring all jobs in background — refreshing in 20s...');
-      setTimeout(() => { fetchData(); setScanNote(''); }, 20000);
-    } catch (err) {
-      setError('Rescore failed: ' + (err as Error).message);
-    } finally {
-      setRescoring(false);
-    }
-  };
+  // Scoring is now client-side — no rescore/purge API calls needed
 
   const handleScan = async () => {
     setScanning(true);
@@ -202,32 +249,6 @@ export const OpportunityMonitor = () => {
             <input type="checkbox" checked={showNewOnly} onChange={e => setShowNewOnly(e.target.checked)} />
             New only
           </label>
-          <button
-            onClick={handlePurge}
-            disabled={purging}
-            style={{
-              padding: '7px 12px', background: '#0f172a',
-              color: purging ? '#64748b' : '#ef4444',
-              border: '1px solid #334155', borderRadius: '6px',
-              cursor: purging ? 'not-allowed' : 'pointer', fontSize: '11px'
-            }}
-            title="Delete garbage nav-link/search-result entries from database"
-          >
-            {purging ? 'Purging...' : '✕ Purge Garbage'}
-          </button>
-          <button
-            onClick={handleRescore}
-            disabled={rescoring}
-            style={{
-              padding: '7px 12px', background: '#0f172a',
-              color: rescoring ? '#64748b' : '#94a3b8',
-              border: '1px solid #334155', borderRadius: '6px',
-              cursor: rescoring ? 'not-allowed' : 'pointer', fontSize: '11px'
-            }}
-            title="Recalculate match scores for all existing jobs"
-          >
-            {rescoring ? 'Rescoring...' : '↻ Rescore'}
-          </button>
           <button
             onClick={handleScan}
             disabled={scanning}
