@@ -132,7 +132,10 @@ function buildApiPaths(sector: Sector, region: string | null): string[] {
     base({ track: 'Industry' }),
     '/monitor/jobs?sector=industry',    // scanned Europe + Asia + US industry orgs
   ];
-  if (sector === 'india') return ['/monitor/jobs?sector=india'];   // ← correct endpoint
+  if (sector === 'india') return [
+    '/monitor/jobs?sector=india',
+    base({ country: 'india' }),   // Adzuna India — reliable supplement
+  ];
   if (sector === 'international') {
     const country = region === 'US' ? 'usa'
       : region === 'UK' ? 'uk'
@@ -175,22 +178,23 @@ function matchesIndustryRegion(job: any, region: IndustryRegion): boolean {
 // ── India sub-sector constants ────────────────────────────────────────────────
 type IndiaSubsector = 'All' | 'Academic' | 'Govt Research' | 'Industry';
 const INDIA_SUBSECTORS: IndiaSubsector[] = ['All', 'Academic', 'Govt Research', 'Industry'];
-const INDIA_ORG_SUBSECTOR: Record<string, IndiaSubsector> = {
-  'IISc Bangalore': 'Academic', 'IISER Pune': 'Academic',
-  'IIT Bombay Biology': 'Academic', 'IIT Bombay Biosciences': 'Academic',
-  'IIT Delhi Biochemical Engineering': 'Academic', 'JNU School of Life Sciences': 'Academic',
-  'IISER Kolkata': 'Academic', 'IISER Bhopal': 'Academic',
-  'IISER Mohali': 'Academic', 'IISER Thiruvananthapuram': 'Academic',
-  'ICMR HQ': 'Govt Research', 'CSIR-IGIB Delhi': 'Govt Research',
-  'DBT-THSTI Faridabad': 'Govt Research', 'AIIMS New Delhi': 'Govt Research',
-  'JNCASR Bangalore': 'Govt Research', 'NCBS Bangalore': 'Govt Research',
-  'TIFR Mumbai': 'Govt Research', 'CCMB Hyderabad': 'Govt Research',
-  'IGIB Delhi': 'Govt Research', 'inStem Bangalore': 'Govt Research',
-  'NII Delhi': 'Govt Research', 'RCB Faridabad': 'Govt Research',
-  'RGCB Trivandrum': 'Govt Research',
-  'Biocon Biologics': 'Industry', 'Biocon Research': 'Industry',
-  'Syngene International': 'Industry', 'AstraZeneca India': 'Industry',
-};
+// Fuzzy keyword matching handles Adzuna company names (e.g. "Biocon" vs "Biocon Biologics")
+const INDIA_INDUSTRY_KEYWORDS = [
+  'biocon', 'syngene', 'astrazeneca', 'dr reddy', 'sun pharma', 'cipla',
+  'zydus', 'lupin', 'piramal', 'glenmark', 'aurobindo', 'alembic',
+  'wockhardt', 'serum institute', 'divi', 'strides', 'torrent pharma',
+  'jubilant', 'abbott india', 'pfizer india', 'sanofi india',
+];
+const INDIA_ACADEMIC_KEYWORDS = [
+  'iit ', 'iit,', 'iit-', 'iisc', 'iiser', 'tifr', 'ncbs', 'jncasr',
+  'niser', 'jnu ', 'jnu,', 'bits pilani', 'manipal', 'university',
+];
+function getIndiaSubsector(orgName: string): IndiaSubsector {
+  const text = (orgName || '').toLowerCase();
+  if (INDIA_INDUSTRY_KEYWORDS.some(k => text.includes(k))) return 'Industry';
+  if (INDIA_ACADEMIC_KEYWORDS.some(k => text.includes(k))) return 'Academic';
+  return 'Govt Research';
+}
 
 // ── Elite Match — senior India roles ─────────────────────────────────────────
 const ELITE_TERMS = [
@@ -467,7 +471,7 @@ export const OpportunityMonitor = () => {
   const visibleJobs = jobs
     .filter(j => tierFilter === 'all' || j.tier === tierFilter)
     .filter(j => sector !== 'india' || indiaSubsector === 'All' ||
-      (INDIA_ORG_SUBSECTOR[j.raw.org_name ?? j.raw.company] ?? 'Govt Research') === indiaSubsector)
+      getIndiaSubsector(j.raw.org_name ?? j.raw.company ?? '') === indiaSubsector)
     .filter(j => sector !== 'industry' || matchesIndustryRegion(j.raw, industryRegion));
 
   return (
@@ -508,9 +512,18 @@ export const OpportunityMonitor = () => {
           {INDUSTRY_REGIONS.map(r => (
             <button key={r} onClick={() => {
               setIndustryRegion(r);
-              if (r === 'Asia')          supplementJobs('/monitor/jobs?sector=industry&region=asia');
-              else if (r === 'Europe')   supplementJobs('/monitor/jobs?sector=industry&region=europe');
-              else if (r === 'North America') supplementJobs('/monitor/jobs?sector=industry&region=north_america');
+              if (r === 'Asia') {
+                supplementJobs('/monitor/jobs?sector=industry&region=asia');
+                // Adzuna Singapore — most reliable Asian market on Adzuna
+                supplementJobs('/jobs?candidate=pooja&country=sg&track=Industry');
+              } else if (r === 'Europe') {
+                supplementJobs('/monitor/jobs?sector=industry&region=europe');
+                // Adzuna UK + Germany for reliable European coverage
+                supplementJobs('/jobs?candidate=pooja&country=gb&track=Industry');
+                supplementJobs('/jobs?candidate=pooja&country=de&track=Industry');
+              } else if (r === 'North America') {
+                supplementJobs('/monitor/jobs?sector=industry&region=north_america');
+              }
             }} style={{
               padding: '6px 14px',
               background: industryRegion === r ? 'rgba(52,211,153,0.15)' : '#1e293b',
