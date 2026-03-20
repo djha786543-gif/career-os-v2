@@ -14,9 +14,10 @@ const INSTITUTIONS = {
   ],
   // Indian biotech/pharma industry
   indiaIndustry: [
-    'biocon', 'syngene', 'dr reddy', 'sun pharma', 'cipla',
+    'biocon', 'syngene', 'dr reddy', 'sun pharma', 'sun pharmaceutical', 'cipla',
     'serum institute', 'zydus', 'lupin', 'wockhardt', 'piramal',
     'glenmark', 'aurobindo', 'cadila', 'alembic',
+    'jubilant', 'aragen', 'anthem biosciences', 'tata memorial', 'lupin research',
   ],
   // International pharma/biotech (high Pooja alignment)
   international: [
@@ -26,9 +27,15 @@ const INSTITUTIONS = {
     // Asia pharma
     'daiichi sankyo', 'astellas', 'eisai', 'samsung biologics', 'celltrion',
     'chugai', 'ono pharmaceutical', 'shionogi', 'mitsubishi tanabe',
+    'a*star', 'astar', 'csl behring', 'beigene', 'yuhan',
+    'pfizer australia', 'roche singapore', 'gsk singapore',
+    'novartis singapore', 'abbvie singapore', 'bayer asia',
     // Indian industry
-    'dr reddy', 'sun pharma', 'cipla', 'zydus', 'lupin', 'piramal',
+    'dr reddy', 'sun pharma', 'sun pharmaceutical', 'cipla',
+    'zydus', 'lupin', 'piramal',
     'glenmark', 'aurobindo', 'alembic',
+    'jubilant', 'aragen', 'anthem biosciences', 'tata memorial',
+    'serum institute', 'lupin research',
   ],
 };
 const ALL_INSTITUTIONS = [
@@ -107,9 +114,12 @@ function scoreJob(job: any): ScoredJob | null {
     ? Math.max(serverScore, Math.min(localScore, 100))
     : Math.min(localScore, 100);
 
-  // Hard gate: server score alone is not enough — must have at least ONE life-science signal.
-  // This prevents generic Asia/Industry jobs (IT, logistics, finance) from leaking through.
-  if (matchedInstitutions.length === 0 && matchedExpertise.length === 0 && !matchedRole) return null;
+  // Hard gate: must have at least ONE life-science signal.
+  // For industry/india: role match alone is sufficient if score >= 15
+  const hasSignal = matchedInstitutions.length > 0 ||
+                    matchedExpertise.length > 0 ||
+                    !!matchedRole
+  if (!hasSignal) return null
 
   // Soft gate: overall score must be meaningful
   if (blended < 20) return null;
@@ -174,7 +184,7 @@ const INDUSTRY_REGION_COUNTRIES: Record<Exclude<IndustryRegion, 'All'>, string[]
   'Europe': ['uk', 'united kingdom', 'germany', 'switzerland', 'france',
              'denmark', 'ireland', 'netherlands', 'belgium', 'sweden', 'europe'],
   'Asia': ['japan', 'singapore', 'south korea', 'korea', 'china',
-           'shanghai', 'tokyo', 'india'],
+           'shanghai', 'tokyo', 'india', 'australia', 'melbourne', 'sydney'],
 };
 
 function matchesIndustryRegion(job: any, region: IndustryRegion): boolean {
@@ -570,7 +580,10 @@ export const OpportunityMonitor = () => {
           {INDIA_SUBSECTORS.map(sub => (
             <button key={sub} onClick={() => {
               setIndiaSubsector(sub);
-              if (sub === 'Industry') supplementJobs('/monitor/jobs?sector=india&subsector=industry');
+              if (sub === 'Industry') {
+                supplementJobs('/monitor/jobs?sector=india&subsector=industry');
+                supplementJobs('/jobs?candidate=pooja&country=in&track=Industry');
+              }
             }} style={{
               padding: '6px 14px',
               background: indiaSubsector === sub ? 'rgba(236,72,153,0.15)' : '#1e293b',
