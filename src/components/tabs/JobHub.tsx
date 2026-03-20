@@ -174,6 +174,7 @@ export function JobHub() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>(subContext === 'pooja' ? 'list' : 'grid');
   const [sortBy, setSortBy] = useState<'fit' | 'newest' | 'salary' | 'company'>('fit');
   const [apiUsage, setApiUsage] = useState<any>(null);
+  const [timeString, setTimeString] = useState('');
 
   const candidateId = subContext;
 
@@ -236,6 +237,10 @@ export function JobHub() {
       setLoading(false);
     }
   }, [subContext, state.page, isRemote, country, state.lastJobIds, setState]);
+
+  useEffect(() => {
+    setTimeString(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+  }, []);
 
   useEffect(() => {
     if (activePanel === 'hub' && state.jobs.length === 0) fetchJobs();
@@ -428,7 +433,7 @@ export function JobHub() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
             {/* Results count */}
             <span style={{ color: 'var(--text-muted)', fontSize: 13, flex: 1 }}>
-              {state.totalResults || 0} {isRemote || subContext === 'dj' ? 'remote ' : ''} {CP_PROFILES[subContext].role.replace(' Manager', '')} positions · {subContext === 'dj' ? 'USA' : country === 'all' ? 'GLOBAL' : country.toUpperCase()} · Updated {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              {state.totalResults || 0} {isRemote || subContext === 'dj' ? 'remote ' : ''} {CP_PROFILES[subContext].role.replace(' Manager', '')} positions · {subContext === 'dj' ? 'USA' : country === 'all' ? 'GLOBAL' : country.toUpperCase()} · Updated {timeString}
             </span>
 
             {/* Sort dropdown — DJ only */}

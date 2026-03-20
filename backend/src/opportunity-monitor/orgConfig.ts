@@ -9,6 +9,23 @@ export interface MonitorOrg {
   slowFetch?: boolean  // Add extra inter-scan delay to respect org rate limits
 }
 
+// Academic acronyms that map to Indian government research institutes
+const GOVT_RESEARCH_ACRONYMS = /\b(CSIR|TIFR|IISc|NCBS|IGIB)\b/
+
+/**
+ * Returns a display subsector for an org:
+ *  - Indian government research institutes → 'Govt Research'
+ *  - Known pharma/biotech pattern → 'Industry'
+ *  - Everything else falls through to the org's sector label
+ */
+export function getOrgSubsector(org: MonitorOrg): string {
+  if (GOVT_RESEARCH_ACRONYMS.test(org.name)) return 'Govt Research'
+  if (org.sector === 'industry') return 'Industry'
+  if (org.sector === 'india') return 'India Academia'
+  if (org.sector === 'international') return 'International'
+  return 'Academia'
+}
+
 // ─── webSearch is ONLY used for orgs with no free source ─────────────────────
 // Max 15 websearch orgs. All others use RSS or USAJobs (free, no AI cost).
 // Cost: ~60 webSearch calls/month @ ~$0.03/call = ~$1-2/month for monitor

@@ -1,9 +1,7 @@
-import Anthropic from '@anthropic-ai/sdk'
 import { pool } from '../db/client'
 import { MONITOR_ORGS, MonitorOrg } from './orgConfig'
+import { geminiGroundedSearch } from '../services/geminiClient'
 import crypto from 'crypto'
-
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
 // ─── Pooja-Core Profile ────────────────────────────────────────────────────
 // Rank 1 job title keywords — positions Pooja is actually targeting
@@ -90,12 +88,26 @@ function isRelevantLocation(location: string = ''): boolean {
   return RELEVANT_LOCATIONS.some(l => loc.includes(l))
 }
 
-// Hard filter: returns false for roles Pooja should not see
-// Exception: "assistant professor" is always allowed despite containing 'assistant'
+// Regex: reject titles where a non-life-science discipline precedes Scientist/Researcher
+const NOISE_DISCIPLINE_RE = /\b(data|market(?:ing)?|software|i\.?t\.?|finance|financial|social|computer|machine\s+learning|analyst)\s+(scientist|researcher)\b/i
+
+// Regex: require at least one life-science anchor in the title
+const LIFESCI_ANCHOR_RE = /\b(metabolism|molecular|biotech|cardiovascular|immunology|ph\.?d|postdoc(?:toral)?)\b/i
+
+// Hard filter: returns false for roles Pooja should not see.
+// Exception: "assistant professor" is always allowed despite containing 'assistant'.
 function passesHardFilter(title: string): boolean {
+  if (/assistant\s+professor/i.test(title)) return true
+
+  // Reject non-life-science "X Scientist / X Researcher" roles
+  if (NOISE_DISCIPLINE_RE.test(title)) return false
+
+  // Reject legacy hard-filter terms (technician, intern, junior, admin, coordinator)
   const t = title.toLowerCase()
-  if (t.includes('assistant professor')) return true
-  return !HARD_FILTER_TERMS.some(term => t.includes(term))
+  if (HARD_FILTER_TERMS.some(term => t.includes(term))) return false
+
+  // Require at least one life-science anchor
+  return LIFESCI_ANCHOR_RE.test(title)
 }
 
 // Pooja suitability scorer (0–5 scale). Jobs must score ≥ 3 to be stored.

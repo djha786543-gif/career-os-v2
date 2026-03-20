@@ -6,12 +6,15 @@
  *   - Prep Vault AI generator
  *   - Learning Track generator
  *   - AI Assist (cover letter, interview prep, skill gap)
+ *   - Grounded web search (opportunity monitor)
  *
  * Requires env var: GEMINI_API_KEY
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
 import { GoogleGenerativeAI } from '@google/generative-ai';
+
+const GEMINI_MODEL = 'gemini-3.0-flash';
 
 let _genAI: GoogleGenerativeAI | null = null;
 
@@ -23,7 +26,7 @@ function getGenAI(): GoogleGenerativeAI {
 }
 
 /**
- * Generate content using Gemini 2.5 Flash.
+ * Generate content using Gemini 3.0 Flash.
  * @param systemPrompt  System-level instructions
  * @param userPrompt    User message / task
  * @param maxTokens     Max output tokens (default 2000)
@@ -35,7 +38,7 @@ export async function geminiGenerate(
 ): Promise<string> {
   const genAI = getGenAI();
   const model = genAI.getGenerativeModel({
-    model: 'gemini-2.0-flash-lite',
+    model: GEMINI_MODEL,
     systemInstruction: systemPrompt,
     generationConfig: { maxOutputTokens: maxTokens },
   });
@@ -43,4 +46,25 @@ export async function geminiGenerate(
   const result = await model.generateContent(userPrompt);
   const response = result.response;
   return response.text();
+}
+
+/**
+ * Grounded web search using Gemini 3.0 Flash with Google Search tool.
+ * Used by the opportunity monitor to find live job postings.
+ * @param prompt   Full search prompt instructing Gemini what to find
+ * @param maxTokens Max output tokens (default 2000)
+ */
+export async function geminiGroundedSearch(
+  prompt: string,
+  maxTokens = 2000,
+): Promise<string> {
+  const genAI = getGenAI();
+  const model = genAI.getGenerativeModel({
+    model: GEMINI_MODEL,
+    tools: [{ googleSearch: {} }],
+    generationConfig: { maxOutputTokens: maxTokens },
+  });
+
+  const result = await model.generateContent(prompt);
+  return result.response.text();
 }
