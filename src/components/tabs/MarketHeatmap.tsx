@@ -6,16 +6,18 @@ export function MarketHeatmap() {
   const { profile } = useProfile();
   const data = PROFILES[profile];
   const [animate, setAnimate] = useState(false);
+  const [today, setToday] = useState('');
 
   useEffect(() => {
     setAnimate(true);
+    setToday(new Date().toLocaleDateString());
   }, [profile]);
 
   return (
     <div style={s.container}>
       <div style={s.header}>
         <h2 style={s.title}>MARKET HEATMAP / <span style={{ color: 'var(--accent-active)' }}>{profile.toUpperCase()}</span></h2>
-        <div style={s.updated}>Last updated: {new Date().toLocaleDateString()}</div>
+        <div style={s.updated}>Last updated: {today}</div>
       </div>
 
       <div style={s.grid}>
