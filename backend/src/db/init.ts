@@ -154,11 +154,14 @@ export async function dbInit(): Promise<void> {
         ON monitor_scans(org_id, scanned_at DESC);
 
       -- ─── Idempotent column migrations (safe to run every boot) ───────────────
-      -- Adds job_board to tables created before this column existed in the schema
-      ALTER TABLE jobs         ADD COLUMN IF NOT EXISTS job_board TEXT         DEFAULT 'Adzuna';
-      ALTER TABLE monitor_jobs ADD COLUMN IF NOT EXISTS job_board VARCHAR(100);
-      ALTER TABLE kanban_cards ADD COLUMN IF NOT EXISTS job_board VARCHAR(100);
+      ALTER TABLE jobs         ADD COLUMN IF NOT EXISTS job_board    TEXT         DEFAULT 'Adzuna';
+      ALTER TABLE monitor_jobs ADD COLUMN IF NOT EXISTS job_board    VARCHAR(100);
+      ALTER TABLE kanban_cards ADD COLUMN IF NOT EXISTS job_board    VARCHAR(100);
       ALTER TABLE monitor_jobs ADD COLUMN IF NOT EXISTS high_suitability BOOLEAN DEFAULT FALSE;
+      -- match_score: Pooja profile-based 0-100 score stored on every monitor_job
+      ALTER TABLE monitor_jobs ADD COLUMN IF NOT EXISTS match_score  SMALLINT DEFAULT 0;
+      CREATE INDEX IF NOT EXISTS idx_monitor_jobs_score
+        ON monitor_jobs(sector, match_score DESC, detected_at DESC);
     `);
     console.log('✅ DB tables verified / created');
   } catch (err) {

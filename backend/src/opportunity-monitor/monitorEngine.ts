@@ -3,134 +3,194 @@ import { MONITOR_ORGS, MonitorOrg } from './orgConfig'
 import { geminiGroundedSearch } from '../services/geminiClient'
 import crypto from 'crypto'
 
-// ─── Pooja-Core Profile ────────────────────────────────────────────────────
-// Rank 1 job title keywords — positions Pooja is actually targeting
-const POOJA_RANK1_KEYWORDS = [
-  'assistant professor', 'scientist', 'investigator', 'research scientist',
-  'group leader', 'tenure track', 'tenure-track', 'faculty', 'staff scientist',
-  'senior scientist', 'principal scientist', 'research fellow'
-]
+// ─────────────────────────────────────────────────────────────────────────────
+// DR. POOJA CHOUBEY — Profile-Based Matching Engine
+// Built from her actual CV (January 2026):
+//   PhD Molecular Genetics (Delhi), Postdoc Tulane + Lundquist/UCLA
+//   Co-first author Nature Communications (IF 15.7) — PTRH2/cardiomyopathy
+//   Target: Research Scientist / Sr Scientist / Asst Professor / Group Leader
+//   Salary floor: $95k USD | ₹22 LPA India
+// ─────────────────────────────────────────────────────────────────────────────
 
-// Technical domain anchors — Pooja's core expertise areas
-const TECHNICAL_ANCHORS = [
-  'molecular', 'genetics', 'cardiovascular', 'genomics', 'bioinformatics',
-  'cell biology', 'molecular biology', 'cardiac', 'transcriptomics',
-  'proteomics', 'crispr', 'rna', 'heart'
+// DOMAIN ANCHORS — Pooja's core research areas (scored by specificity)
+// Each tuple: [regex, points] — max 40 pts total from domain
+const DOMAIN_TIERS: Array<[RegExp, number]> = [
+  // Tier A — her exact specialisation (15 pts)
+  [/\b(cardiovascular|cardiomyopathy|peripartum|cardiac|heart failure|heart disease|cardiomyocyte|cardio)\b/i, 15],
+  // Tier B — primary model systems (10 pts)
+  [/\b(transgenic|knockout|cre.lox|conditional knockout|mouse model|in.vivo|genetically modified)\b/i, 10],
+  // Tier C — her genomics expertise (8 pts)
+  [/\b(rna.?seq|transcriptom|single.cell|scRNA|rnaseq|deseq|edger|bulk RNA)\b/i, 8],
+  // Tier D — her other research domains (4 pts each, capped at 7)
+  [/\b(cellular senescence|senescence|aging|ageing|SASP|p21|p16)\b/i, 4],
+  [/\b(heme|heme oxygenase|hmox|heme metabolism|molecular genetics|prolactin|placenta)\b/i, 3],
 ]
+const DOMAIN_MAX = 40
 
-// Hard filter: discard these title terms UNLESS the title is 'Assistant Professor'
+// TECHNIQUE ANCHORS — her specific wet-lab skills (5 pts each, max 30 pts)
+const TECHNIQUE_KEYWORDS = [
+  'echocardiography', 'echo', 'langendorff', 'ekg', 'electrocardiography',
+  'immunohistochemistry', 'ihc', 'immunofluorescence', 'confocal',
+  'western blot', 'flow cytometry', 'elisa', 'tunel', 'beta-galactosidase',
+  'rna-seq', 'bioinformatics', 'ipa', 'ingenuity pathway', 'pathway analysis',
+  'genomics', 'cell culture', 'crispr', 'gene expression', 'transcriptomics',
+  'hydroxyproline', 'cardiac fibrosis', 'senescence assay',
+]
+const TECHNIQUE_PTS = 5
+const TECHNIQUE_MAX = 30
+
+// TITLE/SENIORITY MATCH — target roles only (20 pts)
+// Pooja is targeting Equivalent+ positions — NOT postdocs (except academia international)
+const SENIOR_SCIENTIST_RE = /\b(senior scientist|principal scientist|staff scientist|group leader|investigator|associate investigator|research scientist ii|research scientist iii)\b/i
+const FACULTY_RE = /\b(assistant professor|associate professor|faculty|tenure.track|tenure track)\b/i
+const SCIENTIST_RE = /\b(scientist\b|research scientist)\b/i
+const SCIENTIST_LEVEL_RE = /\b(scientist [I]{1,3}|scientist [1-3]|scientist [A-E]|scientist [IV]+)\b/i
+
+// Hard filter: reject roles that are clearly not suitable for Pooja
 const HARD_FILTER_TERMS = [
-  'technician', 'postdoc', 'postdoctoral', 'intern', 'internship',
-  'junior', 'admin', 'administrative', 'coordinator', 'assistant'
+  'technician', 'intern', 'internship', 'junior', 'admin', 'administrative',
+  'coordinator', 'lab manager', 'lab tech'
 ]
+// Exception: "assistant" is blocked UNLESS it's "assistant professor"
+// Postdoc is blocked EXCEPT for academia/international where it still has value
+const NOISE_DISCIPLINE_RE = /\b(data|market(?:ing)?|software|i\.?t\.?|finance|financial|social|computer|machine\s+learning|analyst|clinical\s+data)\s+(scientist|researcher)\b/i
+const LIFESCI_ANCHOR_RE = /\b(metabolism|molecular|biotech|cardiovascular|immunology|ph\.?d|biology|biological|biochem(?:istry|ical)?|genomics|genetics|genetic|research|faculty|staff|science|sciences|investigator|oncology|neuroscience|microbiology|virology|pharmacology|pharma(?:ceutical)?|proteomics|transcriptomics|bioinformatics|crispr|rna|sequencing|cancer|cardiac|immunobiology|epigenetics|haematology|hematology|cell biology|molecular genetics)\b/i
+const GARBAGE_TITLE_RE = /^\$|^\d+\s+(job|position|opening|result|postdoc|researcher)/i
 
-// Tier 1 orgs for +1 suitability bonus
+// Tier 1 org prestige bonus (10 pts)
 const TIER1_ORG_NAMES = new Set([
   'Harvard Medical School', 'Stanford Medicine', 'MIT Biology', 'UCSF',
   'Broad Institute', 'Johns Hopkins Medicine', 'Mayo Clinic Research',
   'Salk Institute', 'Columbia University Medical Center', 'Yale School of Medicine',
   'Gladstone Institutes', 'Scripps Research', 'UT Southwestern Medical Center',
   'Baylor College of Medicine', 'Washington University St Louis', 'Weill Cornell Medicine',
+  'Duke University Medical Center', 'University of Michigan Medical School',
+  'Vanderbilt University Medical Center', 'University of Pennsylvania Perelman',
+  'Northwestern University Feinberg',
   'NIH NHLBI', 'NIH NIGMS', 'NIH NCI',
   'Karolinska Institute', 'ETH Zurich', 'EMBL Jobs', 'Francis Crick Institute',
-  'Wellcome Sanger Institute', 'Max Planck Heart and Lung', 'Roche',
+  'Wellcome Sanger Institute', 'Max Planck Heart and Lung',
+  'Max Planck Institute for Molecular Biomedicine', 'Hubrecht Institute',
   'Genentech', 'Regeneron', 'Amgen', 'Pfizer Research', 'Merck Research',
-  'NCBS Bangalore', 'IISc Bangalore', 'TIFR Mumbai'
+  'Roche', 'GlaxoSmithKline GSK', 'AstraZeneca US', 'Novartis US', 'Moderna',
+  'NCBS Bangalore', 'IISc Bangalore', 'TIFR Mumbai',
+  'Baker Heart Institute', 'Victor Chang Cardiac Research Institute',
+  'Duke-NUS Medical School',
 ])
 
-// Pooja-relevant job title and domain keywords (used for legacy relevance scoring)
-const RELEVANT_KEYWORDS = [
-  'research scientist', 'research associate',
-  'senior scientist', 'staff scientist', 'principal scientist',
-  'cardiovascular', 'molecular biology', 'cell biology', 'genomics',
-  'sequencing', 'crispr', 'rna', 'cardiac', 'heart failure',
-  'cardiomyopathy', 'transcriptomics', 'proteomics', 'bioinformatics',
-  'research fellow', 'scientist i', 'scientist ii', 'scientist iii',
-  'associate scientist', 'assistant professor', 'group leader',
-  'investigator', 'faculty', 'tenure track'
-]
-
-// RECOMMENDATION 1: Strict location filtering
+// ─── Location Filter ──────────────────────────────────────────────────────────
 const RELEVANT_LOCATIONS = [
-  'usa', 'united states', 'new york', 'boston', 'san francisco',
-  'seattle', 'chicago', 'houston', 'los angeles', 'bethesda',
-  'cambridge, ma', 'cambridge ma', 'la jolla', 'san diego',
+  'usa', 'united states', 'new york', 'boston', 'san francisco', 'seattle',
+  'chicago', 'houston', 'los angeles', 'bethesda', 'cambridge, ma',
+  'cambridge ma', 'la jolla', 'san diego', 'torrance', 'baltimore',
+  'durham', 'nashville', 'philadelphia', 'ann arbor',
   'uk', 'united kingdom', 'london', 'edinburgh', 'oxford',
-  'cambridge, uk', 'cambridge uk', 'manchester', 'glasgow',
-  'germany', 'berlin', 'heidelberg', 'munich', 'frankfurt',
+  'cambridge, uk', 'cambridge uk', 'manchester', 'glasgow', 'hinxton',
+  'germany', 'berlin', 'heidelberg', 'munich', 'frankfurt', 'cologne',
   'sweden', 'stockholm', 'gothenburg',
   'switzerland', 'zurich', 'basel', 'geneva',
+  'netherlands', 'amsterdam', 'utrecht',
+  'france', 'paris',
+  'denmark', 'copenhagen',
+  'portugal', 'lisbon',
   'canada', 'toronto', 'montreal', 'vancouver',
   'singapore',
-  'australia', 'melbourne', 'sydney',
-  'india', 'bangalore', 'bengaluru', 'mumbai', 'delhi',
-  'hyderabad', 'pune', 'faridabad', 'trivandrum', 'kolkata'
+  'australia', 'melbourne', 'sydney', 'brisbane',
+  'india', 'bangalore', 'bengaluru', 'mumbai', 'delhi', 'new delhi',
+  'hyderabad', 'pune', 'faridabad', 'trivandrum', 'kolkata', 'chennai',
+  'gurgaon', 'gurugram', 'noida', 'chandigarh', 'tirupati',
 ]
 
-// RECOMMENDATION 8: Relevance scoring instead of binary match
-function relevanceScore(title: string, description: string = ''): number {
-  const text = (title + ' ' + description).toLowerCase()
-  let score = 0
-  for (const kw of RELEVANT_KEYWORDS) {
-    if (text.includes(kw.toLowerCase())) score++
-  }
-  return score
-}
-
-function isRelevant(title: string, description: string = ''): boolean {
-  return relevanceScore(title, description) >= 1
-}
-
-// RECOMMENDATION 1: Fixed location filter — require explicit location match
 function isRelevantLocation(location: string = ''): boolean {
   if (!location || location.trim() === '') return false
   const loc = location.toLowerCase()
   return RELEVANT_LOCATIONS.some(l => loc.includes(l))
 }
 
-// Regex: reject titles where a non-life-science discipline precedes Scientist/Researcher
-const NOISE_DISCIPLINE_RE = /\b(data|market(?:ing)?|software|i\.?t\.?|finance|financial|social|computer|machine\s+learning|analyst)\s+(scientist|researcher)\b/i
-
-// Regex: require at least one life-science anchor in the title.
-const LIFESCI_ANCHOR_RE = /\b(metabolism|molecular|biotech|cardiovascular|immunology|ph\.?d|postdoc(?:toral)?|biology|biological|biochem(?:istry|ical)?|genomics|genetics|genetic|research|faculty|staff|science|sciences|investigator|oncology|neuroscience|microbiology|virology|pharmacology|pharma(?:ceutical)?|proteomics|transcriptomics|bioinformatics|crispr|rna|sequencing|cancer|cardiac|immunobiology|epigenetics|haematology|hematology)\b/i
-
-// Regex: reject garbage titles scraped from job-board search result pages
-// e.g. "179 Postdoctoral jobs in USA", "$49k", "Join Our Team", "Post"
-const GARBAGE_TITLE_RE = /^\$|^\d+\s+(job|position|opening|result|postdoc|researcher)/i
-
-// Hard filter: returns false for roles Pooja should not see.
-// Exception: "assistant professor" is always allowed despite containing 'assistant'.
-function passesHardFilter(title: string): boolean {
+// ─── Hard Filter ─────────────────────────────────────────────────────────────
+function passesHardFilter(title: string, sector?: string): boolean {
   const t = title.trim()
-
-  // Reject obviously garbage scraped titles
   if (t.length < 6) return false
   if (GARBAGE_TITLE_RE.test(t)) return false
-  // Reject titles that are just search-result counts or navigation text
   if (/\d+\s+(cardiovascular|postdoc|molecular|research)\s+jobs?\b/i.test(t)) return false
   if (/\bjobs?\s+in\s+(north america|united states|usa|uk|europe|global)\b/i.test(t)) return false
 
+  // Assistant Professor always passes
   if (/assistant\s+professor/i.test(t)) return true
 
-  // Reject non-life-science "X Scientist / X Researcher" roles
+  // Postdoc: allowed for academia/international sectors only
+  if (/\b(postdoc|postdoctoral)\b/i.test(t)) {
+    return sector === 'academia' || sector === 'international'
+  }
+
   if (NOISE_DISCIPLINE_RE.test(t)) return false
 
-  // Reject legacy hard-filter terms (technician, intern, junior, admin, coordinator)
   const tl = t.toLowerCase()
+  // Block "assistant" unless it precedes "professor" (already caught above)
+  if (tl.includes('assistant') && !tl.includes('assistant professor')) return false
   if (HARD_FILTER_TERMS.some(term => tl.includes(term))) return false
 
-  // Require at least one life-science anchor
   return LIFESCI_ANCHOR_RE.test(t)
 }
 
-// Pooja suitability scorer (0–5 scale). Jobs must score ≥ 3 to be stored.
-function poojaSuitabilityScore(title: string, snippet: string, orgName: string): number {
+// ─── Relevance gate (minimum bar to even consider a job) ─────────────────────
+function isRelevant(title: string, description: string = ''): boolean {
+  const text = (title + ' ' + description).toLowerCase()
+  return LIFESCI_ANCHOR_RE.test(text) || SCIENTIST_RE.test(title)
+}
+
+// ─── POOJA MATCH SCORE — 0 to 100 ────────────────────────────────────────────
+// Grounded in her actual CV profile. This score is stored in the DB and
+// shown to her in the UI so she can filter to only high-confidence matches.
+//
+// Breakdown:
+//   Domain match   : 0–40 pts  (cardiovascular, mouse models, RNA-seq, senescence)
+//   Technique match: 0–30 pts  (echo, IHC, western blot, bioinformatics, Langendorff)
+//   Title/level    : 0–20 pts  (Scientist, Faculty, Group Leader — NOT postdoc for industry)
+//   Org prestige   : 0–10 pts  (Tier 1 research institutions)
+function poojaMatchScore(title: string, snippet: string, orgName: string, sector?: string): number {
   const text = (title + ' ' + snippet).toLowerCase()
+  const titleLower = title.toLowerCase()
   let score = 0
-  if (POOJA_RANK1_KEYWORDS.some(kw => text.includes(kw))) score += 2
-  if (TECHNICAL_ANCHORS.some(anchor => text.includes(anchor))) score += 2
-  if (TIER1_ORG_NAMES.has(orgName)) score += 1
-  return score
+
+  // 1. Domain match (max 40)
+  let domainScore = 0
+  for (const [re, pts] of DOMAIN_TIERS) {
+    if (re.test(text)) domainScore += pts
+  }
+  score += Math.min(domainScore, DOMAIN_MAX)
+
+  // 2. Technique match (max 30, 5 pts each)
+  let techPts = 0
+  for (const kw of TECHNIQUE_KEYWORDS) {
+    if (text.includes(kw.toLowerCase())) {
+      techPts += TECHNIQUE_PTS
+      if (techPts >= TECHNIQUE_MAX) break
+    }
+  }
+  score += Math.min(techPts, TECHNIQUE_MAX)
+
+  // 3. Title/level match (max 20)
+  // For industry sector: do NOT reward postdoc titles
+  const isIndustry = sector === 'industry' || sector === 'india'
+  if (FACULTY_RE.test(title)) {
+    score += 20
+  } else if (SENIOR_SCIENTIST_RE.test(title)) {
+    score += 20
+  } else if (SCIENTIST_LEVEL_RE.test(title)) {
+    score += 16
+  } else if (SCIENTIST_RE.test(title)) {
+    score += 14
+  } else if (/\b(research fellow|group leader|investigator)\b/i.test(title)) {
+    score += 18
+  } else if (!isIndustry && /\b(postdoc|postdoctoral)\b/i.test(titleLower)) {
+    score += 8  // postdoc still has value for academia
+  }
+
+  // 4. Org prestige bonus (max 10)
+  if (TIER1_ORG_NAMES.has(orgName)) score += 10
+
+  return Math.min(score, 100)
 }
 
 // Filter out generic social/landing-page URLs that don't point to actual job postings
@@ -175,40 +235,47 @@ interface ScannedJob {
   snippet: string
   postedDate?: string
   contentHash: string
-  relevanceScore: number
+  matchScore: number      // 0–100 based on Pooja's CV profile
   highSuitability: boolean
 }
 
 // websearch via Gemini grounded search — finds live individual job postings
 async function scanViaWebSearch(org: MonitorOrg): Promise<ScannedJob[]> {
   try {
-    const prompt = `You are a job search assistant. Search the web RIGHT NOW for currently open job positions at ${org.name}.
+    const isIndustry = org.sector === 'industry' || org.sector === 'india'
+    const roleGuidance = isIndustry
+      ? 'Focus on: Research Scientist, Senior Scientist, Principal Scientist, Scientist I/II/III, Group Leader, Investigator. Do NOT include postdoctoral positions.'
+      : 'Include: Research Scientist, Postdoctoral Fellow/Associate, Assistant Professor, Faculty, Group Leader, Staff Scientist.'
+
+    const prompt = `You are a life-sciences job search expert. Search the web RIGHT NOW for currently open positions at ${org.name} that match this candidate profile:
+
+Candidate: Dr. Pooja Choubey — PhD Molecular Genetics, 3+ years postdoc experience in cardiovascular biology, peripartum cardiomyopathy, transgenic mouse models (Cre-lox), RNA-seq/transcriptomics, cellular senescence, echocardiography, Langendorff perfusion, immunohistochemistry, confocal microscopy. Co-first author Nature Communications 2025 (IF 15.7).
 
 Search query: "${org.searchQuery}"
 
 Rules:
-- Find ONLY real, individual job postings (not search result pages, not salary listings, not articles)
-- Posted in 2025 or 2026 only
-- Locations: USA, UK, Germany, Sweden, Switzerland, Canada, Singapore, Australia, or India ONLY
-- Each entry must have a direct apply URL to a real job posting page
-- Do NOT include: news articles, person profiles, annual reports, generic "jobs page" links
+- ONLY real individual job postings currently open (not search result pages, salary pages, news articles, person profiles)
+- Posted in 2025 or 2026 only — NO expired listings
+- ${roleGuidance}
+- Locations: USA, UK, Germany, Sweden, Switzerland, Netherlands, France, Denmark, Canada, Singapore, Australia, or India ONLY
+- Each entry MUST have a direct URL to the actual job posting (not the org homepage)
 
-Return ONLY a valid JSON array with no markdown, no explanation, no preamble:
+Return ONLY a valid JSON array, no markdown, no explanation:
 [
   {
-    "title": "exact job title as posted (e.g. Postdoctoral Fellow – Cardiovascular Biology)",
-    "location": "City, Country (specific — not just 'Remote' or 'Global')",
+    "title": "exact job title as posted",
+    "location": "City, Country",
     "applyUrl": "https://direct-link-to-job-posting",
-    "snippet": "brief role description under 150 characters",
+    "snippet": "2-sentence description of role and key requirements (max 200 chars)",
     "postedDate": "YYYY-MM-DD or Recent"
   }
 ]
 
-If no individual open positions are found, return: []`
+If no matching open positions are found, return: []`
 
     const raw = await withTimeout(
-      geminiGroundedSearch(prompt, 2000),
-      25000,
+      geminiGroundedSearch(prompt, 2500),
+      30000,
       `webSearch for ${org.name}`
     )
 
@@ -216,7 +283,7 @@ If no individual open positions are found, return: []`
     const start = cleaned.indexOf('[')
     const end = cleaned.lastIndexOf(']')
     if (start === -1 || end === -1) {
-      console.log(`[Monitor] webSearch no JSON array found for ${org.name}`)
+      console.log(`[Monitor] webSearch no JSON for ${org.name}`)
       return []
     }
 
@@ -234,22 +301,25 @@ If no individual open positions are found, return: []`
       .filter((j: any) => j.title && typeof j.title === 'string' && j.title.trim().length >= 6)
       .filter((j: any) => isRelevant(j.title, j.snippet))
       .filter((j: any) => j.location && isRelevantLocation(j.location))
-      .filter((j: any) => passesHardFilter(j.title))
-      .filter((j: any) => poojaSuitabilityScore(j.title, j.snippet || '', org.name) >= 2)
-      .map((j: any) => ({
-        externalId: hashContent(j.title, org.name, j.location || ''),
-        title: j.title.trim(),
-        orgName: org.name,
-        location: j.location,
-        country: org.country,
-        applyUrl: extractCanonicalUrl(j.applyUrl || '', org.careersUrl || ''),
-        snippet: (j.snippet || '').slice(0, 200),
-        postedDate: j.postedDate || 'Recent',
-        contentHash: hashContent(j.title, org.name, j.location || ''),
-        relevanceScore: relevanceScore(j.title, j.snippet),
-        highSuitability: true
-      }))
-      .sort((a: ScannedJob, b: ScannedJob) => b.relevanceScore - a.relevanceScore)
+      .filter((j: any) => passesHardFilter(j.title, org.sector))
+      .map((j: any) => {
+        const ms = poojaMatchScore(j.title, j.snippet || '', org.name, org.sector)
+        return {
+          externalId: hashContent(j.title, org.name, j.location || ''),
+          title: j.title.trim(),
+          orgName: org.name,
+          location: j.location,
+          country: org.country,
+          applyUrl: extractCanonicalUrl(j.applyUrl || '', org.careersUrl || ''),
+          snippet: (j.snippet || '').slice(0, 200),
+          postedDate: j.postedDate || 'Recent',
+          contentHash: hashContent(j.title, org.name, j.location || ''),
+          matchScore: ms,
+          highSuitability: ms >= 40
+        }
+      })
+      .filter((j: ScannedJob) => j.matchScore >= 20)   // minimum bar
+      .sort((a: ScannedJob, b: ScannedJob) => b.matchScore - a.matchScore)
 
   } catch (err) {
     console.error(`[Monitor] webSearch failed for ${org.name}:`, (err as Error).message)
@@ -284,19 +354,14 @@ async function scanViaUSAJobs(org: MonitorOrg): Promise<ScannedJob[]> {
     return items
       .filter((item: any) => {
         const title = item.MatchedObjectDescriptor?.PositionTitle || ''
-        return isRelevant(title) && passesHardFilter(title)
-      })
-      .filter((item: any) => {
-        const d = item.MatchedObjectDescriptor
-        const title = d.PositionTitle || ''
-        const snippet = (d.UserArea?.Details?.JobSummary || '').slice(0, 150)
-        return poojaSuitabilityScore(title, snippet, org.name) >= 3
+        return isRelevant(title) && passesHardFilter(title, org.sector)
       })
       .map((item: any) => {
         const d = item.MatchedObjectDescriptor
         const title = d.PositionTitle || ''
         const location = d.PositionLocation?.[0]?.LocationName || 'Washington DC, USA'
-        const snippet = (d.UserArea?.Details?.JobSummary || '').slice(0, 150)
+        const snippet = (d.UserArea?.Details?.JobSummary || '').slice(0, 200)
+        const ms = poojaMatchScore(title, snippet, d.OrganizationName || org.name, org.sector)
         return {
           externalId: d.PositionID || hashContent(title, org.name, location),
           title,
@@ -307,10 +372,12 @@ async function scanViaUSAJobs(org: MonitorOrg): Promise<ScannedJob[]> {
           snippet,
           postedDate: d.PublicationStartDate?.split('T')[0] || 'Recent',
           contentHash: hashContent(title, org.name, location),
-          relevanceScore: relevanceScore(title),
-          highSuitability: true
+          matchScore: ms,
+          highSuitability: ms >= 40
         }
       })
+      .filter((j: ScannedJob) => j.matchScore >= 20)
+      .sort((a: ScannedJob, b: ScannedJob) => b.matchScore - a.matchScore)
   } catch (err) {
     console.error(`[Monitor] USAJobs failed for ${org.name}:`, (err as Error).message)
     return scanViaWebSearch(org)
@@ -350,14 +417,13 @@ async function scanViaRSS(org: MonitorOrg): Promise<ScannedJob[]> {
       const pubDate = item.match(/<pubDate>(.*?)<\/pubDate>/)?.[1] || 'Recent'
 
       if (!isRelevant(title, desc)) continue
-      if (!passesHardFilter(title)) continue
+      if (!passesHardFilter(title, org.sector)) continue
 
       const location = org.country
-
       if (!isRelevantLocation(location)) continue
 
-      const suitability = poojaSuitabilityScore(title, desc, org.name)
-      if (suitability < 3) continue
+      const ms = poojaMatchScore(title, desc, org.name, org.sector)
+      if (ms < 20) continue
 
       items.push({
         externalId: hashContent(title, org.name, location),
@@ -369,8 +435,8 @@ async function scanViaRSS(org: MonitorOrg): Promise<ScannedJob[]> {
         snippet: desc,
         postedDate: pubDate,
         contentHash: hashContent(title, org.name, location),
-        relevanceScore: relevanceScore(title, desc),
-        highSuitability: suitability >= 3
+        matchScore: ms,
+        highSuitability: ms >= 40
       })
     }
 
@@ -379,7 +445,7 @@ async function scanViaRSS(org: MonitorOrg): Promise<ScannedJob[]> {
       return scanViaWebSearch(org)
     }
 
-    return items.sort((a, b) => b.relevanceScore - a.relevanceScore)
+    return items.sort((a, b) => b.matchScore - a.matchScore)
 
   } catch (err) {
     console.error(`[Monitor] RSS failed for ${org.name}:`, (err as Error).message)
@@ -420,12 +486,13 @@ export async function scanOrg(orgId: string, org: MonitorOrg): Promise<{
         `INSERT INTO monitor_jobs
            (org_id, external_id, title, org_name, location, country,
             sector, apply_url, snippet, posted_date, content_hash,
-            high_suitability, is_new, is_active, last_seen_at)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,true,true,NOW())
+            high_suitability, match_score, is_new, is_active, last_seen_at)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,true,true,NOW())
          ON CONFLICT (org_id, external_id) DO UPDATE
            SET is_active = true,
                last_seen_at = NOW(),
                high_suitability = $12,
+               match_score = $13,
                is_new = CASE
                  WHEN monitor_jobs.content_hash != $11 THEN true
                  ELSE monitor_jobs.is_new
@@ -435,7 +502,7 @@ export async function scanOrg(orgId: string, org: MonitorOrg): Promise<{
         [orgId, job.externalId, job.title, job.orgName,
          job.location, job.country, org.sector,
          job.applyUrl, job.snippet, job.postedDate, job.contentHash,
-         job.highSuitability]
+         job.highSuitability, job.matchScore]
       )
       if (result.rows[0]?.inserted) newCount++
     } catch (err) {

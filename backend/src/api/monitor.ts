@@ -9,16 +9,23 @@ const router = Router()
 const MAX_LIMIT = 100
 const DEFAULT_LIMIT = 50
 
-// GET /api/monitor/jobs?sector=academia&isNew=true&limit=50&offset=0
+// GET /api/monitor/jobs?sector=academia&isNew=true&minScore=40&limit=50&offset=0
 router.get('/jobs', async (req: Request, res: Response) => {
   try {
     const sector = req.query.sector as string | undefined
     const isNew = req.query.isNew === 'true'
+    const minScore = Math.max(0, parseInt(req.query.minScore as string || '0'))
     const limit = Math.min(parseInt(req.query.limit as string || String(DEFAULT_LIMIT)), MAX_LIMIT)
     const offset = Math.max(parseInt(req.query.offset as string || '0'), 0)
 
+    // Industry and India: strict 45-day recency (no expired listings)
+    // Academia/International: 90-day window (faculty cycles are slower)
+    const isIndustryOrIndia = sector === 'industry' || sector === 'india'
+    const recencyDays = isIndustryOrIndia ? 45 : 90
+
     const params: any[] = []
-    let where = 'WHERE j.is_active = true'
+    let where = `WHERE j.is_active = true
+      AND j.detected_at > NOW() - INTERVAL '${recencyDays} days'`
 
     if (sector && ['academia','industry','international','india'].includes(sector)) {
       params.push(sector)
@@ -26,6 +33,10 @@ router.get('/jobs', async (req: Request, res: Response) => {
     }
     if (isNew) {
       where += ` AND j.is_new = true`
+    }
+    if (minScore > 0) {
+      params.push(minScore)
+      where += ` AND j.match_score >= $${params.length}`
     }
 
     params.push(limit)
@@ -36,7 +47,7 @@ router.get('/jobs', async (req: Request, res: Response) => {
        FROM monitor_jobs j
        JOIN monitor_orgs o ON j.org_id = o.id
        ${where}
-       ORDER BY j.is_new DESC, j.detected_at DESC
+       ORDER BY j.match_score DESC NULLS LAST, j.is_new DESC, j.detected_at DESC
        LIMIT $${params.length - 1}
        OFFSET $${params.length}`,
       params
@@ -44,8 +55,8 @@ router.get('/jobs', async (req: Request, res: Response) => {
 
     const counts = await pool.query(
       `SELECT sector,
-         COUNT(*) FILTER (WHERE is_active = true) as total,
-         COUNT(*) FILTER (WHERE is_new = true AND is_active = true) as new_count
+         COUNT(*) FILTER (WHERE is_active = true AND detected_at > NOW() - INTERVAL '90 days') as total,
+         COUNT(*) FILTER (WHERE is_new = true AND is_active = true AND detected_at > NOW() - INTERVAL '90 days') as new_count
        FROM monitor_jobs
        GROUP BY sector`
     )
