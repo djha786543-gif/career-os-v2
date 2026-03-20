@@ -1,4 +1,9 @@
-export const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://career-os-backend-production.up.railway.app/api'
+// Normalise: strip trailing slash and any trailing /api, then always append /api.
+// This makes the URL correct whether NEXT_PUBLIC_API_URL is set with or without /api.
+const _raw = (process.env.NEXT_PUBLIC_API_URL || 'https://career-os-backend-production.up.railway.app')
+  .replace(/\/+$/, '')        // remove trailing slashes
+  .replace(/\/api$/, '');     // remove /api suffix if already present
+export const API_BASE = `${_raw}/api`
 
 export const api = {
   get: (path: string) => 
