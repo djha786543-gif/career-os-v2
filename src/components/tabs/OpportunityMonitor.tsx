@@ -373,7 +373,6 @@ export const OpportunityMonitor = () => {
       results.forEach(res => {
         if (res.status === 'fulfilled') {
           const data = res.value;
-          // Surface broadened-search notice from monitor API
           if (data?.broadened) setBroadenedNotice(data.broadenedReason ?? 'Showing broadened results');
           const list: any[] = Array.isArray(data?.jobs) ? data.jobs
             : Array.isArray(data) ? data : [];
@@ -394,6 +393,31 @@ export const OpportunityMonitor = () => {
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  // Merges additional jobs from a monitor endpoint into existing results.
+  // Used when region/subsector tabs are clicked to fetch targeted live data.
+  const supplementJobs = useCallback(async (path: string) => {
+    try {
+      const data = await api.get(path);
+      if (data?.broadened) setBroadenedNotice(data.broadenedReason ?? 'Live search active');
+      const list: any[] = Array.isArray(data?.jobs) ? data.jobs
+        : Array.isArray(data) ? data : [];
+      const newScored: ScoredJob[] = [];
+      list.forEach(job => {
+        const norm = normaliseMonitorJob(job);
+        const key = norm.id ?? `${norm.title}__${norm.company}`;
+        if (!seenIds.current.has(key)) {
+          seenIds.current.add(key);
+          const scored = scoreJob(norm);
+          if (scored) newScored.push(scored);
+        }
+      });
+      if (newScored.length > 0) {
+        setJobs(prev => [...prev, ...newScored].sort((a, b) => b.score - a.score));
+        setTotalFetched(prev => prev + list.length);
+      }
+    } catch { /* non-fatal — existing jobs remain visible */ }
   }, []);
 
   // Auto-load on mount
@@ -482,7 +506,12 @@ export const OpportunityMonitor = () => {
       {sector === 'industry' && (
         <div style={{ display: 'flex', gap: 2, marginBottom: 6 }}>
           {INDUSTRY_REGIONS.map(r => (
-            <button key={r} onClick={() => setIndustryRegion(r)} style={{
+            <button key={r} onClick={() => {
+              setIndustryRegion(r);
+              if (r === 'Asia')          supplementJobs('/monitor/jobs?sector=industry&region=asia');
+              else if (r === 'Europe')   supplementJobs('/monitor/jobs?sector=industry&region=europe');
+              else if (r === 'North America') supplementJobs('/monitor/jobs?sector=industry&region=north_america');
+            }} style={{
               padding: '6px 14px',
               background: industryRegion === r ? 'rgba(52,211,153,0.15)' : '#1e293b',
               border: `1px solid ${industryRegion === r ? '#34d399' : '#334155'}`,
@@ -502,7 +531,10 @@ export const OpportunityMonitor = () => {
       {sector === 'india' && (
         <div style={{ display: 'flex', gap: 2, marginBottom: 6 }}>
           {INDIA_SUBSECTORS.map(sub => (
-            <button key={sub} onClick={() => setIndiaSubsector(sub)} style={{
+            <button key={sub} onClick={() => {
+              setIndiaSubsector(sub);
+              if (sub === 'Industry') supplementJobs('/monitor/jobs?sector=india&subsector=industry');
+            }} style={{
               padding: '6px 14px',
               background: indiaSubsector === sub ? 'rgba(236,72,153,0.15)' : '#1e293b',
               border: `1px solid ${indiaSubsector === sub ? '#ec4899' : '#334155'}`,
