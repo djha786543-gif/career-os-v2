@@ -399,13 +399,14 @@ export const OpportunityMonitor = () => {
   const [broadenedNotice, setBroadenedNotice] = useState<string | null>(null);
   const seenIds = useRef(new Set<string>());
 
-  const fetchJobs = useCallback(async (s: Sector, r: string | null) => {
+  const fetchJobs = useCallback(async (s: Sector, r: string | null, bust = false) => {
     setLoading(true);
     setError(null);
     setBroadenedNotice(null);
     seenIds.current.clear();
     try {
-      const paths = buildApiPaths(s, r);
+      const cacheBust = bust ? `&_t=${Date.now()}` : '';
+      const paths = buildApiPaths(s, r).map(p => p + cacheBust);
       const results = await Promise.allSettled(paths.map(p => api.get(p)));
       const raw: any[] = [];
       results.forEach(res => {
@@ -477,6 +478,13 @@ export const OpportunityMonitor = () => {
     setScanning(false);
   };
 
+  const handleForceRefresh = async () => {
+    setJobs([]);
+    setTotalFetched(0);
+    setBroadenedNotice(null);
+    await fetchJobs(sector, region, true /* bust cache */);
+  };
+
   const handleSectorChange = (s: Sector) => {
     setSector(s);
     setRegion(null);
@@ -519,12 +527,23 @@ export const OpportunityMonitor = () => {
             {lastScan && <span style={{ color: '#10b981', marginLeft: 10 }}>↻ {lastScan}</span>}
           </p>
         </div>
-        <button onClick={handleScan} disabled={scanning || loading}
-          style={{ padding: '9px 22px', background: (scanning || loading) ? '#334155' : '#22c55e',
-            color: 'white', border: 'none', borderRadius: 8, cursor: (scanning||loading) ? 'default' : 'pointer',
-            fontWeight: 900, fontSize: 12.5, flexShrink: 0 }}>
-          {scanning ? 'Scanning...' : 'Run Scan'}
-        </button>
+        <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+          <button onClick={handleForceRefresh} disabled={loading}
+            title="Clear cached results and re-fetch from backend (bypasses browser cache)"
+            style={{ padding: '9px 16px', background: 'transparent',
+              color: loading ? '#475569' : '#94a3b8',
+              border: `1px solid ${loading ? '#334155' : '#475569'}`,
+              borderRadius: 8, cursor: loading ? 'default' : 'pointer',
+              fontWeight: 700, fontSize: 11.5 }}>
+            ↺ Clear Cache
+          </button>
+          <button onClick={handleScan} disabled={scanning || loading}
+            style={{ padding: '9px 22px', background: (scanning || loading) ? '#334155' : '#22c55e',
+              color: 'white', border: 'none', borderRadius: 8, cursor: (scanning||loading) ? 'default' : 'pointer',
+              fontWeight: 900, fontSize: 12.5 }}>
+            {scanning ? 'Scanning...' : 'Run Scan'}
+          </button>
+        </div>
       </div>
 
       {/* Sector tabs */}
