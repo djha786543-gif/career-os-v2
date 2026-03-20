@@ -192,16 +192,32 @@ const INDIA_INDUSTRY_KEYWORDS = [
   'zydus', 'lupin', 'piramal', 'glenmark', 'aurobindo', 'alembic',
   'wockhardt', 'serum institute', 'divi', 'strides', 'torrent pharma',
   'jubilant', 'abbott india', 'pfizer india', 'sanofi india',
+  'novartis', 'roche', 'merck', 'johnson', 'bayer', 'novozymes',
+  'reliance life', 'tata', 'hll lifecare', 'bharat biotech', 'biological e',
+  'intas', 'cadila', 'emcure', 'natco', 'hetero', 'granules', 'divis',
+  'aragen', 'anthem', 'laurus', 'divi lab', 'suven', 'dishman',
+  'philips india', 'siemens healthineers', 'ge healthcare india',
+  'thermo fisher india', 'waters india', 'agilent india',
 ];
 const INDIA_ACADEMIC_KEYWORDS = [
   'iit ', 'iit,', 'iit-', 'iisc', 'iiser', 'tifr', 'ncbs', 'jncasr',
   'niser', 'jnu ', 'jnu,', 'bits pilani', 'manipal', 'university',
+  'college', 'institute of technology', 'institute of science',
+];
+const INDIA_GOVT_KEYWORDS = [
+  'csir', 'drdo', 'icmr', 'icar', 'dbt ', 'dbt-', 'dbt,',
+  'national institute', 'national centre', 'national center',
+  'government', 'ministry', 'department of', 'aiims', 'nimhans',
+  'pgimer', 'sgpgi', 'regional centre', 'regional center',
+  'centre for cellular', 'centre for dna', 'inmas', 'defence',
 ];
 function getIndiaSubsector(orgName: string): IndiaSubsector {
   const text = (orgName || '').toLowerCase();
   if (INDIA_INDUSTRY_KEYWORDS.some(k => text.includes(k))) return 'Industry';
   if (INDIA_ACADEMIC_KEYWORDS.some(k => text.includes(k))) return 'Academic';
-  return 'Govt Research';
+  if (INDIA_GOVT_KEYWORDS.some(k => text.includes(k))) return 'Govt Research';
+  // Unknown companies from Adzuna are almost always private industry
+  return 'Industry';
 }
 
 // ── Elite Match — senior India roles ─────────────────────────────────────────
