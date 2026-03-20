@@ -109,6 +109,8 @@ const REGIONS = [
   { label: 'Italy', value: 'italy' },
   { label: 'Spain', value: 'spain' },
   { label: 'Finland', value: 'finland' },
+  { label: 'Norway', value: 'norway' },
+  { label: 'Ireland', value: 'ireland' },
   { label: 'Singapore', value: 'singapore' },
   { label: 'Australia', value: 'australia' },
   { label: 'Canada', value: 'canada' },
