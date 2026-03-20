@@ -60,10 +60,14 @@ const EXPERTISE = {
 };
 
 const ROLES = [
-  'postdoctoral', 'postdoc', 'post-doc', 'research scientist',
-  'scientist', 'researcher', 'research associate', 'research fellow',
+  'postdoctoral', 'postdoc', 'post-doc',
+  'research scientist', 'research associate', 'research fellow',
   'principal scientist', 'senior scientist', 'staff scientist',
+  'scientist i', 'scientist ii', 'scientist iii',
   'faculty', 'professor', 'associate professor',
+  'r&d scientist', 'biologics', 'pharmacologist', 'toxicologist',
+  'medicinal chemist', 'structural biologist', 'cell biologist',
+  'molecular biologist', 'biochemist', 'bioinformatician',
 ];
 
 type Tier = 'high' | 'good' | 'broad';
@@ -103,8 +107,12 @@ function scoreJob(job: any): ScoredJob | null {
     ? Math.max(serverScore, Math.min(localScore, 100))
     : Math.min(localScore, 100);
 
-  // Gate: must have some signal
-  if (blended < 30 && matchedInstitutions.length === 0 && matchedExpertise.length === 0) return null;
+  // Hard gate: server score alone is not enough — must have at least ONE life-science signal.
+  // This prevents generic Asia/Industry jobs (IT, logistics, finance) from leaking through.
+  if (matchedInstitutions.length === 0 && matchedExpertise.length === 0 && !matchedRole) return null;
+
+  // Soft gate: overall score must be meaningful
+  if (blended < 20) return null;
 
   const tier: Tier = blended >= 75 ? 'high' : blended >= 50 ? 'good' : 'broad';
 
