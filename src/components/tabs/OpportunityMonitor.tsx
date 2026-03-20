@@ -12,8 +12,8 @@ export const OpportunityMonitor = () => {
       // Step 1: Fetch all jobs for the sector
       const res = await fetch(`${API_BASE}/monitor/jobs?sector=${activeSector}`);
       const data = await res.json();
-      
-      let allJobs = Array.isArray(data) ? data : [];
+
+      let allJobs = Array.isArray(data?.jobs) ? data.jobs : [];
 
       // Step 2: Apply Region Filter ONLY if one is selected
       if (activeRegion) {
