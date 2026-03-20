@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express'
 import { pool } from '../db/client'
-import { runFullScan, scanOrg, seedOrgs } from '../opportunity-monitor/monitorEngine'
+import { runFullScan, scanOrg, seedOrgs, rescoreAllActiveJobs } from '../opportunity-monitor/monitorEngine'
 import { MONITOR_ORGS } from '../opportunity-monitor/orgConfig'
 
 const router = Router()
@@ -130,6 +130,20 @@ router.post('/scan', async (req: Request, res: Response) => {
       res.json({ status: 'scanning', message: 'Full scan started in background' })
       runFullScan().catch(console.error)
     }
+  } catch (err) {
+    if (!res.headersSent) {
+      res.status(500).json({ error: (err as Error).message })
+    }
+  }
+})
+
+// POST /api/monitor/rescore — recalculate match_score for all active jobs
+// Fixes rows inserted before the match_score column existed (score = 0).
+// Safe to call at any time; runs in background.
+router.post('/rescore', async (req: Request, res: Response) => {
+  try {
+    res.json({ status: 'rescoring', message: 'Rescoring all active jobs in background' })
+    rescoreAllActiveJobs().catch(console.error)
   } catch (err) {
     if (!res.headersSent) {
       res.status(500).json({ error: (err as Error).message })

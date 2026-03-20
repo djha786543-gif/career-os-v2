@@ -86,6 +86,11 @@ export const OpportunityMonitor = () => {
   const [showNewOnly, setShowNewOnly] = useState(false);
   const [minScore, setMinScore] = useState(0);
   const [scanNote, setScanNote] = useState('');
+  const [rescoring, setRescoring] = useState(false);
+
+  // allJobs holds the full server response for the active sector (unfiltered by score)
+  // Slider filtering is done client-side so it's instant
+  const [allJobs, setAllJobs] = useState<Job[]>([]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -93,22 +98,13 @@ export const OpportunityMonitor = () => {
     try {
       const params = new URLSearchParams({ sector: activeSector, limit: '100' });
       if (showNewOnly) params.set('isNew', 'true');
-      if (minScore > 0) params.set('minScore', String(minScore));
 
       const res = await fetch(`${API_BASE}/monitor/jobs?${params}`);
       if (!res.ok) throw new Error(`Server error: ${res.status}`);
       const data = await res.json();
 
-      let allJobs: Job[] = Array.isArray(data?.jobs) ? data.jobs : [];
-
-      if (activeRegion) {
-        allJobs = allJobs.filter(job =>
-          job.location?.toLowerCase().includes(activeRegion) ||
-          job.country?.toLowerCase().includes(activeRegion)
-        );
-      }
-
-      setJobs(allJobs);
+      let fetched: Job[] = Array.isArray(data?.jobs) ? data.jobs : [];
+      setAllJobs(fetched);
       setCounts(Array.isArray(data?.counts) ? data.counts : []);
     } catch (err) {
       setError((err as Error).message);
@@ -117,7 +113,36 @@ export const OpportunityMonitor = () => {
     }
   };
 
-  useEffect(() => { fetchData(); }, [activeSector, activeRegion, showNewOnly, minScore]);
+  // Client-side filtering: instant response on slider/region changes
+  useEffect(() => {
+    let filtered = [...allJobs];
+    if (activeRegion) {
+      filtered = filtered.filter(job =>
+        job.location?.toLowerCase().includes(activeRegion) ||
+        job.country?.toLowerCase().includes(activeRegion)
+      );
+    }
+    if (minScore > 0) {
+      filtered = filtered.filter(job => (job.match_score || 0) >= minScore);
+    }
+    setJobs(filtered);
+  }, [allJobs, activeRegion, minScore]);
+
+  useEffect(() => { fetchData(); }, [activeSector, showNewOnly]);
+
+  const handleRescore = async () => {
+    setRescoring(true);
+    setScanNote('');
+    try {
+      await fetch(`${API_BASE}/monitor/rescore`, { method: 'POST' });
+      setScanNote('Rescoring all jobs in background — refreshing in 20s...');
+      setTimeout(() => { fetchData(); setScanNote(''); }, 20000);
+    } catch (err) {
+      setError('Rescore failed: ' + (err as Error).message);
+    } finally {
+      setRescoring(false);
+    }
+  };
 
   const handleScan = async () => {
     setScanning(true);
@@ -155,16 +180,29 @@ export const OpportunityMonitor = () => {
             Live positions scored against Pooja's profile · No expired listings · Industry & India prioritized
           </p>
         </div>
-        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
           <label style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '12px', color: '#94a3b8', cursor: 'pointer' }}>
             <input type="checkbox" checked={showNewOnly} onChange={e => setShowNewOnly(e.target.checked)} />
             New only
           </label>
           <button
+            onClick={handleRescore}
+            disabled={rescoring}
+            style={{
+              padding: '7px 12px', background: '#0f172a',
+              color: rescoring ? '#64748b' : '#94a3b8',
+              border: '1px solid #334155', borderRadius: '6px',
+              cursor: rescoring ? 'not-allowed' : 'pointer', fontSize: '11px'
+            }}
+            title="Recalculate match scores for all existing jobs"
+          >
+            {rescoring ? 'Rescoring...' : '↻ Rescore'}
+          </button>
+          <button
             onClick={handleScan}
             disabled={scanning}
             style={{
-              padding: '7px 16px', background: scanning ? '#166534' : '#22c55e',
+              padding: '7px 14px', background: scanning ? '#166534' : '#22c55e',
               color: 'white', border: 'none', borderRadius: '6px',
               cursor: scanning ? 'not-allowed' : 'pointer', fontWeight: 'bold', fontSize: '12px'
             }}
@@ -174,35 +212,33 @@ export const OpportunityMonitor = () => {
         </div>
       </div>
 
-      {/* Score filter + legend */}
+      {/* Score filter */}
       <div style={{ background: '#1e293b', borderRadius: '10px', padding: '14px 16px', marginBottom: '16px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
-          <div style={{ flex: 1, minWidth: '200px' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px', flexWrap: 'wrap' }}>
+          <div style={{ flex: 1, minWidth: '220px' }}>
             <label style={{ fontSize: '12px', color: '#94a3b8', display: 'block', marginBottom: '6px' }}>
-              Min Match Score: <strong style={{ color: minScore >= 70 ? '#22c55e' : minScore >= 50 ? '#f59e0b' : '#94a3b8' }}>{minScore}+</strong>
+              Min Match Score: <strong style={{ color: minScore >= 70 ? '#22c55e' : minScore >= 50 ? '#f59e0b' : '#94a3b8' }}>
+                {minScore === 0 ? 'All' : `${minScore}+`}
+              </strong>
+              {' '}
+              <span style={{ fontSize: '10px', color: '#475569' }}>
+                ({allJobs.filter(j => minScore === 0 || (j.match_score || 0) >= minScore).length} of {allJobs.length} visible)
+              </span>
             </label>
             <input
               type="range" min={0} max={80} step={10} value={minScore}
               onChange={e => setMinScore(parseInt(e.target.value))}
-              style={{ width: '100%', accentColor: '#3b82f6' }}
+              style={{ width: '100%', accentColor: '#3b82f6', cursor: 'pointer' }}
             />
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#475569', marginTop: '2px' }}>
-              <span>All</span><span>30</span><span>50</span><span>70</span><span>80+</span>
+              <span>All</span><span>30</span><span>50</span><span>70</span><span>80</span>
             </div>
           </div>
-          <div style={{ display: 'flex', gap: '12px', fontSize: '11px' }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <span style={{ width: '10px', height: '10px', borderRadius: '2px', background: '#22c55e', display: 'inline-block' }}/>
-              <span style={{ color: '#94a3b8' }}>70+ Strong</span>
-            </span>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <span style={{ width: '10px', height: '10px', borderRadius: '2px', background: '#f59e0b', display: 'inline-block' }}/>
-              <span style={{ color: '#94a3b8' }}>50+ Good</span>
-            </span>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <span style={{ width: '10px', height: '10px', borderRadius: '2px', background: '#64748b', display: 'inline-block' }}/>
-              <span style={{ color: '#94a3b8' }}>&lt;50 Partial</span>
-            </span>
+          <div style={{ fontSize: '10px', color: '#64748b', lineHeight: '1.6' }}>
+            <div><span style={{ color: '#22c55e' }}>■</span> 75–100 <strong style={{ color: '#94a3b8' }}>High</strong> — wet-lab + cardiovascular/genetics</div>
+            <div><span style={{ color: '#f59e0b' }}>■</span> 50–74 <strong style={{ color: '#94a3b8' }}>Medium</strong> — molecular biology, transferable domain</div>
+            <div><span style={{ color: '#64748b' }}>■</span> &lt;50 <strong style={{ color: '#475569' }}>Low</strong> — adjacent field, limited overlap</div>
+            <div style={{ marginTop: '3px', color: '#475569', fontSize: '9px' }}>Scored: Technical(40) + Domain(30) + Title(20) + Org(10)</div>
           </div>
         </div>
       </div>

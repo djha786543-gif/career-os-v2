@@ -10,6 +10,7 @@ import aiRouter from './api/ai';
 import monitorRouter from './api/monitor';
 import adminRouter from './api/admin';
 import { initMonitorScheduler } from './opportunity-monitor/scheduler';
+import { rescoreAllActiveJobs } from './opportunity-monitor/monitorEngine';
 import { dbInit } from './db/init';
 
 dotenv.config();
@@ -109,5 +110,11 @@ app.listen(PORT, '0.0.0.0', async () => {
 	await dbInit().catch(err => console.error('dbInit error:', err.message));
 	initMonitorScheduler().catch(err =>
 		console.error('[Monitor] Scheduler init failed:', err.message)
+	);
+	// Rescore all existing jobs using the current Pooja profile scorer.
+	// Fixes rows inserted before match_score column existed (all 0).
+	// Runs async — does not block server startup.
+	rescoreAllActiveJobs().catch(err =>
+		console.error('[Monitor] Boot rescore failed:', err.message)
 	);
 });

@@ -140,57 +140,119 @@ function isRelevant(title: string, description: string = ''): boolean {
 }
 
 // ─── POOJA MATCH SCORE — 0 to 100 ────────────────────────────────────────────
-// Grounded in her actual CV profile. This score is stored in the DB and
-// shown to her in the UI so she can filter to only high-confidence matches.
+// Implements the exact scoring matrix requested:
 //
-// Breakdown:
-//   Domain match   : 0–40 pts  (cardiovascular, mouse models, RNA-seq, senescence)
-//   Technique match: 0–30 pts  (echo, IHC, western blot, bioinformatics, Langendorff)
-//   Title/level    : 0–20 pts  (Scientist, Faculty, Group Leader — NOT postdoc for industry)
-//   Org prestige   : 0–10 pts  (Tier 1 research institutions)
-function poojaMatchScore(title: string, snippet: string, orgName: string, sector?: string): number {
-  const text = (title + ' ' + snippet).toLowerCase()
-  const titleLower = title.toLowerCase()
+// 1. Core Technical Mastery     (40 pts)
+//    Full 40 if job requires ANY high-level wet-lab (PCR, protein, IHC, cell culture)
+//    OR in-vivo work (animal model, surgery, mouse). Reasoning: someone who does
+//    Langendorff/echocardiography adapts easily to other physiological assays.
+//
+// 2. Domain / Disease Alignment  (30 pts)
+//    30 — cardiovascular, heme, molecular genetics (her exact domains)
+//    15 — oncology, immunology, metabolism (transferable molecular skills)
+//
+// 3. Seniority & Title           (20 pts)
+//    Scientist / R&D / PI / Faculty / Group Leader → 20
+//    Postdoc at Tier 1 institution → 12 (don't penalise)
+//    Postdoc elsewhere → 8
+//
+// 4. Institutional Fit           (10 pts)
+//    Tier 1 research orgs bonus
+//
+// Floor Rule: PhD Life Sciences + Molecular Biology context → minimum score 50
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ── Component 1: Core Technical Mastery (40 pts) ─────────────────────────────
+const WET_LAB_RE = /\b(genotyping|pcr|qpcr|rt.?pcr|western blot|protein analysis|protein expression|immunohistochemistry|ihc|elisa|cell culture|primary cell|flow cytometry|immunofluorescence|confocal|microscopy|molecular biology|biochemistry|cloning|rna.?seq|transcriptomics|crispr|gene expression|sequencing|rna isolation|dna isolation|immunoprecipitation|chromatin|chip.?seq|atac.?seq|single.cell)\b/i
+const IN_VIVO_RE  = /\b(animal model|mouse model|in.?vivo|transgenic|knockout|knock.?in|conditional knockout|animal surgery|echocardiography|langendorff|cardiac perfusion|animal handling|rodent|murine|rat model|zebrafish|drosophila|genetically modified|cre.?lox)\b/i
+
+// ── Component 2: Domain / Disease Alignment (30 pts full, 15 pts partial) ────
+const PRIMARY_DOMAIN_RE   = /\b(cardiovascular|cardiomyopathy|peripartum|cardiac|heart failure|heart disease|cardiomyocyte|cardio|vascular|heme|haemo|hemoglobin|haematology|hematology|molecular genetics|genomics|genetics|gene|transcriptomics|rna.?seq)\b/i
+const SECONDARY_DOMAIN_RE = /\b(cancer|oncology|tumor|tumour|immunology|immune|inflammation|inflammatory|metabolism|metabolic|liver|fibrosis|neuroscience|neurological|pulmonary|renal|kidney|diabetes|obesity)\b/i
+
+// ── Component 3: Seniority / Title (20 pts) ──────────────────────────────────
+const SENIOR_TITLE_RE  = /\b(senior scientist|principal scientist|staff scientist|group leader|team leader|associate investigator|lead scientist|scientist [2-9]|scientist ii|scientist iii|scientist iv)\b/i
+const FACULTY_TITLE_RE = /\b(assistant professor|associate professor|professor|faculty|tenure.?track|principal investigator|pi\b)\b/i
+const SCIENTIST_TITLE_RE = /\b(research scientist|scientist\b|r&d scientist|r&d|investigator)\b/i
+const POSTDOC_TITLE_RE   = /\b(postdoc|postdoctoral|research fellow|research associate)\b/i
+
+// ── Floor rule context ────────────────────────────────────────────────────────
+const LIFESCI_PHD_RE  = /\b(ph\.?d|doctorate|life science|biology|biochemistry|molecular|genetics|biomedical|bioscience)\b/i
+const MOLBIO_CONTEXT_RE = /\b(molecular biology|molecular|biochemistry|cell biology|genetics|genomics|protein|rna|dna|assay|experiment|laboratory|research)\b/i
+
+export function poojaMatchScore(title: string, snippet: string, orgName: string, sector?: string): number {
+  const text   = (title + ' ' + snippet).toLowerCase()
+  const tLower = title.toLowerCase()
   let score = 0
 
-  // 1. Domain match (max 40)
-  let domainScore = 0
-  for (const [re, pts] of DOMAIN_TIERS) {
-    if (re.test(text)) domainScore += pts
+  // ── 1. Core Technical Mastery (40 pts) ───────────────────────────────────
+  const hasWetLab = WET_LAB_RE.test(text)
+  const hasInVivo = IN_VIVO_RE.test(text)
+  if (hasWetLab || hasInVivo) {
+    score += 40
+  } else if (LIFESCI_PHD_RE.test(text)) {
+    score += 20  // Life-science role, no explicit technique keywords — partial credit
   }
-  score += Math.min(domainScore, DOMAIN_MAX)
 
-  // 2. Technique match (max 30, 5 pts each)
-  let techPts = 0
-  for (const kw of TECHNIQUE_KEYWORDS) {
-    if (text.includes(kw.toLowerCase())) {
-      techPts += TECHNIQUE_PTS
-      if (techPts >= TECHNIQUE_MAX) break
-    }
+  // ── 2. Domain / Disease Alignment (30 pts / 15 pts) ──────────────────────
+  if (PRIMARY_DOMAIN_RE.test(text)) {
+    score += 30
+  } else if (SECONDARY_DOMAIN_RE.test(text)) {
+    score += 15
   }
-  score += Math.min(techPts, TECHNIQUE_MAX)
 
-  // 3. Title/level match (max 20)
-  // For industry sector: do NOT reward postdoc titles
-  const isIndustry = sector === 'industry' || sector === 'india'
-  if (FACULTY_RE.test(title)) {
+  // ── 3. Seniority & Title (20 pts) ────────────────────────────────────────
+  if (FACULTY_TITLE_RE.test(tLower)) {
     score += 20
-  } else if (SENIOR_SCIENTIST_RE.test(title)) {
+  } else if (SENIOR_TITLE_RE.test(tLower)) {
     score += 20
-  } else if (SCIENTIST_LEVEL_RE.test(title)) {
-    score += 16
-  } else if (SCIENTIST_RE.test(title)) {
-    score += 14
-  } else if (/\b(research fellow|group leader|investigator)\b/i.test(title)) {
+  } else if (SCIENTIST_TITLE_RE.test(tLower)) {
     score += 18
-  } else if (!isIndustry && /\b(postdoc|postdoctoral)\b/i.test(titleLower)) {
-    score += 8  // postdoc still has value for academia
+  } else if (POSTDOC_TITLE_RE.test(tLower)) {
+    // Postdoc: full credit at Tier 1 / academia; partial elsewhere
+    const isTier1Academia = TIER1_ORG_NAMES.has(orgName) ||
+      sector === 'academia' || sector === 'international'
+    score += isTier1Academia ? 12 : 8
   }
 
-  // 4. Org prestige bonus (max 10)
+  // ── 4. Institutional Fit (10 pts) ────────────────────────────────────────
   if (TIER1_ORG_NAMES.has(orgName)) score += 10
 
-  return Math.min(score, 100)
+  // ── Floor Rule ────────────────────────────────────────────────────────────
+  // PhD Life Sciences + molecular biology context → cannot be below 50
+  const requiresPhd    = LIFESCI_PHD_RE.test(text)
+  const hasMolBio      = MOLBIO_CONTEXT_RE.test(text)
+  const isLifeSciTitle = LIFESCI_ANCHOR_RE.test(title) || SCIENTIST_TITLE_RE.test(title) || FACULTY_TITLE_RE.test(title)
+  if (requiresPhd && hasMolBio && isLifeSciTitle && score < 50) {
+    score = 50
+  }
+
+  return Math.min(Math.round(score), 100)
+}
+
+// ─── Rescore all active jobs in the DB using current scorer ──────────────────
+// Called on: server boot, after scan, and via POST /api/monitor/rescore
+// This fixes rows that were inserted before match_score column existed (all 0).
+export async function rescoreAllActiveJobs(): Promise<number> {
+  try {
+    const { rows } = await pool.query(
+      `SELECT id, title, snippet, org_name, sector FROM monitor_jobs WHERE is_active = true`
+    )
+    let updated = 0
+    for (const row of rows) {
+      const ms = poojaMatchScore(row.title, row.snippet || '', row.org_name, row.sector)
+      await pool.query(
+        `UPDATE monitor_jobs SET match_score = $1, high_suitability = $2 WHERE id = $3`,
+        [ms, ms >= 50, row.id]
+      )
+      updated++
+    }
+    console.log(`[Monitor] Rescored ${updated} active jobs`)
+    return updated
+  } catch (err) {
+    console.error('[Monitor] Rescore failed:', (err as Error).message)
+    return 0
+  }
 }
 
 // Filter out generic social/landing-page URLs that don't point to actual job postings
