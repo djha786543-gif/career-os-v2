@@ -136,6 +136,7 @@ export const OpportunityMonitor = () => {
     setScanNote('');
     try {
       const res = await fetch(`${API_BASE}/monitor/purge`, { method: 'POST' });
+      if (!res.ok) throw new Error(`Server returned ${res.status} — deploy may still be in progress, try again in 1 min`);
       const data = await res.json();
       setScanNote(`Purged ${data.deleted ?? 0} garbage entries — refreshing in 10s...`);
       setTimeout(() => { fetchData(); setScanNote(''); }, 10000);
