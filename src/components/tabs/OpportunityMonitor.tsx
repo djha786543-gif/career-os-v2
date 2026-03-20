@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_BASE } from '../../config/api';
 
 export const OpportunityMonitor = () => {
   const [activeSector, setActiveSector] = useState('academia');
@@ -9,7 +10,7 @@ export const OpportunityMonitor = () => {
   const fetchData = async () => {
     try {
       // Step 1: Fetch all jobs for the sector
-      const res = await fetch(`http://localhost:8080/api/monitor/jobs?sector=${activeSector}`);
+      const res = await fetch(`${API_BASE}/monitor/jobs?sector=${activeSector}`);
       const data = await res.json();
       
       let allJobs = Array.isArray(data) ? data : [];
@@ -31,7 +32,7 @@ export const OpportunityMonitor = () => {
   const handleScan = async () => {
     setScanning(true);
     try {
-      await fetch('http://localhost:8080/api/monitor/scan', { method: 'POST' });
+      await fetch(`${API_BASE}/monitor/scan`, { method: 'POST' });
       await fetchData();
     } catch (err) { console.error("Scan Error:", err); }
     setScanning(false);
