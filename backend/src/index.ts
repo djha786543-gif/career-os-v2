@@ -10,7 +10,7 @@ import aiRouter from './api/ai';
 import monitorRouter from './api/monitor';
 import adminRouter from './api/admin';
 import { initMonitorScheduler } from './opportunity-monitor/scheduler';
-import { rescoreAllActiveJobs } from './opportunity-monitor/monitorEngine';
+import { rescoreAllActiveJobs, purgeGarbageJobs } from './opportunity-monitor/monitorEngine';
 import { dbInit } from './db/init';
 
 dotenv.config();
@@ -111,10 +111,10 @@ app.listen(PORT, '0.0.0.0', async () => {
 	initMonitorScheduler().catch(err =>
 		console.error('[Monitor] Scheduler init failed:', err.message)
 	);
-	// Rescore all existing jobs using the current Pooja profile scorer.
-	// Fixes rows inserted before match_score column existed (all 0).
-	// Runs async — does not block server startup.
-	rescoreAllActiveJobs().catch(err =>
-		console.error('[Monitor] Boot rescore failed:', err.message)
-	);
+	// Purge garbage titles first (nav links, search result pages scraped by Gemini)
+	// then rescore remaining jobs with the current Pooja profile scorer.
+	// Both run async — do not block server startup.
+	purgeGarbageJobs()
+		.then(() => rescoreAllActiveJobs())
+		.catch(err => console.error('[Monitor] Boot purge/rescore failed:', err.message));
 });

@@ -55,7 +55,7 @@ const HARD_FILTER_TERMS = [
 // Postdoc is blocked EXCEPT for academia/international where it still has value
 const NOISE_DISCIPLINE_RE = /\b(data|market(?:ing)?|software|i\.?t\.?|finance|financial|social|computer|machine\s+learning|analyst|clinical\s+data)\s+(scientist|researcher)\b/i
 const LIFESCI_ANCHOR_RE = /\b(metabolism|molecular|biotech|cardiovascular|immunology|ph\.?d|biology|biological|biochem(?:istry|ical)?|genomics|genetics|genetic|research|faculty|staff|science|sciences|investigator|oncology|neuroscience|microbiology|virology|pharmacology|pharma(?:ceutical)?|proteomics|transcriptomics|bioinformatics|crispr|rna|sequencing|cancer|cardiac|immunobiology|epigenetics|haematology|hematology|cell biology|molecular genetics)\b/i
-const GARBAGE_TITLE_RE = /^\$|^\d+\s+(job|position|opening|result|postdoc|researcher)/i
+const GARBAGE_TITLE_RE = /^\$|^\d+\s+(job|position|opening|result|postdoc|researcher)|\s+jobs(,\s+employment)?\s*$|^(careers?|admissions?|home|about\s+us?|open\s+positions?|join\s+our\s+team|our\s+team|opportunities|apply\s+now|contact\s+us?|sitemap|menu|navigation|explore|learn\s+more|vacancies)\s*$/i
 
 // Tier 1 org prestige bonus (10 pts)
 const TIER1_ORG_NAMES = new Set([
@@ -251,6 +251,33 @@ export async function rescoreAllActiveJobs(): Promise<number> {
     return updated
   } catch (err) {
     console.error('[Monitor] Rescore failed:', (err as Error).message)
+    return 0
+  }
+}
+
+// ─── Purge garbage titles from the DB ────────────────────────────────────────
+// Removes nav-link text, search result pages, and short junk that Gemini
+// scrapes from org websites and returns as "jobs".
+export async function purgeGarbageJobs(): Promise<number> {
+  try {
+    const result = await pool.query(`
+      DELETE FROM monitor_jobs
+      WHERE
+        title ~ '^\\$'
+        OR title ~ '^[0-9]+ (job|position|opening|result|postdoc|researcher)'
+        OR title ~* '[0-9]+ (cardiovascular|postdoc|molecular|research) jobs?'
+        OR title ~* 'jobs? in (north america|united states|usa|uk|europe|global)'
+        OR title ~* '\\s+jobs(,\\s+employment)?\\s*$'
+        OR title ~* '^(careers?|admissions?|home|about us?|open positions?|join our team|our team|opportunities|apply now|contact us?|sitemap|navigation|vacancies|explore|learn more)\\s*$'
+        OR title ~* '^(post|genomic sciences|research & development jobs|join our team)$'
+        OR length(trim(title)) < 6
+      RETURNING id
+    `)
+    const n = result.rows.length
+    if (n > 0) console.log(`[Monitor] Purged ${n} garbage job entries`)
+    return n
+  } catch (err) {
+    console.error('[Monitor] Garbage purge failed:', (err as Error).message)
     return 0
   }
 }
@@ -645,20 +672,7 @@ export async function runFullScan(): Promise<void> {
     }
 
     // Purge garbage titles: search-result-page text scraped from job board RSS feeds
-    const purged = await pool.query(
-      `DELETE FROM monitor_jobs
-       WHERE
-         title ~ '^\\$'
-         OR title ~ '^[0-9]+ (job|position|opening|result|postdoc|researcher)'
-         OR title ~* '[0-9]+ (cardiovascular|postdoc|molecular|research) jobs?'
-         OR title ~* 'jobs? in (north america|united states|usa|uk|europe|global)'
-         OR title ~* '^(join our team|post|genomic sciences|research & development jobs)$'
-         OR length(trim(title)) < 6
-       RETURNING id`
-    )
-    if (purged.rows.length > 0) {
-      console.log(`[Monitor] Purged ${purged.rows.length} garbage job entries`)
-    }
+    await purgeGarbageJobs()
 
     console.log('[Monitor] Full scan complete')
 

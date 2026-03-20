@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express'
 import { pool } from '../db/client'
-import { runFullScan, scanOrg, seedOrgs, rescoreAllActiveJobs } from '../opportunity-monitor/monitorEngine'
+import { runFullScan, scanOrg, seedOrgs, rescoreAllActiveJobs, purgeGarbageJobs } from '../opportunity-monitor/monitorEngine'
 import { MONITOR_ORGS } from '../opportunity-monitor/orgConfig'
 
 const router = Router()
@@ -143,6 +143,20 @@ router.post('/scan', async (req: Request, res: Response) => {
 router.post('/rescore', async (req: Request, res: Response) => {
   try {
     res.json({ status: 'rescoring', message: 'Rescoring all active jobs in background' })
+    rescoreAllActiveJobs().catch(console.error)
+  } catch (err) {
+    if (!res.headersSent) {
+      res.status(500).json({ error: (err as Error).message })
+    }
+  }
+})
+
+// POST /api/monitor/purge — delete garbage titles and rescore in background
+router.post('/purge', async (req: Request, res: Response) => {
+  try {
+    const deleted = await purgeGarbageJobs()
+    res.json({ status: 'success', deleted, message: `Purged ${deleted} garbage entries` })
+    // Also trigger a rescore of remaining jobs
     rescoreAllActiveJobs().catch(console.error)
   } catch (err) {
     if (!res.headersSent) {

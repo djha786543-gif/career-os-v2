@@ -87,6 +87,7 @@ export const OpportunityMonitor = () => {
   const [minScore, setMinScore] = useState(0);
   const [scanNote, setScanNote] = useState('');
   const [rescoring, setRescoring] = useState(false);
+  const [purging, setPurging] = useState(false);
 
   // allJobs holds the full server response for the active sector (unfiltered by score)
   // Slider filtering is done client-side so it's instant
@@ -129,6 +130,21 @@ export const OpportunityMonitor = () => {
   }, [allJobs, activeRegion, minScore]);
 
   useEffect(() => { fetchData(); }, [activeSector, showNewOnly]);
+
+  const handlePurge = async () => {
+    setPurging(true);
+    setScanNote('');
+    try {
+      const res = await fetch(`${API_BASE}/monitor/purge`, { method: 'POST' });
+      const data = await res.json();
+      setScanNote(`Purged ${data.deleted ?? 0} garbage entries — refreshing in 10s...`);
+      setTimeout(() => { fetchData(); setScanNote(''); }, 10000);
+    } catch (err) {
+      setError('Purge failed: ' + (err as Error).message);
+    } finally {
+      setPurging(false);
+    }
+  };
 
   const handleRescore = async () => {
     setRescoring(true);
@@ -185,6 +201,19 @@ export const OpportunityMonitor = () => {
             <input type="checkbox" checked={showNewOnly} onChange={e => setShowNewOnly(e.target.checked)} />
             New only
           </label>
+          <button
+            onClick={handlePurge}
+            disabled={purging}
+            style={{
+              padding: '7px 12px', background: '#0f172a',
+              color: purging ? '#64748b' : '#ef4444',
+              border: '1px solid #334155', borderRadius: '6px',
+              cursor: purging ? 'not-allowed' : 'pointer', fontSize: '11px'
+            }}
+            title="Delete garbage nav-link/search-result entries from database"
+          >
+            {purging ? 'Purging...' : '✕ Purge Garbage'}
+          </button>
           <button
             onClick={handleRescore}
             disabled={rescoring}
