@@ -92,24 +92,35 @@ function isRelevantLocation(location: string = ''): boolean {
 const NOISE_DISCIPLINE_RE = /\b(data|market(?:ing)?|software|i\.?t\.?|finance|financial|social|computer|machine\s+learning|analyst)\s+(scientist|researcher)\b/i
 
 // Regex: require at least one life-science anchor in the title.
-// Broad enough to pass real bio-science roles; NOISE_DISCIPLINE_RE + suitability
-// scorer provide the second and third layers of protection.
 const LIFESCI_ANCHOR_RE = /\b(metabolism|molecular|biotech|cardiovascular|immunology|ph\.?d|postdoc(?:toral)?|biology|biological|biochem(?:istry|ical)?|genomics|genetics|genetic|research|faculty|staff|science|sciences|investigator|oncology|neuroscience|microbiology|virology|pharmacology|pharma(?:ceutical)?|proteomics|transcriptomics|bioinformatics|crispr|rna|sequencing|cancer|cardiac|immunobiology|epigenetics|haematology|hematology)\b/i
+
+// Regex: reject garbage titles scraped from job-board search result pages
+// e.g. "179 Postdoctoral jobs in USA", "$49k", "Join Our Team", "Post"
+const GARBAGE_TITLE_RE = /^\$|^\d+\s+(job|position|opening|result|postdoc|researcher)/i
 
 // Hard filter: returns false for roles Pooja should not see.
 // Exception: "assistant professor" is always allowed despite containing 'assistant'.
 function passesHardFilter(title: string): boolean {
-  if (/assistant\s+professor/i.test(title)) return true
+  const t = title.trim()
+
+  // Reject obviously garbage scraped titles
+  if (t.length < 6) return false
+  if (GARBAGE_TITLE_RE.test(t)) return false
+  // Reject titles that are just search-result counts or navigation text
+  if (/\d+\s+(cardiovascular|postdoc|molecular|research)\s+jobs?\b/i.test(t)) return false
+  if (/\bjobs?\s+in\s+(north america|united states|usa|uk|europe|global)\b/i.test(t)) return false
+
+  if (/assistant\s+professor/i.test(t)) return true
 
   // Reject non-life-science "X Scientist / X Researcher" roles
-  if (NOISE_DISCIPLINE_RE.test(title)) return false
+  if (NOISE_DISCIPLINE_RE.test(t)) return false
 
   // Reject legacy hard-filter terms (technician, intern, junior, admin, coordinator)
-  const t = title.toLowerCase()
-  if (HARD_FILTER_TERMS.some(term => t.includes(term))) return false
+  const tl = t.toLowerCase()
+  if (HARD_FILTER_TERMS.some(term => tl.includes(term))) return false
 
   // Require at least one life-science anchor
-  return LIFESCI_ANCHOR_RE.test(title)
+  return LIFESCI_ANCHOR_RE.test(t)
 }
 
 // Pooja suitability scorer (0–5 scale). Jobs must score ≥ 3 to be stored.
@@ -168,63 +179,71 @@ interface ScannedJob {
   highSuitability: boolean
 }
 
-// RECOMMENDATION 4: websearch is last resort — RSS and USAJobs preferred
+// websearch via Gemini grounded search — finds live individual job postings
 async function scanViaWebSearch(org: MonitorOrg): Promise<ScannedJob[]> {
   try {
-    const response = await withTimeout(
-      anthropic.messages.create({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 2000,
-        tools: [{ type: 'web_search_20250305' as any, name: 'web_search' }],
-        messages: [{
-          role: 'user',
-          content: `Search for current open job positions at ${org.name}.
-Query: "${org.searchQuery}"
+    const prompt = `You are a job search assistant. Search the web RIGHT NOW for currently open job positions at ${org.name}.
 
-Find ONLY real, currently open positions posted in 2025 or 2026.
-Include ONLY positions in these locations: USA, UK, Germany, Sweden,
-Switzerland, Canada, Singapore, Australia, or India.
+Search query: "${org.searchQuery}"
 
-Return ONLY a JSON array, no markdown, no explanation:
-[{
-  "title": "exact job title",
-  "location": "city, country (must be specific — not just 'remote')",
-  "applyUrl": "direct URL to job posting",
-  "snippet": "job description under 150 characters",
-  "postedDate": "date posted or Recent"
-}]
-If no relevant open positions found, return: []`
-        }]
-      }),
-      15000,
+Rules:
+- Find ONLY real, individual job postings (not search result pages, not salary listings, not articles)
+- Posted in 2025 or 2026 only
+- Locations: USA, UK, Germany, Sweden, Switzerland, Canada, Singapore, Australia, or India ONLY
+- Each entry must have a direct apply URL to a real job posting page
+- Do NOT include: news articles, person profiles, annual reports, generic "jobs page" links
+
+Return ONLY a valid JSON array with no markdown, no explanation, no preamble:
+[
+  {
+    "title": "exact job title as posted (e.g. Postdoctoral Fellow – Cardiovascular Biology)",
+    "location": "City, Country (specific — not just 'Remote' or 'Global')",
+    "applyUrl": "https://direct-link-to-job-posting",
+    "snippet": "brief role description under 150 characters",
+    "postedDate": "YYYY-MM-DD or Recent"
+  }
+]
+
+If no individual open positions are found, return: []`
+
+    const raw = await withTimeout(
+      geminiGroundedSearch(prompt, 2000),
+      25000,
       `webSearch for ${org.name}`
     )
 
-    let raw = ''
-    for (const block of response.content) {
-      if (block.type === 'text') raw += block.text
+    const cleaned = raw.replace(/```json\n?|```/g, '').trim()
+    const start = cleaned.indexOf('[')
+    const end = cleaned.lastIndexOf(']')
+    if (start === -1 || end === -1) {
+      console.log(`[Monitor] webSearch no JSON array found for ${org.name}`)
+      return []
     }
 
-    raw = raw.replace(/```json|```/g, '').trim()
-    const start = raw.indexOf('[')
-    const end = raw.lastIndexOf(']')
-    if (start === -1 || end === -1) return []
+    let parsed: any[]
+    try {
+      parsed = JSON.parse(cleaned.slice(start, end + 1))
+    } catch (parseErr) {
+      console.error(`[Monitor] JSON parse failed for ${org.name}:`, (parseErr as Error).message)
+      return []
+    }
 
-    const parsed = JSON.parse(raw.slice(start, end + 1))
+    if (!Array.isArray(parsed)) return []
 
     return parsed
-      .filter((j: any) => j.title && isRelevant(j.title, j.snippet))
+      .filter((j: any) => j.title && typeof j.title === 'string' && j.title.trim().length >= 6)
+      .filter((j: any) => isRelevant(j.title, j.snippet))
       .filter((j: any) => j.location && isRelevantLocation(j.location))
       .filter((j: any) => passesHardFilter(j.title))
-      .filter((j: any) => poojaSuitabilityScore(j.title, j.snippet || '', org.name) >= 3)
+      .filter((j: any) => poojaSuitabilityScore(j.title, j.snippet || '', org.name) >= 2)
       .map((j: any) => ({
         externalId: hashContent(j.title, org.name, j.location || ''),
-        title: j.title,
+        title: j.title.trim(),
         orgName: org.name,
         location: j.location,
         country: org.country,
         applyUrl: extractCanonicalUrl(j.applyUrl || '', org.careersUrl || ''),
-        snippet: j.snippet || '',
+        snippet: (j.snippet || '').slice(0, 200),
         postedDate: j.postedDate || 'Recent',
         contentHash: hashContent(j.title, org.name, j.location || ''),
         relevanceScore: relevanceScore(j.title, j.snippet),
@@ -484,16 +503,32 @@ export async function runFullScan(): Promise<void> {
       await new Promise(r => setTimeout(r, delay))
     }
 
-    // RECOMMENDATION 6: Clean up jobs not seen in 30 days
-    const cleaned = await pool.query(
+    // Clean up jobs not seen in 30 days
+    const expired = await pool.query(
       `UPDATE monitor_jobs
        SET is_active = false
        WHERE last_seen_at < NOW() - INTERVAL '30 days'
        AND is_active = true
        RETURNING id`
     )
-    if (cleaned.rows.length > 0) {
-      console.log(`[Monitor] Expired ${cleaned.rows.length} old job listings`)
+    if (expired.rows.length > 0) {
+      console.log(`[Monitor] Expired ${expired.rows.length} old job listings`)
+    }
+
+    // Purge garbage titles: search-result-page text scraped from job board RSS feeds
+    const purged = await pool.query(
+      `DELETE FROM monitor_jobs
+       WHERE
+         title ~ '^\\$'
+         OR title ~ '^[0-9]+ (job|position|opening|result|postdoc|researcher)'
+         OR title ~* '[0-9]+ (cardiovascular|postdoc|molecular|research) jobs?'
+         OR title ~* 'jobs? in (north america|united states|usa|uk|europe|global)'
+         OR title ~* '^(join our team|post|genomic sciences|research & development jobs)$'
+         OR length(trim(title)) < 6
+       RETURNING id`
+    )
+    if (purged.rows.length > 0) {
+      console.log(`[Monitor] Purged ${purged.rows.length} garbage job entries`)
     }
 
     console.log('[Monitor] Full scan complete')

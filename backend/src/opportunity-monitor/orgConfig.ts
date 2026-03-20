@@ -49,26 +49,11 @@ export const MONITOR_ORGS: MonitorOrg[] = [
     searchQuery: "research scientist cardiovascular molecular biology CDC" },
 
   // ═══ ACADEMIA — RSS feeds (free, no AI cost) ═══
+  // RSS feeds — only sources that emit individual per-job items (not search-page aggregators)
   { name: "Cold Spring Harbor Laboratory", sector: "academia", country: "USA",
     apiType: "rss",
     rssUrl: "https://cshl.edu/careers/feed/",
     searchQuery: "Cold Spring Harbor postdoc molecular biology genomics" },
-  { name: "Nature Jobs", sector: "academia", country: "Global",
-    apiType: "rss",
-    rssUrl: "https://www.nature.com/naturecareers/rss/latest",
-    searchQuery: "postdoc cardiovascular molecular biology nature jobs" },
-  { name: "Science Careers", sector: "academia", country: "Global",
-    apiType: "rss",
-    rssUrl: "https://jobs.sciencecareers.org/rss/jobs/",
-    searchQuery: "postdoc cardiovascular molecular biology science careers" },
-  { name: "Jobs.ac.uk", sector: "international", country: "UK",
-    apiType: "rss",
-    rssUrl: "https://www.jobs.ac.uk/search/?rss=1&keywords=cardiovascular+postdoc+molecular+biology",
-    searchQuery: "cardiovascular postdoc molecular biology UK" },
-  { name: "EuroScienceJobs", sector: "international", country: "Europe",
-    apiType: "rss",
-    rssUrl: "https://www.eurosciencejobs.com/rss/jobs",
-    searchQuery: "postdoc cardiovascular molecular biology Europe" },
   { name: "EMBL Jobs", sector: "international", country: "Germany",
     apiType: "rss",
     rssUrl: "https://www.embl.org/jobs/rss/",
@@ -81,10 +66,19 @@ export const MONITOR_ORGS: MonitorOrg[] = [
     apiType: "rss",
     rssUrl: "https://www.crick.ac.uk/careers/vacancies/rss",
     searchQuery: "Francis Crick postdoc cardiovascular molecular biology" },
-  { name: "HigherEdJobs", sector: "academia", country: "USA",
+  // Jobs.ac.uk — filtered RSS returns individual UK academic job postings
+  { name: "Jobs.ac.uk", sector: "international", country: "UK",
     apiType: "rss",
-    rssUrl: "https://www.higheredjobs.com/rss/jobFeed.cfm?JobCat=203",
-    searchQuery: "postdoc cardiovascular molecular biology US university" },
+    rssUrl: "https://www.jobs.ac.uk/search/?rss=1&keywords=cardiovascular+molecular+biology+postdoc+research+scientist",
+    searchQuery: "cardiovascular postdoc molecular biology UK" },
+  // Nature Jobs websearch — Gemini finds specific individual listings
+  { name: "Nature Jobs", sector: "academia", country: "Global",
+    apiType: "websearch",
+    searchQuery: "site:nature.com/naturecareers postdoc cardiovascular molecular biology research scientist 2026" },
+  // Science Careers websearch — Gemini finds specific individual listings
+  { name: "Science Careers", sector: "academia", country: "USA",
+    apiType: "websearch",
+    searchQuery: "site:jobs.sciencecareers.org postdoc cardiovascular molecular biology research scientist 2026" },
 
   // ═══ ACADEMIA — webSearch (no free source — keep to 15 total) ═══
   { name: "Harvard Medical School", sector: "academia", country: "USA",
@@ -325,12 +319,75 @@ export const MONITOR_ORGS: MonitorOrg[] = [
   { name: "MRC Harwell", sector: "international", country: "UK",
     apiType: "websearch",
     searchQuery: "MRC Harwell Institute scientist researcher cardiovascular genomics molecular biology 2026" },
+
+  // ═══ INTERNATIONAL — Top EU Academic Institutes ═══
+  { name: "Heidelberg University Hospital", sector: "international", country: "Germany",
+    apiType: "websearch",
+    searchQuery: "Heidelberg University DKFZ postdoc cardiovascular molecular biology research scientist 2026" },
+  { name: "Max Planck Institute for Molecular Biomedicine", sector: "international", country: "Germany",
+    apiType: "websearch",
+    searchQuery: "Max Planck Institute Molecular Biomedicine postdoc cardiovascular genomics 2026" },
+  { name: "Hubrecht Institute", sector: "international", country: "Netherlands",
+    apiType: "websearch",
+    searchQuery: "Hubrecht Institute postdoc cardiovascular developmental biology genomics 2026" },
+  { name: "University of Amsterdam AMC", sector: "international", country: "Netherlands",
+    apiType: "websearch",
+    searchQuery: "Amsterdam UMC postdoc cardiovascular molecular biology research scientist 2026" },
+  { name: "Institut Pasteur Paris", sector: "international", country: "France",
+    apiType: "websearch",
+    searchQuery: "Institut Pasteur postdoc cardiovascular genomics molecular biology Paris 2026",
+    careersUrl: "https://jobs.pasteur.fr" },
+  { name: "Uppsala University", sector: "international", country: "Sweden",
+    apiType: "websearch",
+    searchQuery: "Uppsala University postdoc cardiovascular molecular biology genomics 2026" },
+  { name: "University of Copenhagen BRIC", sector: "international", country: "Denmark",
+    apiType: "websearch",
+    searchQuery: "University Copenhagen BRIC postdoc cardiovascular molecular biology 2026" },
+  { name: "Champalimaud Foundation", sector: "international", country: "Portugal",
+    apiType: "websearch",
+    searchQuery: "Champalimaud Foundation postdoc cardiovascular molecular biology genomics 2026" },
+
+  // ═══ INTERNATIONAL — Singapore & Australia ═══
+  { name: "Duke-NUS Medical School", sector: "international", country: "Singapore",
+    apiType: "websearch",
+    searchQuery: "Duke-NUS Singapore postdoc cardiovascular molecular biology research scientist 2026",
+    careersUrl: "https://www.duke-nus.edu.sg/careers" },
+  { name: "NUS Yong Soo Lin School of Medicine", sector: "international", country: "Singapore",
+    apiType: "websearch",
+    searchQuery: "NUS National University Singapore postdoc cardiovascular molecular biology faculty 2026" },
+  { name: "Baker Heart Institute", sector: "international", country: "Australia",
+    apiType: "websearch",
+    searchQuery: "Baker Heart Diabetes Institute Melbourne postdoc cardiovascular research scientist 2026",
+    careersUrl: "https://baker.edu.au/careers" },
+  { name: "Victor Chang Cardiac Research Institute", sector: "international", country: "Australia",
+    apiType: "websearch",
+    searchQuery: "Victor Chang Cardiac Research Institute postdoc cardiovascular molecular biology 2026" },
+
+  // ═══ INTERNATIONAL — Canada ═══
+  { name: "Montreal Clinical Research Institute", sector: "international", country: "Canada",
+    apiType: "websearch",
+    searchQuery: "IRCM Montreal postdoc cardiovascular molecular biology genomics 2026" },
+  { name: "University of British Columbia", sector: "international", country: "Canada",
+    apiType: "websearch",
+    searchQuery: "UBC University British Columbia postdoc cardiovascular molecular biology faculty 2026" },
+
+  // ═══ ACADEMIA — Additional US Tier 1 ═══
+  { name: "Duke University Medical Center", sector: "academia", country: "USA",
+    apiType: "websearch",
+    searchQuery: "Duke University postdoc cardiovascular molecular biology research scientist 2026" },
+  { name: "University of Michigan Medical School", sector: "academia", country: "USA",
+    apiType: "websearch",
+    searchQuery: "University Michigan postdoc cardiovascular molecular biology genomics 2026" },
+  { name: "Vanderbilt University Medical Center", sector: "academia", country: "USA",
+    apiType: "websearch",
+    searchQuery: "Vanderbilt University postdoc cardiovascular molecular biology 2026" },
+  { name: "University of Pennsylvania Perelman", sector: "academia", country: "USA",
+    apiType: "websearch",
+    searchQuery: "UPenn Perelman School Medicine postdoc cardiovascular molecular biology 2026" },
+  { name: "Northwestern University Feinberg", sector: "academia", country: "USA",
+    apiType: "websearch",
+    searchQuery: "Northwestern Feinberg postdoc cardiovascular molecular biology genomics 2026" },
 ]
 
-// Total: 82 Orgs — Tier 1-4 India Academics, Global Pharma, International Research Labs
-
-// Deployment Trigger: 2026-03-18 17:35:42
-
-// FORCE DEPLOY SYNC: 82 ORGS - 03/18/2026 17:42:31
-
-// Final Sync Trigger: 03/18/2026 18:03:43
+// Total: ~100 Orgs — Tier 1-4 India Academics, Global Pharma, International Research Labs
+// Last updated: 2026-03-20
