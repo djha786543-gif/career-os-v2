@@ -91,8 +91,10 @@ function isRelevantLocation(location: string = ''): boolean {
 // Regex: reject titles where a non-life-science discipline precedes Scientist/Researcher
 const NOISE_DISCIPLINE_RE = /\b(data|market(?:ing)?|software|i\.?t\.?|finance|financial|social|computer|machine\s+learning|analyst)\s+(scientist|researcher)\b/i
 
-// Regex: require at least one life-science anchor in the title
-const LIFESCI_ANCHOR_RE = /\b(metabolism|molecular|biotech|cardiovascular|immunology|ph\.?d|postdoc(?:toral)?)\b/i
+// Regex: require at least one life-science anchor in the title.
+// Broad enough to pass real bio-science roles; NOISE_DISCIPLINE_RE + suitability
+// scorer provide the second and third layers of protection.
+const LIFESCI_ANCHOR_RE = /\b(metabolism|molecular|biotech|cardiovascular|immunology|ph\.?d|postdoc(?:toral)?|biology|biological|biochem(?:istry|ical)?|genomics|genetics|genetic|research|faculty|staff|science|sciences|investigator|oncology|neuroscience|microbiology|virology|pharmacology|pharma(?:ceutical)?|proteomics|transcriptomics|bioinformatics|crispr|rna|sequencing|cancer|cardiac|immunobiology|epigenetics|haematology|hematology)\b/i
 
 // Hard filter: returns false for roles Pooja should not see.
 // Exception: "assistant professor" is always allowed despite containing 'assistant'.
