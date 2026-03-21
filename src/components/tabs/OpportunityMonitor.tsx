@@ -76,10 +76,13 @@ function djClientScore(title: string, snippet: string, orgName: string): number 
   if (text.includes('aws cloud audit') || text.includes('cloud audit') ||
       text.includes('ai governance') || text.includes('ml governance')) score += 20;
   if (tl.includes('manager') || tl.includes('director') || tl.includes('avp') || tl.includes('vp')) score += 15;
-  const TIER1_DJ = new Set(['EY US Technology Risk','EY India GDS','Deloitte US Risk Advisory','Deloitte India',
-    'KPMG US Technology Risk','KPMG India','PwC US Digital Assurance','PwC India',
+  const TIER1_DJ = new Set(['EY US Technology Risk','EY India GDS','EY UK','EY Germany',
+    'Deloitte US Risk Advisory','Deloitte India','Deloitte UK','Deloitte Germany',
+    'KPMG US Technology Risk','KPMG India','KPMG UK','KPMG Netherlands',
+    'PwC US Digital Assurance','PwC India','PwC UK','PwC Germany',
     'Goldman Sachs','Goldman Sachs India','JPMorgan Chase','JPMorgan India GCC',
-    'Amazon Web Services','Amazon India GCC','Microsoft','Microsoft India GCC','Google Cloud','Google India GCC']);
+    'Amazon Web Services','Amazon India GCC','Microsoft','Microsoft India GCC','Google Cloud','Google India GCC',
+    'HSBC UK','Barclays','Deutsche Bank','ING Netherlands','ABN AMRO']);
   if (TIER1_DJ.has(orgName)) score += 10;
   return Math.min(Math.round(score), 100);
 }
@@ -125,6 +128,7 @@ const DJ_REGIONS = [
   { label: 'ALL', value: null },
   { label: 'USA', value: 'usa' },
   { label: 'India', value: 'india' },
+  { label: 'Europe', value: 'europe' },
 ];
 
 function scoreColor(score: number): string {
