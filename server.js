@@ -9,6 +9,16 @@ const path = require('path');
 const fs = require('fs');
 const app = express();
 
+const cors = require('cors');
+app.use(cors({
+  origin: [
+    'https://career-os-portal-production.up.railway.app',
+    'http://localhost:3000'
+  ],
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  credentials: true
+}));
+
 app.get('/health', (req, res) => {
   res.status(200).send('OK');
 });
