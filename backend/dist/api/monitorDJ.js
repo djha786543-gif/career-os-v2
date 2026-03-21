@@ -107,7 +107,7 @@ router.get('/orgs', async (req, res) => {
 // POST /api/monitor/dj/scan
 router.post('/scan', async (req, res) => {
     try {
-        const { orgId } = req.body;
+        const { orgId } = req.body || {};
         if (orgId) {
             const orgRow = await client_1.pool.query('SELECT * FROM dj_monitor_orgs WHERE id = $1', [orgId]);
             if (!orgRow.rows.length) {

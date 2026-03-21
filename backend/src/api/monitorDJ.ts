@@ -126,7 +126,7 @@ router.get('/orgs', async (req: Request, res: Response) => {
 // POST /api/monitor/dj/scan
 router.post('/scan', async (req: Request, res: Response) => {
   try {
-    const { orgId } = req.body
+    const { orgId } = req.body || {}
 
     if (orgId) {
       const orgRow = await pool.query(

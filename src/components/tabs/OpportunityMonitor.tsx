@@ -247,7 +247,11 @@ export const OpportunityMonitor = () => {
     setScanning(true);
     setScanNote('');
     try {
-      await fetch(`${API_BASE}${API_PATH}/scan`, { method: 'POST' });
+      await fetch(`${API_BASE}${API_PATH}/scan`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
       setScanNote('Scan running in background — refreshing in 35s...');
       setTimeout(() => { fetchData(); setScanNote(''); }, 35000);
     } catch (err) {
