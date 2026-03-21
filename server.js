@@ -1,4 +1,10 @@
-﻿const express = require('express');
+const cors = require('cors');
+app.use(cors({
+  origin: ['https://career-os-portal-production.up.railway.app', 'http://localhost:3000'],
+  methods: ['GET', 'POST'],
+  credentials: true
+}));
+const express = require('express');
 const path = require('path');
 const fs = require('fs');
 const app = express();
