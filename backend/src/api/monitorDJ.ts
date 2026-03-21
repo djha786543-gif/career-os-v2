@@ -17,6 +17,7 @@ import { Router, Request, Response } from 'express'
 import { pool } from '../db/client'
 import { runFullScanDJ, scanOrgDJ, seedOrgsDJ } from '../opportunity-monitor/monitorEngineDJ'
 import { DJ_MONITOR_ORGS } from '../opportunity-monitor/orgConfigDJ'
+import { geminiGroundedSearch } from '../services/geminiClient'
 
 const router = Router()
 
@@ -230,6 +231,33 @@ router.post('/seed', async (req: Request, res: Response) => {
     if (!res.headersSent) {
       res.status(500).json({ error: (err as Error).message })
     }
+  }
+})
+
+// GET /api/monitor/dj/test-search?org=EY+US+Technology+Risk
+// Returns RAW Gemini response before any filtering — diagnostic only
+router.get('/test-search', async (req: Request, res: Response) => {
+  try {
+    const orgName = (req.query.org as string) || 'EY US Technology Risk'
+    const org = DJ_MONITOR_ORGS.find(o => o.name === orgName) || DJ_MONITOR_ORGS[0]
+
+    const prompt = `You are an IT Audit job search expert. Search the web RIGHT NOW for currently open IT Audit or Technology Risk positions at ${org.name}.
+Search query: "${org.searchQuery}"
+Candidate: IT Audit Manager, CISA, AWS Certified. Expertise: SOX 404, ITGC, Cloud Security, GRC.
+Return ONLY a valid JSON array:
+[{"title":"...","location":"...","applyUrl":"...","snippet":"...","postedDate":"..."}]
+If none found, return: []`
+
+    const raw = await geminiGroundedSearch(prompt, 2500)
+
+    res.json({
+      org: org.name,
+      query: org.searchQuery,
+      rawGeminiResponse: raw,
+      hasJsonArray: raw.includes('[') && raw.includes(']'),
+    })
+  } catch (err: any) {
+    res.status(500).json({ error: err.message })
   }
 })
 

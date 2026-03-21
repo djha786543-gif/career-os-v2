@@ -18,6 +18,7 @@ const express_1 = require("express");
 const client_1 = require("../db/client");
 const monitorEngineDJ_1 = require("../opportunity-monitor/monitorEngineDJ");
 const orgConfigDJ_1 = require("../opportunity-monitor/orgConfigDJ");
+const geminiClient_1 = require("../services/geminiClient");
 const router = (0, express_1.Router)();
 const MAX_LIMIT = 100;
 const DEFAULT_LIMIT = 50;
@@ -193,6 +194,30 @@ router.post('/seed', async (req, res) => {
         if (!res.headersSent) {
             res.status(500).json({ error: err.message });
         }
+    }
+});
+// GET /api/monitor/dj/test-search?org=EY+US+Technology+Risk
+// Returns RAW Gemini response before any filtering — diagnostic only
+router.get('/test-search', async (req, res) => {
+    try {
+        const orgName = req.query.org || 'EY US Technology Risk';
+        const org = orgConfigDJ_1.DJ_MONITOR_ORGS.find(o => o.name === orgName) || orgConfigDJ_1.DJ_MONITOR_ORGS[0];
+        const prompt = `You are an IT Audit job search expert. Search the web RIGHT NOW for currently open IT Audit or Technology Risk positions at ${org.name}.
+Search query: "${org.searchQuery}"
+Candidate: IT Audit Manager, CISA, AWS Certified. Expertise: SOX 404, ITGC, Cloud Security, GRC.
+Return ONLY a valid JSON array:
+[{"title":"...","location":"...","applyUrl":"...","snippet":"...","postedDate":"..."}]
+If none found, return: []`;
+        const raw = await (0, geminiClient_1.geminiGroundedSearch)(prompt, 2500);
+        res.json({
+            org: org.name,
+            query: org.searchQuery,
+            rawGeminiResponse: raw,
+            hasJsonArray: raw.includes('[') && raw.includes(']'),
+        });
+    }
+    catch (err) {
+        res.status(500).json({ error: err.message });
     }
 });
 // GET /api/monitor/dj/debug — full diagnostic dump
