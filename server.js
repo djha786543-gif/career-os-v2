@@ -1,4 +1,4 @@
-const express = require('express');
+﻿const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const app = express();
@@ -6,22 +6,32 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// 1. Healthcheck (Must be top priority for Railway)
-app.get('/health', (req, res) => res.status(200).send('OK'));
+// 1. Healthcheck
+app.get('/health', (req, res) => {
+  res.status(200).send('OK');
+});
 
-// 2. Link Logic (This is where Pooja's data lives)
+// 2. API Bridge
 try {
-    // Attempt to load the compiled logic from the backend folder
-    const monitorRouter = require('./backend/dist/api/monitor');
-    app.use('/api/monitor', monitorRouter);
+  const monitorPath = path.join(__dirname, 'backend', 'dist', 'api', 'monitor');
+  const monitorRouter = require(monitorPath);
+  app.use('/api/monitor', monitorRouter);
+  console.log('API Bridge: Connected');
 } catch (e) {
-    console.log('API Logic not found, running in frontend-only mode');
+  console.log('API Bridge: Running in fallback mode');
 }
 
-// 3. Static Files (Next.js)
+// 3. Static Frontend
 const publicPath = path.join(__dirname, 'public');
 app.use(express.static(publicPath));
-app.get('*', (req, res) => res.sendFile(path.join(publicPath, 'index.html')));
+
+// Express 5: Use a Regex Literal to catch everything
+// This avoids the 'path-to-regexp' string parsing error
+app.get(/^(?!\/api).+/, (req, res) => {
+  res.sendFile(path.join(publicPath, 'index.html'));
+});
 
 const PORT = process.env.PORT || 8080;
-app.listen(PORT, '0.0.0.0', () => console.log('Server live on ' + PORT));
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server live on port ${PORT}`);
+});
