@@ -544,11 +544,3 @@ router.post('/ingest-mcp', async (req, res) => {
     }
 });
 exports.default = router;
-
-module.exports = router;
-
-module.exports = router;
-
-module.exports = router;
-
-module.exports = router;
