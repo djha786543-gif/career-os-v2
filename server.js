@@ -8,6 +8,10 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs');
 const app = express();
+
+app.get('/health', (req, res) => {
+  res.status(200).send('OK');
+});
 const PORT = process.env.PORT || 3000;
 
 const publicPath = path.join(__dirname, 'public');
