@@ -103,7 +103,7 @@ function isRelevantDJ(title: string, snippet: string = ''): boolean {
 }
 
 /**
- * DJ suitability score (0–5). Score must be ≥ 4 to persist.
+ * DJ suitability score (0–5). Score must be ≥ 2 to persist.
  */
 function djSuitabilityScore(title: string, snippet: string, orgName: string): number {
   const text = (title + ' ' + snippet).toLowerCase()
@@ -234,7 +234,7 @@ If no relevant open positions found, return: []`,
       .filter((j: any) => passesHardFilter(j.title, org.country))
       .filter((j: any) => {
         const s = djSuitabilityScore(j.title, j.snippet || '', org.name)
-        return s >= 4
+        return s >= 2
       })
       .map((j: any) => {
         const location = j.location || org.country
