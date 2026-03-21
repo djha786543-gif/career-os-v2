@@ -14,7 +14,7 @@
 
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-const GEMINI_MODEL = 'gemini-3.0-flash';
+const GEMINI_MODEL = 'gemini-2.0-flash';
 
 let _genAI: GoogleGenerativeAI | null = null;
 

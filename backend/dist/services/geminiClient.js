@@ -16,7 +16,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.geminiGenerate = geminiGenerate;
 exports.geminiGroundedSearch = geminiGroundedSearch;
 const generative_ai_1 = require("@google/generative-ai");
-const GEMINI_MODEL = 'gemini-3.0-flash';
+const GEMINI_MODEL = 'gemini-2.0-flash';
 let _genAI = null;
 function getGenAI() {
     const key = process.env.GEMINI_API_KEY;
