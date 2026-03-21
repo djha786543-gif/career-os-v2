@@ -3,30 +3,27 @@ const cors = require('cors');
 const path = require('path');
 const app = express();
 
-// 1. Security & Body Parsing
-app.use(cors({
-  origin: ['https://career-os-portal-production.up.railway.app', 'http://localhost:3000'],
-  credentials: true
-}));
+app.use(cors());
 app.use(express.json());
 
-// 2. Healthcheck
+// 1. Immediate Healthcheck (Must be first)
 app.get('/health', (req, res) => res.status(200).send('OK'));
 
-// 3. LINK THE ENGINE (This connects to your actual logic)
-// We point to the 'dist' folder because Node runs Javascript, not Typescript
-const monitorRouter = require('./backend/dist/api/monitor');
-const jobsRouter = require('./backend/dist/api/jobs');
+// 2. Link Engine with Error Handling
+try {
+    const monitorRouter = require('./backend/dist/api/monitor');
+    app.use('/api/monitor', monitorRouter);
+    console.log('Monitor logic loaded successfully');
+} catch (e) {
+    console.error('CRITICAL: Monitor logic failed to load:', e.message);
+}
 
-app.use('/api/monitor', monitorRouter);
-app.use('/api/jobs', jobsRouter);
-
-// 4. Static Files (Next.js export)
+// 3. Static Files
 const publicPath = path.join(__dirname, 'public');
 app.use(express.static(publicPath));
-app.get('*', (req, res) => {
-  res.sendFile(path.join(publicPath, 'index.html'));
-});
+app.get('*', (req, res) => res.sendFile(path.join(publicPath, 'index.html')));
 
 const PORT = process.env.PORT || 8080;
-app.listen(PORT, () => console.log('Server running on port ' + PORT));
+app.listen(PORT, '0.0.0.0', () => {
+    console.log('Server is live on port ' + PORT);
+});
