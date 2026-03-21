@@ -156,7 +156,7 @@ router.post('/scan', async (req: Request, res: Response) => {
 // POST /api/monitor/dj/mark-seen
 router.post('/mark-seen', async (req: Request, res: Response) => {
   try {
-    const { sector } = req.body
+    const { sector } = req.body || {}
     if (sector && VALID_DJ_SECTORS.includes(sector)) {
       await pool.query(
         'UPDATE dj_monitor_jobs SET is_new = false WHERE sector = $1 AND is_active = true',
