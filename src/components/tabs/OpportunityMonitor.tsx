@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { API_BASE } from '../../config/api';
+import { useProfile } from '../../context/ProfileContext';
 
-// ─── Client-side Pooja Match Scorer ──────────────────────────────────────────
-// Mirrors backend poojaMatchScore() so scores work even if backend deploy lags.
-// This runs in the browser on every data fetch — no DB round-trip needed.
+// ─── Pooja Client-Side Scorer ─────────────────────────────────────────────────
 const WET_LAB_RE = /\b(genotyping|pcr|qpcr|rt.?pcr|western blot|protein analysis|protein expression|immunohistochemistry|ihc|elisa|cell culture|primary cell|flow cytometry|immunofluorescence|confocal|microscopy|molecular biology|biochemistry|cloning|rna.?seq|transcriptomics|crispr|gene expression|sequencing|rna isolation|dna isolation|immunoprecipitation|chromatin|chip.?seq|atac.?seq|single.cell)\b/i;
 const IN_VIVO_RE  = /\b(animal model|mouse model|in.?vivo|transgenic|knockout|knock.?in|conditional knockout|animal surgery|echocardiography|langendorff|cardiac perfusion|animal handling|rodent|murine|rat model|zebrafish|drosophila|genetically modified|cre.?lox)\b/i;
 const PRIMARY_DOMAIN_RE   = /\b(cardiovascular|cardiomyopathy|peripartum|cardiac|heart failure|heart disease|cardiomyocyte|cardio|vascular|heme|haemo|hemoglobin|haematology|hematology|molecular genetics|genomics|genetics|gene|transcriptomics|rna.?seq)\b/i;
@@ -32,34 +31,23 @@ const TIER1_ORGS = new Set([
   'NCBS Bangalore','IISc Bangalore','TIFR Mumbai',
 ]);
 
-function clientScore(title: string, snippet: string, orgName: string, sector: string): number {
+function poojaClientScore(title: string, snippet: string, orgName: string, sector: string): number {
   const text = (title + ' ' + snippet).toLowerCase();
   const tl = title.toLowerCase();
   let score = 0;
-
-  // 1. Technical mastery (40 pts)
   if (WET_LAB_RE.test(text) || IN_VIVO_RE.test(text)) score += 40;
   else if (LIFESCI_PHD_RE.test(text)) score += 20;
-
-  // 2. Domain alignment (30 / 15 pts)
   if (PRIMARY_DOMAIN_RE.test(text)) score += 30;
   else if (SECONDARY_DOMAIN_RE.test(text)) score += 15;
-
-  // 3. Seniority (20 / 18 / 12 / 8 pts)
   if (FACULTY_TITLE_RE.test(tl) || SENIOR_TITLE_RE.test(tl)) score += 20;
   else if (SCIENTIST_TITLE_RE.test(tl)) score += 18;
   else if (POSTDOC_TITLE_RE.test(tl)) {
     score += (TIER1_ORGS.has(orgName) || sector === 'academia' || sector === 'international') ? 12 : 8;
   }
-
-  // 4. Institutional prestige (10 pts)
   if (TIER1_ORGS.has(orgName)) score += 10;
-
-  // Floor: PhD life-sci + molecular context → min 50
   if (LIFESCI_PHD_RE.test(text) && MOLBIO_CONTEXT_RE.test(text) &&
       (LIFESCI_ANCHOR_RE.test(title) || SCIENTIST_TITLE_RE.test(title) || FACULTY_TITLE_RE.test(title)) &&
       score < 50) score = 50;
-
   return Math.min(Math.round(score), 100);
 }
 
@@ -71,6 +59,32 @@ function isGarbageTitle(title: string): boolean {
   return false;
 }
 
+// ─── DJ Client-Side Scorer ────────────────────────────────────────────────────
+const DJ_RANK1_TITLES_RE = /\b(it audit manager|it audit director|head of it audit|director of it audit|vp internal audit|avp it audit|senior manager it audit|technology risk manager|technology risk director|cloud risk manager|cloud audit manager|information security manager|sox audit manager|it compliance manager|cloud security manager|grc manager|it risk manager)\b/i;
+const DJ_SENIORITY_RE    = /\b(manager|senior manager|director|avp|vp|vice president|head of|principal|lead)\b/i;
+const DJ_TECHNICAL_RE    = /\b(sox|sox 404|itgc|itac|cloud security|cloud audit|sap s.?4hana|nist|ai governance|ml governance|soc1|soc 1|soc2|soc 2|grc|cisa|cissp|aws cloud|azure security|cloud risk|it general controls|application controls|it audit)\b/i;
+const DJ_GARBAGE_RE      = /\b(intern|internship|entry level|entry-level|staff auditor|junior|graduate|trainee|fresher)\b/i;
+
+function djClientScore(title: string, snippet: string, orgName: string): number {
+  if (DJ_GARBAGE_RE.test(title.toLowerCase())) return 0;
+  const text = (title + ' ' + snippet).toLowerCase();
+  const tl = title.toLowerCase();
+  let score = 0;
+  if (DJ_RANK1_TITLES_RE.test(tl)) score += 50;
+  else if (DJ_SENIORITY_RE.test(tl) && DJ_TECHNICAL_RE.test(text)) score += 40;
+  else if (DJ_TECHNICAL_RE.test(text)) score += 25;
+  if (text.includes('aws cloud audit') || text.includes('cloud audit') ||
+      text.includes('ai governance') || text.includes('ml governance')) score += 20;
+  if (tl.includes('manager') || tl.includes('director') || tl.includes('avp') || tl.includes('vp')) score += 15;
+  const TIER1_DJ = new Set(['EY US Technology Risk','EY India GDS','Deloitte US Risk Advisory','Deloitte India',
+    'KPMG US Technology Risk','KPMG India','PwC US Digital Assurance','PwC India',
+    'Goldman Sachs','Goldman Sachs India','JPMorgan Chase','JPMorgan India GCC',
+    'Amazon Web Services','Amazon India GCC','Microsoft','Microsoft India GCC','Google Cloud','Google India GCC']);
+  if (TIER1_DJ.has(orgName)) score += 10;
+  return Math.min(Math.round(score), 100);
+}
+
+// ─── Shared types & helpers ───────────────────────────────────────────────────
 interface Job {
   title: string;
   org_name: string;
@@ -82,54 +96,48 @@ interface Job {
   is_new: boolean;
   high_suitability: boolean;
   match_score: number;
+  suitability_score?: number;
   sector: string;
   detected_at: string;
+  ead_friendly?: boolean;
 }
 
-interface SectorCount {
-  sector: string;
-  total: string;
-  new_count: string;
-}
+interface SectorCount { sector: string; total: string; new_count: string; }
 
-const SECTORS = ['academia', 'industry', 'international', 'india'] as const;
+const POOJA_SECTORS = ['academia', 'industry', 'international', 'india'] as const;
+const DJ_SECTORS    = ['big4', 'banking', 'tech-cloud', 'manufacturing'] as const;
 
-const REGIONS = [
+const POOJA_REGIONS = [
+  { label: 'ALL', value: null },
+  { label: 'USA', value: 'usa' },   { label: 'UK', value: 'uk' },
+  { label: 'Germany', value: 'germany' }, { label: 'Netherlands', value: 'netherlands' },
+  { label: 'Belgium', value: 'belgium' }, { label: 'Switzerland', value: 'switzerland' },
+  { label: 'Sweden', value: 'sweden' },   { label: 'Denmark', value: 'denmark' },
+  { label: 'Austria', value: 'austria' }, { label: 'France', value: 'france' },
+  { label: 'Italy', value: 'italy' },     { label: 'Spain', value: 'spain' },
+  { label: 'Finland', value: 'finland' }, { label: 'Norway', value: 'norway' },
+  { label: 'Ireland', value: 'ireland' }, { label: 'Singapore', value: 'singapore' },
+  { label: 'Australia', value: 'australia' }, { label: 'Canada', value: 'canada' },
+  { label: 'India', value: 'india' },
+];
+
+const DJ_REGIONS = [
   { label: 'ALL', value: null },
   { label: 'USA', value: 'usa' },
-  { label: 'UK', value: 'uk' },
-  { label: 'Germany', value: 'germany' },
-  { label: 'Netherlands', value: 'netherlands' },
-  { label: 'Belgium', value: 'belgium' },
-  { label: 'Switzerland', value: 'switzerland' },
-  { label: 'Sweden', value: 'sweden' },
-  { label: 'Denmark', value: 'denmark' },
-  { label: 'Austria', value: 'austria' },
-  { label: 'France', value: 'france' },
-  { label: 'Italy', value: 'italy' },
-  { label: 'Spain', value: 'spain' },
-  { label: 'Finland', value: 'finland' },
-  { label: 'Norway', value: 'norway' },
-  { label: 'Ireland', value: 'ireland' },
-  { label: 'Singapore', value: 'singapore' },
-  { label: 'Australia', value: 'australia' },
-  { label: 'Canada', value: 'canada' },
   { label: 'India', value: 'india' },
 ];
 
 function scoreColor(score: number): string {
-  if (score >= 70) return '#22c55e';   // green — strong match
-  if (score >= 50) return '#f59e0b';   // amber — good match
-  if (score >= 30) return '#64748b';   // slate — partial match
-  return '#475569';                    // dim — weak
+  if (score >= 70) return '#22c55e';
+  if (score >= 50) return '#f59e0b';
+  if (score >= 30) return '#64748b';
+  return '#475569';
 }
-
 function scoreBg(score: number): string {
   if (score >= 70) return 'rgba(34,197,94,0.12)';
   if (score >= 50) return 'rgba(245,158,11,0.10)';
   return 'rgba(100,116,139,0.08)';
 }
-
 function scoreLabel(score: number): string {
   if (score >= 80) return 'Strong fit';
   if (score >= 65) return 'Good fit';
@@ -137,14 +145,12 @@ function scoreLabel(score: number): string {
   if (score >= 30) return 'Possible';
   return 'Low match';
 }
-
 function borderColor(score: number, isNew: boolean): string {
   if (isNew) return '#22c55e';
   if (score >= 70) return '#3b82f6';
   if (score >= 50) return '#f59e0b';
   return '#334155';
 }
-
 function daysAgo(dateStr: string): string {
   if (!dateStr) return '';
   const d = new Date(dateStr);
@@ -153,25 +159,38 @@ function daysAgo(dateStr: string): string {
   if (days === 0) return 'Today';
   if (days === 1) return '1 day ago';
   if (days < 30) return `${days}d ago`;
-  const weeks = Math.floor(days / 7);
-  return `${weeks}w ago`;
+  return `${Math.floor(days / 7)}w ago`;
 }
 
 export const OpportunityMonitor = () => {
-  const [activeSector, setActiveSector] = useState<string>('academia');
+  const { profile } = useProfile();
+  const isDJ = profile === 'dj';
+
+  const SECTORS  = isDJ ? DJ_SECTORS    : POOJA_SECTORS;
+  const REGIONS  = isDJ ? DJ_REGIONS    : POOJA_REGIONS;
+  const API_PATH = isDJ ? '/monitor/dj' : '/monitor';
+
+  const [activeSector, setActiveSector] = useState<string>(SECTORS[0]);
   const [activeRegion, setActiveRegion] = useState<string | null>(null);
-  const [jobs, setJobs] = useState<Job[]>([]);
-  const [counts, setCounts] = useState<SectorCount[]>([]);
+  const [allJobs, setAllJobs]   = useState<Job[]>([]);
+  const [jobs, setJobs]         = useState<Job[]>([]);
+  const [counts, setCounts]     = useState<SectorCount[]>([]);
   const [scanning, setScanning] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading]   = useState(false);
+  const [error, setError]       = useState<string | null>(null);
   const [showNewOnly, setShowNewOnly] = useState(false);
   const [minScore, setMinScore] = useState(0);
   const [scanNote, setScanNote] = useState('');
 
-  // allJobs holds the full server response for the active sector (unfiltered by score)
-  // Slider filtering is done client-side so it's instant
-  const [allJobs, setAllJobs] = useState<Job[]>([]);
+  // Reset sector when profile switches
+  useEffect(() => {
+    setActiveSector(isDJ ? 'big4' : 'academia');
+    setActiveRegion(null);
+    setMinScore(0);
+    setAllJobs([]);
+    setJobs([]);
+    setCounts([]);
+  }, [profile]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -180,18 +199,20 @@ export const OpportunityMonitor = () => {
       const params = new URLSearchParams({ sector: activeSector, limit: '100' });
       if (showNewOnly) params.set('isNew', 'true');
 
-      const res = await fetch(`${API_BASE}/monitor/jobs?${params}`);
+      const res = await fetch(`${API_BASE}${API_PATH}/jobs?${params}`);
       if (!res.ok) throw new Error(`Server error: ${res.status}`);
       const data = await res.json();
 
-      // Filter garbage titles and apply client-side scoring (overrides backend 0s)
       const fetched: Job[] = (Array.isArray(data?.jobs) ? data.jobs : [])
         .filter((j: Job) => !isGarbageTitle(j.title))
         .map((j: Job) => ({
           ...j,
-          match_score: clientScore(j.title, j.snippet || '', j.org_name, j.sector),
+          match_score: isDJ
+            ? djClientScore(j.title, j.snippet || '', j.org_name)
+            : poojaClientScore(j.title, j.snippet || '', j.org_name, j.sector),
         }))
         .sort((a: Job, b: Job) => b.match_score - a.match_score);
+
       setAllJobs(fetched);
       setCounts(Array.isArray(data?.counts) ? data.counts : []);
     } catch (err) {
@@ -201,7 +222,7 @@ export const OpportunityMonitor = () => {
     }
   };
 
-  // Client-side filtering: instant response on slider/region changes
+  // Client-side filtering: instant on slider/region change
   useEffect(() => {
     let filtered = [...allJobs];
     if (activeRegion) {
@@ -216,20 +237,15 @@ export const OpportunityMonitor = () => {
     setJobs(filtered);
   }, [allJobs, activeRegion, minScore]);
 
-  useEffect(() => { fetchData(); }, [activeSector, showNewOnly]);
-
-  // Scoring is now client-side — no rescore/purge API calls needed
+  useEffect(() => { fetchData(); }, [activeSector, showNewOnly, profile]);
 
   const handleScan = async () => {
     setScanning(true);
     setScanNote('');
     try {
-      await fetch(`${API_BASE}/monitor/scan`, { method: 'POST' });
+      await fetch(`${API_BASE}${API_PATH}/scan`, { method: 'POST' });
       setScanNote('Scan running in background — refreshing in 35s...');
-      setTimeout(() => {
-        fetchData();
-        setScanNote('');
-      }, 35000);
+      setTimeout(() => { fetchData(); setScanNote(''); }, 35000);
     } catch (err) {
       setError('Scan failed: ' + (err as Error).message);
     } finally {
@@ -240,10 +256,22 @@ export const OpportunityMonitor = () => {
   const getCount = (sector: string) => counts.find(c => c.sector === sector);
 
   const scoreBreakdown = jobs.length > 0 ? {
-    strong: jobs.filter(j => (j.match_score || 0) >= 70).length,
-    good: jobs.filter(j => (j.match_score || 0) >= 50 && (j.match_score || 0) < 70).length,
+    strong:  jobs.filter(j => (j.match_score || 0) >= 70).length,
+    good:    jobs.filter(j => (j.match_score || 0) >= 50 && (j.match_score || 0) < 70).length,
     partial: jobs.filter(j => (j.match_score || 0) < 50).length,
   } : null;
+
+  const subtitle = isDJ
+    ? 'Live positions scored against DJ\'s IT Audit profile · Manager+ grade · SOX/Cloud/GRC prioritized'
+    : 'Live positions scored against Pooja\'s profile · No expired listings · Industry & India prioritized';
+
+  const scoreHint = isDJ
+    ? { high: 'IT Audit Manager + SOX + Cloud/GRC', med: 'Technology Risk, ITGC, adjacent', low: 'Adjacent field, limited overlap' }
+    : { high: 'wet-lab + cardiovascular/genetics',   med: 'molecular biology, transferable domain', low: 'adjacent field, limited overlap' };
+
+  const scoreLegend = isDJ
+    ? 'Scored: Title(50) + Cloud/AI-Gov(20) + Seniority(15) + Org(10) + Misc(5)'
+    : 'Scored: Technical(40) + Domain(30) + Title(20) + Org(10)';
 
   return (
     <div style={{ padding: '20px', color: 'white', minHeight: '100vh', background: '#0f172a', fontFamily: 'sans-serif' }}>
@@ -252,9 +280,7 @@ export const OpportunityMonitor = () => {
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', alignItems: 'flex-start' }}>
         <div>
           <h1 style={{ fontSize: '20px', fontWeight: 'bold', margin: '0 0 4px 0' }}>Opportunity Monitor</h1>
-          <p style={{ margin: 0, color: '#64748b', fontSize: '12px' }}>
-            Live positions scored against Pooja's profile · No expired listings · Industry & India prioritized
-          </p>
+          <p style={{ margin: 0, color: '#64748b', fontSize: '12px' }}>{subtitle}</p>
         </div>
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
           <label style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '12px', color: '#94a3b8', cursor: 'pointer' }}>
@@ -298,10 +324,10 @@ export const OpportunityMonitor = () => {
             </div>
           </div>
           <div style={{ fontSize: '10px', color: '#64748b', lineHeight: '1.6' }}>
-            <div><span style={{ color: '#22c55e' }}>■</span> 75–100 <strong style={{ color: '#94a3b8' }}>High</strong> — wet-lab + cardiovascular/genetics</div>
-            <div><span style={{ color: '#f59e0b' }}>■</span> 50–74 <strong style={{ color: '#94a3b8' }}>Medium</strong> — molecular biology, transferable domain</div>
-            <div><span style={{ color: '#64748b' }}>■</span> &lt;50 <strong style={{ color: '#475569' }}>Low</strong> — adjacent field, limited overlap</div>
-            <div style={{ marginTop: '3px', color: '#475569', fontSize: '9px' }}>Scored: Technical(40) + Domain(30) + Title(20) + Org(10)</div>
+            <div><span style={{ color: '#22c55e' }}>■</span> 75–100 <strong style={{ color: '#94a3b8' }}>High</strong> — {scoreHint.high}</div>
+            <div><span style={{ color: '#f59e0b' }}>■</span> 50–74 <strong style={{ color: '#94a3b8' }}>Medium</strong> — {scoreHint.med}</div>
+            <div><span style={{ color: '#64748b' }}>■</span> &lt;50 <strong style={{ color: '#475569' }}>Low</strong> — {scoreHint.low}</div>
+            <div style={{ marginTop: '3px', color: '#475569', fontSize: '9px' }}>{scoreLegend}</div>
           </div>
         </div>
       </div>
@@ -310,6 +336,9 @@ export const OpportunityMonitor = () => {
       <div style={{ display: 'flex', gap: '4px', marginBottom: '10px', flexWrap: 'wrap' }}>
         {SECTORS.map(s => {
           const c = getCount(s);
+          const label = isDJ
+            ? ({ 'big4': 'Big 4', 'banking': 'Banking', 'tech-cloud': 'Tech/Cloud', 'manufacturing': 'Manufacturing' } as Record<string, string>)[s] || s
+            : s;
           return (
             <button
               key={s}
@@ -321,7 +350,7 @@ export const OpportunityMonitor = () => {
                 color: 'white', cursor: 'pointer', borderRadius: '4px', fontSize: '12px'
               }}
             >
-              <span style={{ textTransform: 'capitalize' }}>{s}</span>
+              <span style={{ textTransform: 'capitalize' }}>{label}</span>
               {c && (
                 <span style={{ marginLeft: '6px', fontSize: '10px', color: '#94a3b8' }}>
                   {c.total}
@@ -368,8 +397,8 @@ export const OpportunityMonitor = () => {
       {!loading && scoreBreakdown && jobs.length > 0 && (
         <div style={{ display: 'flex', gap: '12px', marginBottom: '14px', fontSize: '12px', flexWrap: 'wrap' }}>
           <span style={{ color: '#64748b' }}>{jobs.length} position{jobs.length !== 1 ? 's' : ''}</span>
-          {scoreBreakdown.strong > 0 && <span style={{ color: '#22c55e' }}>● {scoreBreakdown.strong} strong fit (70+)</span>}
-          {scoreBreakdown.good > 0 && <span style={{ color: '#f59e0b' }}>● {scoreBreakdown.good} good fit (50–69)</span>}
+          {scoreBreakdown.strong  > 0 && <span style={{ color: '#22c55e' }}>● {scoreBreakdown.strong} strong fit (70+)</span>}
+          {scoreBreakdown.good    > 0 && <span style={{ color: '#f59e0b' }}>● {scoreBreakdown.good} good fit (50–69)</span>}
           {scoreBreakdown.partial > 0 && <span style={{ color: '#64748b' }}>● {scoreBreakdown.partial} partial (&lt;50)</span>}
           {activeRegion && <span style={{ color: '#475569' }}>in {activeRegion}</span>}
         </div>
@@ -403,6 +432,11 @@ export const OpportunityMonitor = () => {
                       {job.is_new && (
                         <span style={{ fontSize: '9px', background: '#166534', color: '#86efac', padding: '2px 5px', borderRadius: '3px', marginRight: '6px', fontWeight: 'bold', verticalAlign: 'middle' }}>
                           NEW
+                        </span>
+                      )}
+                      {isDJ && job.ead_friendly && (
+                        <span style={{ fontSize: '9px', background: '#1e3a5f', color: '#93c5fd', padding: '2px 5px', borderRadius: '3px', marginRight: '6px', fontWeight: 'bold', verticalAlign: 'middle' }}>
+                          EAD
                         </span>
                       )}
                       {job.title}
