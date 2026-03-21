@@ -6,32 +6,26 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// 1. Healthcheck
-app.get('/health', (req, res) => {
-  res.status(200).send('OK');
-});
+// 1. Healthcheck (Must be top-level)
+app.get('/health', (req, res) => res.status(200).send('OK'));
 
-// 2. API Bridge
+// 2. The Bridge (Using Linux-style relative paths)
 try {
-  const monitorPath = path.join(__dirname, 'backend', 'dist', 'api', 'monitor');
-  const monitorRouter = require(monitorPath);
+  const monitorRouter = require('./backend/dist/api/monitor');
+  const jobsRouter = require('./backend/dist/api/jobs');
   app.use('/api/monitor', monitorRouter);
+  app.use('/api/jobs', jobsRouter);
   console.log('API Bridge: Connected');
 } catch (e) {
-  console.log('API Bridge: Running in fallback mode');
+  console.error('API Bridge Failure:', e.message);
 }
 
-// 3. Static Frontend
+// 3. Static Assets & Express 5 Catch-all
 const publicPath = path.join(__dirname, 'public');
 app.use(express.static(publicPath));
-
-// Express 5: Use a Regex Literal to catch everything
-// This avoids the 'path-to-regexp' string parsing error
 app.get(/^(?!\/api).+/, (req, res) => {
   res.sendFile(path.join(publicPath, 'index.html'));
 });
 
 const PORT = process.env.PORT || 8080;
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server live on port ${PORT}`);
-});
+app.listen(PORT, '0.0.0.0', () => console.log(`Server live on ${PORT}`));
