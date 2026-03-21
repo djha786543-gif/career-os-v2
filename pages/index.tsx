@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import dynamic from 'next/dynamic';
 import { AppLayout, TabId } from '../src/components/AppLayout';
 import { JobHub }          from '../src/components/tabs/JobHub';
 import { PrepVault }       from '../src/components/tabs/PrepVault';
@@ -8,7 +9,13 @@ import { CertVault }       from '../src/components/tabs/CertVault';
 import { TrendRadar }      from '../src/components/tabs/TrendRadar';
 import { Tracker }         from '../src/components/tabs/Tracker';
 import { LearningTracks }  from '../src/components/tabs/LearningTracks';
-import { OpportunityMonitor } from '../src/components/tabs/OpportunityMonitor';
+
+// Load OpportunityMonitor client-side only to avoid SSR/hydration mismatch
+// (component uses useProfile context + fetch which are browser-only)
+const OpportunityMonitor = dynamic(
+  () => import('../src/components/tabs/OpportunityMonitor').then(m => ({ default: m.OpportunityMonitor })),
+  { ssr: false, loading: () => <div style={{ padding: 40, color: '#64748b', textAlign: 'center' }}>Loading...</div> }
+);
 
 const TAB_VIEWS: Record<TabId, React.ReactElement> = {
   'heatmap':         <MarketHeatmap />,
