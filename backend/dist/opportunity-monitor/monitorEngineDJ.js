@@ -25,11 +25,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.scanOrgDJ = scanOrgDJ;
 exports.runFullScanDJ = runFullScanDJ;
 exports.seedOrgsDJ = seedOrgsDJ;
-const sdk_1 = __importDefault(require("@anthropic-ai/sdk"));
+const geminiClient_1 = require("../services/geminiClient");
 const client_1 = require("../db/client");
 const orgConfigDJ_1 = require("./orgConfigDJ");
 const crypto_1 = __importDefault(require("crypto"));
-const anthropic = new sdk_1.default({ apiKey: process.env.ANTHROPIC_API_KEY });
 // ─── DJ Profile Keywords ──────────────────────────────────────────────────────
 const DJ_RANK1_TITLES = [
     'it audit manager', 'it audit director', 'head of it audit', 'director of it audit',
@@ -143,48 +142,52 @@ async function withTimeout(promise, ms, label) {
 async function scanViaWebSearchDJ(org) {
     const isIndia = org.country === 'India';
     const countryStrategy = isIndia
-        ? `INDIA STRATEGY: Return ONLY Manager, Senior Manager, Director, AVP, VP, or Head of IT Audit level roles. Hard-reject Associate, Senior Associate, Analyst.`
-        : `US STRATEGY: Prioritize Contract, Consultant, W2, EAD-friendly, and Project-based roles. Include SOX Testing Cycle and Immediate Start positions.`;
-    try {
-        const response = await withTimeout(anthropic.messages.create({
-            model: 'claude-sonnet-4-5-20251001',
-            max_tokens: 2000,
-            tools: [{ type: 'web_search_20250305', name: 'web_search' }],
-            messages: [{
-                    role: 'user',
-                    content: `Search for current open IT Audit or Technology Risk positions at ${org.name}.
-Query: "${org.searchQuery}"
+        ? `INDIA: Return ONLY Manager, Senior Manager, Director, AVP, VP, or Head of IT Audit level roles. Hard-reject Associate, Senior Associate, Analyst.`
+        : `USA: Prioritize Contract, Consultant, W2, EAD-friendly, and Project-based roles. Include SOX Testing Cycle and Immediate Start positions.`;
+    const prompt = `You are an IT Audit job search expert. Search the web RIGHT NOW for currently open IT Audit or Technology Risk positions at ${org.name}.
 
-DJ Profile: IT Audit Manager, CISA, AWS Certified. Core expertise: SOX 404, ITGC/ITAC, Cloud Security, SAP S/4HANA, NIST, AI/ML Governance, SOC1/SOC2, GRC.
+Search query: "${org.searchQuery}"
+
+Candidate profile: Deobrat Jha — IT Audit Manager, CISA, AWS Certified. Core expertise: SOX 404, ITGC/ITAC, Cloud Security, SAP S/4HANA, NIST, AI/ML Governance, SOC1/SOC2, GRC.
 
 ${countryStrategy}
 
-Exclude ALL of the following: Intern, Entry Level, Staff Auditor, Junior, Graduate, Trainee${isIndia ? ', Associate, Senior Associate, Analyst' : ''}.
+Rules:
+- ONLY real individual job postings currently open (not search result pages, salary pages, news articles)
+- Posted in 2025 or 2026 only — NO expired listings
+- Exclude: Intern, Internship, Entry Level, Staff Auditor, Junior, Graduate, Trainee, Fresher${isIndia ? ', Associate, Senior Associate, Analyst' : ''}
+- Each entry MUST have a direct URL to the actual job posting
 
-Find ONLY real, currently open positions posted in 2025 or 2026.
-
-Return ONLY a JSON array, no markdown, no explanation:
-[{
-  "title": "exact job title",
-  "location": "city, country (specific — not just 'remote')",
-  "applyUrl": "direct URL to job posting",
-  "snippet": "job description under 150 characters",
-  "postedDate": "date posted or Recent"
-}]
-If no relevant open positions found, return: []`,
-                }],
-        }), 18000, `DJ webSearch for ${org.name}`);
-        let raw = '';
-        for (const block of response.content) {
-            if (block.type === 'text')
-                raw += block.text;
-        }
-        raw = raw.replace(/```json|```/g, '').trim();
-        const start = raw.indexOf('[');
-        const end = raw.lastIndexOf(']');
-        if (start === -1 || end === -1)
+Return ONLY a valid JSON array, no markdown, no explanation:
+[
+  {
+    "title": "exact job title as posted",
+    "location": "City, Country",
+    "applyUrl": "https://direct-link-to-job-posting",
+    "snippet": "2-sentence description of role and key requirements (max 150 chars)",
+    "postedDate": "YYYY-MM-DD or Recent"
+  }
+]
+If no matching open positions found, return: []`;
+    try {
+        const raw = await withTimeout((0, geminiClient_1.geminiGroundedSearch)(prompt, 2500), 30000, `DJ webSearch for ${org.name}`);
+        const cleaned = raw.replace(/```json\n?|```/g, '').trim();
+        const start = cleaned.indexOf('[');
+        const end = cleaned.lastIndexOf(']');
+        if (start === -1 || end === -1) {
+            console.log(`[MonitorDJ] No JSON returned for ${org.name}`);
             return [];
-        const parsed = JSON.parse(raw.slice(start, end + 1));
+        }
+        let parsed;
+        try {
+            parsed = JSON.parse(cleaned.slice(start, end + 1));
+        }
+        catch (parseErr) {
+            console.error(`[MonitorDJ] JSON parse failed for ${org.name}:`, parseErr.message);
+            return [];
+        }
+        if (!Array.isArray(parsed))
+            return [];
         return parsed
             .filter((j) => j.title && isRelevantDJ(j.title, j.snippet))
             .filter((j) => passesHardFilter(j.title, org.country))
@@ -214,7 +217,7 @@ If no relevant open positions found, return: []`,
         });
     }
     catch (err) {
-        console.error(`[MonitorDJ] webSearch failed for ${org.name}:`, err.message);
+        console.error(`[MonitorDJ] Gemini search failed for ${org.name}:`, err.message);
         return [];
     }
 }

@@ -18,12 +18,10 @@
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
-import Anthropic from '@anthropic-ai/sdk'
+import { geminiGroundedSearch } from '../services/geminiClient'
 import { pool } from '../db/client'
 import { DJ_MONITOR_ORGS, DJMonitorOrg } from './orgConfigDJ'
 import crypto from 'crypto'
-
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
 // ─── DJ Profile Keywords ──────────────────────────────────────────────────────
 
@@ -180,54 +178,59 @@ interface DJScannedJob {
 async function scanViaWebSearchDJ(org: DJMonitorOrg): Promise<DJScannedJob[]> {
   const isIndia = org.country === 'India'
   const countryStrategy = isIndia
-    ? `INDIA STRATEGY: Return ONLY Manager, Senior Manager, Director, AVP, VP, or Head of IT Audit level roles. Hard-reject Associate, Senior Associate, Analyst.`
-    : `US STRATEGY: Prioritize Contract, Consultant, W2, EAD-friendly, and Project-based roles. Include SOX Testing Cycle and Immediate Start positions.`
+    ? `INDIA: Return ONLY Manager, Senior Manager, Director, AVP, VP, or Head of IT Audit level roles. Hard-reject Associate, Senior Associate, Analyst.`
+    : `USA: Prioritize Contract, Consultant, W2, EAD-friendly, and Project-based roles. Include SOX Testing Cycle and Immediate Start positions.`
 
-  try {
-    const response = await withTimeout(
-      anthropic.messages.create({
-        model: 'claude-sonnet-4-5-20251001',
-        max_tokens: 2000,
-        tools: [{ type: 'web_search_20250305' as any, name: 'web_search' }],
-        messages: [{
-          role: 'user',
-          content: `Search for current open IT Audit or Technology Risk positions at ${org.name}.
-Query: "${org.searchQuery}"
+  const prompt = `You are an IT Audit job search expert. Search the web RIGHT NOW for currently open IT Audit or Technology Risk positions at ${org.name}.
 
-DJ Profile: IT Audit Manager, CISA, AWS Certified. Core expertise: SOX 404, ITGC/ITAC, Cloud Security, SAP S/4HANA, NIST, AI/ML Governance, SOC1/SOC2, GRC.
+Search query: "${org.searchQuery}"
+
+Candidate profile: Deobrat Jha — IT Audit Manager, CISA, AWS Certified. Core expertise: SOX 404, ITGC/ITAC, Cloud Security, SAP S/4HANA, NIST, AI/ML Governance, SOC1/SOC2, GRC.
 
 ${countryStrategy}
 
-Exclude ALL of the following: Intern, Entry Level, Staff Auditor, Junior, Graduate, Trainee${isIndia ? ', Associate, Senior Associate, Analyst' : ''}.
+Rules:
+- ONLY real individual job postings currently open (not search result pages, salary pages, news articles)
+- Posted in 2025 or 2026 only — NO expired listings
+- Exclude: Intern, Internship, Entry Level, Staff Auditor, Junior, Graduate, Trainee, Fresher${isIndia ? ', Associate, Senior Associate, Analyst' : ''}
+- Each entry MUST have a direct URL to the actual job posting
 
-Find ONLY real, currently open positions posted in 2025 or 2026.
+Return ONLY a valid JSON array, no markdown, no explanation:
+[
+  {
+    "title": "exact job title as posted",
+    "location": "City, Country",
+    "applyUrl": "https://direct-link-to-job-posting",
+    "snippet": "2-sentence description of role and key requirements (max 150 chars)",
+    "postedDate": "YYYY-MM-DD or Recent"
+  }
+]
+If no matching open positions found, return: []`
 
-Return ONLY a JSON array, no markdown, no explanation:
-[{
-  "title": "exact job title",
-  "location": "city, country (specific — not just 'remote')",
-  "applyUrl": "direct URL to job posting",
-  "snippet": "job description under 150 characters",
-  "postedDate": "date posted or Recent"
-}]
-If no relevant open positions found, return: []`,
-        }],
-      }),
-      18000,
+  try {
+    const raw = await withTimeout(
+      geminiGroundedSearch(prompt, 2500),
+      30000,
       `DJ webSearch for ${org.name}`
     )
 
-    let raw = ''
-    for (const block of response.content) {
-      if (block.type === 'text') raw += block.text
+    const cleaned = raw.replace(/```json\n?|```/g, '').trim()
+    const start = cleaned.indexOf('[')
+    const end = cleaned.lastIndexOf(']')
+    if (start === -1 || end === -1) {
+      console.log(`[MonitorDJ] No JSON returned for ${org.name}`)
+      return []
     }
 
-    raw = raw.replace(/```json|```/g, '').trim()
-    const start = raw.indexOf('[')
-    const end = raw.lastIndexOf(']')
-    if (start === -1 || end === -1) return []
+    let parsed: any[]
+    try {
+      parsed = JSON.parse(cleaned.slice(start, end + 1))
+    } catch (parseErr) {
+      console.error(`[MonitorDJ] JSON parse failed for ${org.name}:`, (parseErr as Error).message)
+      return []
+    }
 
-    const parsed = JSON.parse(raw.slice(start, end + 1))
+    if (!Array.isArray(parsed)) return []
 
     return parsed
       .filter((j: any) => j.title && isRelevantDJ(j.title, j.snippet))
@@ -258,7 +261,7 @@ If no relevant open positions found, return: []`,
       })
 
   } catch (err) {
-    console.error(`[MonitorDJ] webSearch failed for ${org.name}:`, (err as Error).message)
+    console.error(`[MonitorDJ] Gemini search failed for ${org.name}:`, (err as Error).message)
     return []
   }
 }
