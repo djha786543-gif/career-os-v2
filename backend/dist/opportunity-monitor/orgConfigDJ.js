@@ -634,105 +634,6 @@ const INDIA_GCC_TECH = [
         careersUrl: 'https://dxc.com/us/en/about-dxc/careers',
     },
 ];
-// ═══ Europe — Big 4 (Visa Sponsorship / Skilled Worker / EU Blue Card) ════════
-// UK: Skilled Worker visa | Germany: EU Blue Card | Netherlands: HSMP
-// DJ has no European work permit — these orgs are known to sponsor non-EU talent
-const EUROPE_BIG4 = [
-    {
-        name: 'EY UK',
-        sector: 'big4', country: 'Europe', eadFriendly: false, managerialGrade: true,
-        apiType: 'websearch',
-        searchQuery: 'EY Ernst Young UK IT Audit Manager Technology Risk SOX ITGC Cloud Security visa sponsor 2026',
-        careersUrl: 'https://careers.ey.com/en_UK',
-    },
-    {
-        name: 'Deloitte UK',
-        sector: 'big4', country: 'Europe', eadFriendly: false, managerialGrade: true,
-        apiType: 'websearch',
-        searchQuery: 'Deloitte UK Risk Advisory IT Audit Manager SOX Cloud Security visa sponsorship Skilled Worker 2026',
-        careersUrl: 'https://www2.deloitte.com/uk/en/careers.html',
-    },
-    {
-        name: 'KPMG UK',
-        sector: 'big4', country: 'Europe', eadFriendly: false, managerialGrade: true,
-        apiType: 'websearch',
-        searchQuery: 'KPMG UK Technology Risk IT Audit Manager SOX ITGC Cloud Audit visa sponsor 2026',
-        careersUrl: 'https://home.kpmg/uk/en/home/careers.html',
-    },
-    {
-        name: 'PwC UK',
-        sector: 'big4', country: 'Europe', eadFriendly: false, managerialGrade: true,
-        apiType: 'websearch',
-        searchQuery: 'PwC UK Digital Assurance IT Audit Manager Technology Risk SOX GRC visa sponsorship 2026',
-        careersUrl: 'https://www.pwc.co.uk/careers.html',
-    },
-    {
-        name: 'EY Germany',
-        sector: 'big4', country: 'Europe', eadFriendly: false, managerialGrade: true,
-        apiType: 'websearch',
-        searchQuery: 'EY Germany IT Audit Manager Technology Risk SOX Cloud Security EU Blue Card visa 2026',
-        careersUrl: 'https://careers.ey.com/en_DE',
-    },
-    {
-        name: 'Deloitte Germany',
-        sector: 'big4', country: 'Europe', eadFriendly: false, managerialGrade: true,
-        apiType: 'websearch',
-        searchQuery: 'Deloitte Germany IT Audit Manager Risk Advisory SOX Cloud Security EU Blue Card 2026',
-        careersUrl: 'https://www2.deloitte.com/de/en/careers.html',
-    },
-    {
-        name: 'KPMG Netherlands',
-        sector: 'big4', country: 'Europe', eadFriendly: false, managerialGrade: true,
-        apiType: 'websearch',
-        searchQuery: 'KPMG Netherlands IT Audit Manager Technology Risk SOX Cloud HSMP visa sponsor 2026',
-        careersUrl: 'https://home.kpmg/nl/en/home/careers.html',
-    },
-    {
-        name: 'PwC Germany',
-        sector: 'big4', country: 'Europe', eadFriendly: false, managerialGrade: true,
-        apiType: 'websearch',
-        searchQuery: 'PwC Germany IT Audit Manager Technology Risk SOX GRC Cloud EU Blue Card 2026',
-        careersUrl: 'https://www.pwc.de/en/careers.html',
-    },
-];
-// ═══ Europe — Banking (Visa Sponsorship) ══════════════════════════════════════
-const EUROPE_BANKING = [
-    {
-        name: 'HSBC UK',
-        sector: 'banking', country: 'Europe', eadFriendly: false, managerialGrade: true,
-        apiType: 'websearch',
-        searchQuery: 'HSBC UK IT Audit Manager Technology Risk SOX Cloud Security visa sponsorship Skilled Worker 2026',
-        careersUrl: 'https://www.hsbc.com/careers',
-    },
-    {
-        name: 'Barclays',
-        sector: 'banking', country: 'Europe', eadFriendly: false, managerialGrade: true,
-        apiType: 'websearch',
-        searchQuery: 'Barclays UK IT Audit Manager Technology Risk SOX ITGC Cloud Security visa sponsor 2026',
-        careersUrl: 'https://home.barclays/careers',
-    },
-    {
-        name: 'Deutsche Bank',
-        sector: 'banking', country: 'Europe', eadFriendly: false, managerialGrade: true,
-        apiType: 'websearch',
-        searchQuery: 'Deutsche Bank Frankfurt IT Audit Manager Technology Risk SOX Cloud Security EU Blue Card 2026',
-        careersUrl: 'https://careers.db.com',
-    },
-    {
-        name: 'ING Netherlands',
-        sector: 'banking', country: 'Europe', eadFriendly: false, managerialGrade: true,
-        apiType: 'websearch',
-        searchQuery: 'ING Bank Netherlands IT Audit Manager Technology Risk SOX Cloud Security HSMP visa 2026',
-        careersUrl: 'https://www.ing.jobs/netherlands',
-    },
-    {
-        name: 'ABN AMRO',
-        sector: 'banking', country: 'Europe', eadFriendly: false, managerialGrade: true,
-        apiType: 'websearch',
-        searchQuery: 'ABN AMRO Netherlands IT Audit Manager Technology Risk Cloud Security HSMP visa sponsor 2026',
-        careersUrl: 'https://www.abnamro.com/en/about-abnamro/careers',
-    },
-];
 // ─── Master export ────────────────────────────────────────────────────────────
 exports.DJ_MONITOR_ORGS = [
     ...US_BIG4,
@@ -743,9 +644,6 @@ exports.DJ_MONITOR_ORGS = [
     ...INDIA_BANKING,
     ...INDIA_GCC_FINANCIAL,
     ...INDIA_GCC_TECH,
-    ...EUROPE_BIG4,
-    ...EUROPE_BANKING,
 ];
-// 98 orgs: 4 US Big4 + 20 US Banking + 10 US Tech + 5 US Mfg
+// 85 orgs: 4 US Big4 + 20 US Banking + 10 US Tech + 5 US Mfg
 //        + 4 India Big4 + 8 India Banking + 15 India GCC Financial + 19 India GCC Tech
-//        + 8 Europe Big4 (UK/Germany/Netherlands) + 5 Europe Banking (visa sponsors)

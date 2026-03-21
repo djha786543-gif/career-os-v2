@@ -5,7 +5,7 @@
  * Uses dedicated tables: dj_monitor_orgs, dj_monitor_jobs, dj_monitor_scans.
  * Zero crossover with Pooja's monitorEngine.ts.
  *
- * SCORING RULES (must score ≥ 4):
+ * SCORING RULES (must score ≥ 2 to persist; ≥ 4 = highSuitability badge):
  *   +2  AWS Cloud Audit OR AI Governance (DJ's specialised DNA)
  *   +2  Manager OR Director title
  *   +1  TIER 1 orgs (EY, Deloitte, KPMG, PwC, Goldman Sachs, JPMorgan,

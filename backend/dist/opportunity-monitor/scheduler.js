@@ -6,24 +6,40 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.initMonitorScheduler = initMonitorScheduler;
 const node_cron_1 = __importDefault(require("node-cron"));
 const monitorEngine_1 = require("./monitorEngine");
+const monitorEngineDJ_1 = require("./monitorEngineDJ");
 async function initMonitorScheduler() {
-    // Seed orgs on startup
+    // Seed orgs on startup (Pooja + DJ)
     try {
         await (0, monitorEngine_1.seedOrgs)();
     }
     catch (err) {
-        console.error('[Monitor] Seed error:', err.message);
+        console.error('[Monitor] Pooja seed error:', err.message);
     }
-    // Cost optimisation: once daily at 08:00 UTC, scanning 10 orgs per run.
-    // All 65 orgs rotate through over 6-7 days (oldest-first ordering in runFullScan).
+    try {
+        await (0, monitorEngineDJ_1.seedOrgsDJ)();
+    }
+    catch (err) {
+        console.error('[MonitorDJ] DJ seed error:', err.message);
+    }
+    // Pooja: once daily at 08:00 UTC
     node_cron_1.default.schedule('0 8 * * *', async () => {
-        console.log('[Monitor] Cron triggered at', new Date().toISOString());
+        console.log('[Monitor] Pooja cron triggered at', new Date().toISOString());
         try {
             await (0, monitorEngine_1.runFullScan)();
         }
         catch (err) {
-            console.error('[Monitor] Cron scan error:', err.message);
+            console.error('[Monitor] Pooja cron scan error:', err.message);
         }
     });
-    console.log('[Monitor] Scheduler ready — daily scan at 08:00 UTC (10 orgs per run)');
+    // DJ: once daily at 08:30 UTC (offset to avoid API rate limits)
+    node_cron_1.default.schedule('30 8 * * *', async () => {
+        console.log('[MonitorDJ] DJ cron triggered at', new Date().toISOString());
+        try {
+            await (0, monitorEngineDJ_1.runFullScanDJ)();
+        }
+        catch (err) {
+            console.error('[MonitorDJ] DJ cron scan error:', err.message);
+        }
+    });
+    console.log('[Monitor] Scheduler ready — Pooja @ 08:00 UTC, DJ @ 08:30 UTC (daily)');
 }

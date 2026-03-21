@@ -240,20 +240,6 @@ async function dbInit() {
         ON dj_monitor_scans(scanned_at DESC);
       CREATE INDEX IF NOT EXISTS idx_dj_monitor_scans_org
         ON dj_monitor_scans(org_id, scanned_at DESC);
-
-      -- ─── Allow 'Europe' as valid country for DJ monitor ──────────────────────
-      DO $migration$
-      BEGIN
-        BEGIN
-          ALTER TABLE dj_monitor_orgs DROP CONSTRAINT dj_monitor_orgs_country_check;
-        EXCEPTION WHEN undefined_object THEN NULL;
-        END;
-        BEGIN
-          ALTER TABLE dj_monitor_orgs ADD CONSTRAINT dj_monitor_orgs_country_check
-            CHECK (country IN ('USA', 'India', 'Europe'));
-        EXCEPTION WHEN duplicate_object THEN NULL;
-        END;
-      END $migration$;
     `);
         console.log('✅ DB tables verified / created');
     }

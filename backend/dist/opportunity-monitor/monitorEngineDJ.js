@@ -6,7 +6,7 @@
  * Uses dedicated tables: dj_monitor_orgs, dj_monitor_jobs, dj_monitor_scans.
  * Zero crossover with Pooja's monitorEngine.ts.
  *
- * SCORING RULES (must score ≥ 4):
+ * SCORING RULES (must score ≥ 2 to persist; ≥ 4 = highSuitability badge):
  *   +2  AWS Cloud Audit OR AI Governance (DJ's specialised DNA)
  *   +2  Manager OR Director title
  *   +1  TIER 1 orgs (EY, Deloitte, KPMG, PwC, Goldman Sachs, JPMorgan,
@@ -25,10 +25,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.scanOrgDJ = scanOrgDJ;
 exports.runFullScanDJ = runFullScanDJ;
 exports.seedOrgsDJ = seedOrgsDJ;
+const sdk_1 = __importDefault(require("@anthropic-ai/sdk"));
 const client_1 = require("../db/client");
 const orgConfigDJ_1 = require("./orgConfigDJ");
-const geminiClient_1 = require("../services/geminiClient");
 const crypto_1 = __importDefault(require("crypto"));
+const anthropic = new sdk_1.default({ apiKey: process.env.ANTHROPIC_API_KEY });
 // ─── DJ Profile Keywords ──────────────────────────────────────────────────────
 const DJ_RANK1_TITLES = [
     'it audit manager', 'it audit director', 'head of it audit', 'director of it audit',
@@ -69,14 +70,6 @@ const DJ_TIER1_ORGS = new Set([
     'Amazon Web Services', 'Amazon India GCC',
     'Microsoft', 'Microsoft India GCC',
     'Google Cloud', 'Google India GCC',
-    // Europe — Big 4 (visa sponsors)
-    'EY UK', 'EY Germany',
-    'Deloitte UK', 'Deloitte Germany',
-    'KPMG UK', 'KPMG Netherlands',
-    'PwC UK', 'PwC Germany',
-    // Europe — Banking (visa sponsors)
-    'HSBC UK', 'Barclays', 'Deutsche Bank',
-    'ING Netherlands', 'ABN AMRO',
 ]);
 // ─── Filter Functions ─────────────────────────────────────────────────────────
 function passesHardFilter(title, country) {
@@ -103,7 +96,7 @@ function isRelevantDJ(title, snippet = '') {
         (hasSenioritySignal(title) && hasTechnicalAnchor(title, snippet)));
 }
 /**
- * DJ suitability score (0–5). Score must be ≥ 4 to persist.
+ * DJ suitability score (0–5). Score must be ≥ 2 to persist.
  */
 function djSuitabilityScore(title, snippet, orgName) {
     const text = (title + ' ' + snippet).toLowerCase();
@@ -146,82 +139,65 @@ async function withTimeout(promise, ms, label) {
     const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error(`Timeout after ${ms}ms: ${label}`)), ms));
     return Promise.race([promise, timeout]);
 }
-// ─── Web Search Scanner (DJ-specific prompt, Gemini grounded search) ──────────
+// ─── Web Search Scanner (DJ-specific prompt) ──────────────────────────────────
 async function scanViaWebSearchDJ(org) {
     const isIndia = org.country === 'India';
-    const isEurope = org.country === 'Europe';
-    let countryStrategy;
-    if (isIndia) {
-        countryStrategy = `INDIA STRATEGY: Return ONLY Manager, Senior Manager, Director, AVP, VP, or Head of IT Audit level roles. Hard-reject Associate, Senior Associate, Analyst, Junior.`;
-    }
-    else if (isEurope) {
-        countryStrategy = `EUROPE STRATEGY: Include ONLY roles that explicitly offer visa sponsorship, EU Blue Card eligibility, or Skilled Worker visa processing for non-EU nationals. Manager, Senior Manager, Director, VP level only. Candidate is an Indian national with no current European work permit — must need employer visa sponsorship.`;
-    }
-    else {
-        countryStrategy = `US STRATEGY: Candidate holds EAD (Employment Authorization Document) as a J2 dependent — spouse of a J1 visa holder (Dr. Pooja Choubey). EAD allows work for ANY US employer with zero sponsorship required. Prioritize Contract, W2, EAD-friendly, Consultant, and project-based roles. Include SOX Testing Cycle and Immediate Start positions. Do NOT filter out roles that say "no visa sponsorship" — EAD does not need sponsorship.`;
-    }
-    const hardRejects = isIndia
-        ? 'Intern, Entry Level, Staff Auditor, Junior, Graduate, Trainee, Associate, Senior Associate, Analyst'
-        : 'Intern, Entry Level, Staff Auditor, Junior, Graduate, Trainee';
-    const prompt = `You are a specialized IT audit career search expert. Search the web RIGHT NOW for currently open IT Audit or Technology Risk positions at ${org.name} that match this candidate:
+    const countryStrategy = isIndia
+        ? `INDIA STRATEGY: Return ONLY Manager, Senior Manager, Director, AVP, VP, or Head of IT Audit level roles. Hard-reject Associate, Senior Associate, Analyst.`
+        : `US STRATEGY: Prioritize Contract, Consultant, W2, EAD-friendly, and Project-based roles. Include SOX Testing Cycle and Immediate Start positions.`;
+    try {
+        const response = await withTimeout(anthropic.messages.create({
+            model: 'claude-sonnet-4-5-20251001',
+            max_tokens: 2000,
+            tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+            messages: [{
+                    role: 'user',
+                    content: `Search for current open IT Audit or Technology Risk positions at ${org.name}.
+Query: "${org.searchQuery}"
 
-Candidate: Deobrat Jha — IT Audit Manager, CISA certified, AWS Certified Cloud Practitioner (EY alumni, 10+ years experience). Core expertise: SOX 404, ITGC/ITAC, Cloud Security (AWS/Azure), SAP S/4HANA, NIST, AI/ML Governance, SOC1/SOC2, GRC platforms.
-
-Search query: "${org.searchQuery}"
-
-Rules:
-- ONLY real, individual job postings currently open — posted in 2025 or 2026
-- NOT search result pages, salary pages, news articles, or company overview pages
-- Hard-reject ALL of: ${hardRejects}
-- Manager, Senior Manager, Director, AVP, VP, Head of IT Audit level ONLY
-- Each entry MUST have a direct URL to the actual job posting (not the org homepage)
+DJ Profile: IT Audit Manager, CISA, AWS Certified. Core expertise: SOX 404, ITGC/ITAC, Cloud Security, SAP S/4HANA, NIST, AI/ML Governance, SOC1/SOC2, GRC.
 
 ${countryStrategy}
 
-Return ONLY a valid JSON array, no markdown, no explanation:
-[
-  {
-    "title": "exact job title as posted",
-    "location": "City, Country",
-    "applyUrl": "https://direct-link-to-job-posting",
-    "snippet": "2-sentence description of role and key requirements (max 200 chars)",
-    "postedDate": "YYYY-MM-DD or Recent"
-  }
-]
-If no matching open positions found, return: []`;
-    try {
-        const raw = await withTimeout((0, geminiClient_1.geminiGroundedSearch)(prompt, 2500), 30000, `DJ webSearch for ${org.name}`);
-        const cleaned = raw.replace(/```json\n?|```/g, '').trim();
-        const start = cleaned.indexOf('[');
-        const end = cleaned.lastIndexOf(']');
-        if (start === -1 || end === -1) {
-            console.log(`[MonitorDJ] webSearch no JSON for ${org.name}`);
-            return [];
+Exclude ALL of the following: Intern, Entry Level, Staff Auditor, Junior, Graduate, Trainee${isIndia ? ', Associate, Senior Associate, Analyst' : ''}.
+
+Find ONLY real, currently open positions posted in 2025 or 2026.
+
+Return ONLY a JSON array, no markdown, no explanation:
+[{
+  "title": "exact job title",
+  "location": "city, country (specific — not just 'remote')",
+  "applyUrl": "direct URL to job posting",
+  "snippet": "job description under 150 characters",
+  "postedDate": "date posted or Recent"
+}]
+If no relevant open positions found, return: []`,
+                }],
+        }), 18000, `DJ webSearch for ${org.name}`);
+        let raw = '';
+        for (const block of response.content) {
+            if (block.type === 'text')
+                raw += block.text;
         }
-        let parsed;
-        try {
-            parsed = JSON.parse(cleaned.slice(start, end + 1));
-        }
-        catch (parseErr) {
-            console.error(`[MonitorDJ] JSON parse failed for ${org.name}:`, parseErr.message);
+        raw = raw.replace(/```json|```/g, '').trim();
+        const start = raw.indexOf('[');
+        const end = raw.lastIndexOf(']');
+        if (start === -1 || end === -1)
             return [];
-        }
-        if (!Array.isArray(parsed))
-            return [];
+        const parsed = JSON.parse(raw.slice(start, end + 1));
         return parsed
-            .filter((j) => j.title && typeof j.title === 'string' && j.title.trim().length >= 6)
-            .filter((j) => isRelevantDJ(j.title, j.snippet))
+            .filter((j) => j.title && isRelevantDJ(j.title, j.snippet))
             .filter((j) => passesHardFilter(j.title, org.country))
             .filter((j) => {
             const s = djSuitabilityScore(j.title, j.snippet || '', org.name);
-            return s >= 4;
+            return s >= 2;
         })
             .map((j) => {
             const location = j.location || org.country;
             const s = djSuitabilityScore(j.title, j.snippet || '', org.name);
             return {
                 externalId: hashContent(j.title, org.name, location),
-                title: j.title.trim(),
+                title: j.title,
                 orgName: org.name,
                 location,
                 country: org.country,
