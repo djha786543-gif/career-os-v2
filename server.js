@@ -6,31 +6,30 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// 1. Healthcheck
+// 1. Healthcheck (Critical for Railway)
 app.get('/health', (req, res) => res.status(200).send('OK'));
 
-// 2. THE BRIDGE - Using absolute resolution
+// 2. The Bridge - Targets compiled JS files
 const BACKEND_DIR = path.join(__dirname, 'backend', 'dist', 'api');
+console.log('Targeting Logic at:', BACKEND_DIR);
 
 try {
-  // Explicitly loading the specific files we verified with 'ls'
-  const monitorRouter = require(path.join(BACKEND_DIR, 'monitor.js'));
-  const jobsRouter = require(path.join(BACKEND_DIR, 'jobs.js'));
-  
-  app.use('/api/monitor', monitorRouter);
-  app.use('/api/jobs', jobsRouter);
-  console.log('API Bridge: SUCCESS - Routes registered');
+  const load = (f) => {
+    const m = require(path.join(BACKEND_DIR, f));
+    // Unwraps default exports, named 'router' exports, or the module itself
+    return m.default || m.router || (typeof m === 'function' ? m : m);
+  };
+
+  app.use('/api/monitor', load('monitor.js'));
+  app.use('/api/jobs', load('jobs.js'));
+  console.log('✅ API Bridge: SUCCESS');
 } catch (e) {
-  console.error('API Bridge: CRITICALLY FAILED');
-  console.error('Expected Path:', BACKEND_DIR);
-  console.error('Error:', e.message);
+  console.error('❌ API Bridge: FAILED ->', e.message);
 }
 
-// 3. Static Frontend
+// 3. Static Assets & Express 5 Catch-all
 const publicPath = path.join(__dirname, 'public');
 app.use(express.static(publicPath));
-
-// Catch-all for UI
 app.get(/^(?!\/api).+/, (req, res) => {
   res.sendFile(path.join(publicPath, 'index.html'));
 });
