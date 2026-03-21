@@ -233,4 +233,57 @@ router.post('/seed', async (req: Request, res: Response) => {
   }
 })
 
+// GET /api/monitor/dj/debug — full diagnostic dump
+router.get('/debug', async (req: Request, res: Response) => {
+  const result: Record<string, any> = {
+    codeVersion: '3343e4a',
+    env: {
+      geminiKey:    !!process.env.GEMINI_API_KEY,
+      anthropicKey: !!process.env.ANTHROPIC_API_KEY,
+      databaseUrl:  !!(process.env.DATABASE_PUBLIC_URL || process.env.DATABASE_PRIVATE_URL || process.env.DATABASE_URL),
+    },
+  }
+
+  try {
+    const tableCheck = await pool.query(`
+      SELECT table_name FROM information_schema.tables
+      WHERE table_schema = 'public'
+      AND table_name IN ('dj_monitor_orgs','dj_monitor_jobs','dj_monitor_scans')
+    `)
+    result.tables = tableCheck.rows.map((r: any) => r.table_name)
+  } catch (e: any) {
+    result.tablesError = e.message
+  }
+
+  try {
+    const orgCount = await pool.query('SELECT COUNT(*) as total FROM dj_monitor_orgs')
+    const orgSectors = await pool.query('SELECT sector, country, COUNT(*) as n FROM dj_monitor_orgs GROUP BY sector, country ORDER BY sector')
+    result.orgs = { total: parseInt(orgCount.rows[0].total), bySector: orgSectors.rows }
+  } catch (e: any) {
+    result.orgsError = e.message
+  }
+
+  try {
+    const jobCount = await pool.query('SELECT COUNT(*) as total FROM dj_monitor_jobs WHERE is_active=true')
+    const jobSectors = await pool.query('SELECT sector, country, COUNT(*) as n FROM dj_monitor_jobs WHERE is_active=true GROUP BY sector, country')
+    result.jobs = { total: parseInt(jobCount.rows[0].total), bySector: jobSectors.rows }
+  } catch (e: any) {
+    result.jobsError = e.message
+  }
+
+  try {
+    const scans = await pool.query(`
+      SELECT s.status, s.error_message, s.jobs_found, s.new_jobs, s.scanned_at, o.name as org_name
+      FROM dj_monitor_scans s
+      LEFT JOIN dj_monitor_orgs o ON s.org_id = o.id
+      ORDER BY s.scanned_at DESC LIMIT 20
+    `)
+    result.recentScans = scans.rows
+  } catch (e: any) {
+    result.scansError = e.message
+  }
+
+  res.json(result)
+})
+
 export default router
