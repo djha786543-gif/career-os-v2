@@ -18,7 +18,6 @@ const express_1 = require("express");
 const client_1 = require("../db/client");
 const monitorEngineDJ_1 = require("../opportunity-monitor/monitorEngineDJ");
 const orgConfigDJ_1 = require("../opportunity-monitor/orgConfigDJ");
-const geminiClient_1 = require("../services/geminiClient");
 const router = (0, express_1.Router)();
 const MAX_LIMIT = 100;
 const DEFAULT_LIMIT = 50;
@@ -196,25 +195,21 @@ router.post('/seed', async (req, res) => {
         }
     }
 });
-// GET /api/monitor/dj/test-search?org=EY+US+Technology+Risk
-// Returns RAW Gemini response before any filtering — diagnostic only
+// GET /api/monitor/dj/test-search — hits Serper for EY and returns raw results
 router.get('/test-search', async (req, res) => {
+    const apiKey = process.env.SERPER_API_KEY;
+    if (!apiKey) {
+        return res.status(500).json({ error: 'SERPER_API_KEY not set in Railway env vars' });
+    }
     try {
-        const orgName = req.query.org || 'EY US Technology Risk';
-        const org = orgConfigDJ_1.DJ_MONITOR_ORGS.find(o => o.name === orgName) || orgConfigDJ_1.DJ_MONITOR_ORGS[0];
-        const prompt = `You are an IT Audit job search expert. Search the web RIGHT NOW for currently open IT Audit or Technology Risk positions at ${org.name}.
-Search query: "${org.searchQuery}"
-Candidate: IT Audit Manager, CISA, AWS Certified. Expertise: SOX 404, ITGC, Cloud Security, GRC.
-Return ONLY a valid JSON array:
-[{"title":"...","location":"...","applyUrl":"...","snippet":"...","postedDate":"..."}]
-If none found, return: []`;
-        const raw = await (0, geminiClient_1.geminiGroundedSearch)(prompt, 2500);
-        res.json({
-            org: org.name,
-            query: org.searchQuery,
-            rawGeminiResponse: raw,
-            hasJsonArray: raw.includes('[') && raw.includes(']'),
+        const org = orgConfigDJ_1.DJ_MONITOR_ORGS.find(o => o.name === 'EY US Technology Risk') || orgConfigDJ_1.DJ_MONITOR_ORGS[0];
+        const resp = await fetch('https://google.serper.dev/search', {
+            method: 'POST',
+            headers: { 'X-API-KEY': apiKey, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ q: org.searchQuery, num: 10 }),
         });
+        const data = await resp.json();
+        res.json({ org: org.name, query: org.searchQuery, status: resp.status, results: data });
     }
     catch (err) {
         res.status(500).json({ error: err.message });
@@ -225,6 +220,7 @@ router.get('/debug', async (req, res) => {
     const result = {
         codeVersion: '3343e4a',
         env: {
+            serperKey: !!process.env.SERPER_API_KEY,
             geminiKey: !!process.env.GEMINI_API_KEY,
             anthropicKey: !!process.env.ANTHROPIC_API_KEY,
             databaseUrl: !!(process.env.DATABASE_PUBLIC_URL || process.env.DATABASE_PRIVATE_URL || process.env.DATABASE_URL),

@@ -25,7 +25,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.scanOrgDJ = scanOrgDJ;
 exports.runFullScanDJ = runFullScanDJ;
 exports.seedOrgsDJ = seedOrgsDJ;
-const geminiClient_1 = require("../services/geminiClient");
 const client_1 = require("../db/client");
 const orgConfigDJ_1 = require("./orgConfigDJ");
 const crypto_1 = __importDefault(require("crypto"));
@@ -134,90 +133,69 @@ function extractCanonicalUrl(url, fallback) {
         return fallback;
     return url;
 }
+const CITY_RE = /\b(new york|san francisco|chicago|dallas|houston|atlanta|boston|seattle|washington dc|los angeles|charlotte|new jersey|bangalore|bengaluru|mumbai|delhi|hyderabad|pune|chennai|kolkata|gurgaon|noida|london|paris|frankfurt|amsterdam|zurich|singapore|toronto|sydney)\b/i;
+function extractLocation(snippet, title, fallback) {
+    const m = snippet.match(CITY_RE) || title.match(CITY_RE);
+    return m ? m[0] : fallback;
+}
 async function withTimeout(promise, ms, label) {
     const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error(`Timeout after ${ms}ms: ${label}`)), ms));
     return Promise.race([promise, timeout]);
 }
-// ─── Web Search Scanner (DJ-specific prompt) ──────────────────────────────────
+// ─── Web Search Scanner via Serper.dev ────────────────────────────────────────
 async function scanViaWebSearchDJ(org) {
-    const isIndia = org.country === 'India';
-    const countryStrategy = isIndia
-        ? `INDIA: Return ONLY Manager, Senior Manager, Director, AVP, VP, or Head of IT Audit level roles. Hard-reject Associate, Senior Associate, Analyst.`
-        : `USA: Prioritize Contract, Consultant, W2, EAD-friendly, and Project-based roles. Include SOX Testing Cycle and Immediate Start positions.`;
-    const prompt = `You are an IT Audit job search expert. Search the web RIGHT NOW for currently open IT Audit or Technology Risk positions at ${org.name}.
-
-Search query: "${org.searchQuery}"
-
-Candidate profile: Deobrat Jha — IT Audit Manager, CISA, AWS Certified. Core expertise: SOX 404, ITGC/ITAC, Cloud Security, SAP S/4HANA, NIST, AI/ML Governance, SOC1/SOC2, GRC.
-
-${countryStrategy}
-
-Rules:
-- ONLY real individual job postings currently open (not search result pages, salary pages, news articles)
-- Posted in 2025 or 2026 only — NO expired listings
-- Exclude: Intern, Internship, Entry Level, Staff Auditor, Junior, Graduate, Trainee, Fresher${isIndia ? ', Associate, Senior Associate, Analyst' : ''}
-- Each entry MUST have a direct URL to the actual job posting
-
-Return ONLY a valid JSON array, no markdown, no explanation:
-[
-  {
-    "title": "exact job title as posted",
-    "location": "City, Country",
-    "applyUrl": "https://direct-link-to-job-posting",
-    "snippet": "2-sentence description of role and key requirements (max 150 chars)",
-    "postedDate": "YYYY-MM-DD or Recent"
-  }
-]
-If no matching open positions found, return: []`;
+    const apiKey = process.env.SERPER_API_KEY;
+    if (!apiKey) {
+        console.warn(`[MonitorDJ] SERPER_API_KEY not set — skipping ${org.name}`);
+        return [];
+    }
     try {
-        const raw = await withTimeout((0, geminiClient_1.geminiGroundedSearch)(prompt, 2500), 30000, `DJ webSearch for ${org.name}`);
-        const cleaned = raw.replace(/```json\n?|```/g, '').trim();
-        const start = cleaned.indexOf('[');
-        const end = cleaned.lastIndexOf(']');
-        if (start === -1 || end === -1) {
-            console.log(`[MonitorDJ] No JSON returned for ${org.name}`);
+        const resp = await withTimeout(fetch('https://google.serper.dev/search', {
+            method: 'POST',
+            headers: { 'X-API-KEY': apiKey, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ q: org.searchQuery, num: 10 }),
+        }), 10000, `Serper for ${org.name}`);
+        if (!resp.ok) {
+            console.error(`[MonitorDJ] Serper ${resp.status} for ${org.name}`);
             return [];
         }
-        let parsed;
-        try {
-            parsed = JSON.parse(cleaned.slice(start, end + 1));
-        }
-        catch (parseErr) {
-            console.error(`[MonitorDJ] JSON parse failed for ${org.name}:`, parseErr.message);
-            return [];
-        }
-        if (!Array.isArray(parsed))
-            return [];
-        return parsed
-            .filter((j) => j.title && isRelevantDJ(j.title, j.snippet))
-            .filter((j) => passesHardFilter(j.title, org.country))
-            .filter((j) => {
-            const s = djSuitabilityScore(j.title, j.snippet || '', org.name);
-            return s >= 2;
-        })
-            .map((j) => {
-            const location = j.location || org.country;
-            const s = djSuitabilityScore(j.title, j.snippet || '', org.name);
-            return {
-                externalId: hashContent(j.title, org.name, location),
-                title: j.title,
+        const data = await resp.json();
+        const results = data.organic || [];
+        console.log(`[MonitorDJ] ${org.name}: Serper raw=${results.length}`);
+        const jobs = [];
+        for (const r of results) {
+            const title = (r.title || '').replace(/\s*[-|·].*$/, '').trim();
+            const snippet = r.snippet || '';
+            if (!title || !isRelevantDJ(title, snippet))
+                continue;
+            if (!passesHardFilter(title, org.country))
+                continue;
+            const s = djSuitabilityScore(title, snippet, org.name);
+            if (s < 2)
+                continue;
+            const location = extractLocation(snippet, title, org.country);
+            jobs.push({
+                externalId: hashContent(title, org.name, r.link || ''),
+                title,
                 orgName: org.name,
                 location,
                 country: org.country,
                 sector: org.sector,
-                applyUrl: extractCanonicalUrl(j.applyUrl || '', org.careersUrl || ''),
-                snippet: j.snippet || '',
-                postedDate: j.postedDate || 'Recent',
-                contentHash: hashContent(j.title, org.name, location),
+                applyUrl: extractCanonicalUrl(r.link || '', org.careersUrl || ''),
+                snippet: snippet.slice(0, 200),
+                postedDate: 'Recent',
+                contentHash: hashContent(title, org.name, r.link || ''),
                 highSuitability: s >= 4,
                 eadFriendly: org.eadFriendly === true,
                 managerialGrade: org.managerialGrade === true,
                 suitabilityScore: s,
-            };
-        });
+            });
+        }
+        console.log(`[MonitorDJ] ${org.name}: ${jobs.length} after filter`);
+        return jobs.sort((a, b) => b.suitabilityScore - a.suitabilityScore);
     }
     catch (err) {
-        console.error(`[MonitorDJ] Gemini search failed for ${org.name}:`, err.message);
+        console.error(`[MonitorDJ] Serper failed for ${org.name}:`, err.message);
         return [];
     }
 }

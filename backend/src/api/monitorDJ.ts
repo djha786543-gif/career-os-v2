@@ -17,7 +17,6 @@ import { Router, Request, Response } from 'express'
 import { pool } from '../db/client'
 import { runFullScanDJ, scanOrgDJ, seedOrgsDJ } from '../opportunity-monitor/monitorEngineDJ'
 import { DJ_MONITOR_ORGS } from '../opportunity-monitor/orgConfigDJ'
-import { geminiGroundedSearch } from '../services/geminiClient'
 
 const router = Router()
 
@@ -234,28 +233,21 @@ router.post('/seed', async (req: Request, res: Response) => {
   }
 })
 
-// GET /api/monitor/dj/test-search?org=EY+US+Technology+Risk
-// Returns RAW Gemini response before any filtering — diagnostic only
+// GET /api/monitor/dj/test-search — hits Serper for EY and returns raw results
 router.get('/test-search', async (req: Request, res: Response) => {
+  const apiKey = process.env.SERPER_API_KEY
+  if (!apiKey) {
+    return res.status(500).json({ error: 'SERPER_API_KEY not set in Railway env vars' })
+  }
   try {
-    const orgName = (req.query.org as string) || 'EY US Technology Risk'
-    const org = DJ_MONITOR_ORGS.find(o => o.name === orgName) || DJ_MONITOR_ORGS[0]
-
-    const prompt = `You are an IT Audit job search expert. Search the web RIGHT NOW for currently open IT Audit or Technology Risk positions at ${org.name}.
-Search query: "${org.searchQuery}"
-Candidate: IT Audit Manager, CISA, AWS Certified. Expertise: SOX 404, ITGC, Cloud Security, GRC.
-Return ONLY a valid JSON array:
-[{"title":"...","location":"...","applyUrl":"...","snippet":"...","postedDate":"..."}]
-If none found, return: []`
-
-    const raw = await geminiGroundedSearch(prompt, 2500)
-
-    res.json({
-      org: org.name,
-      query: org.searchQuery,
-      rawGeminiResponse: raw,
-      hasJsonArray: raw.includes('[') && raw.includes(']'),
+    const org = DJ_MONITOR_ORGS.find(o => o.name === 'EY US Technology Risk') || DJ_MONITOR_ORGS[0]
+    const resp = await fetch('https://google.serper.dev/search', {
+      method: 'POST',
+      headers: { 'X-API-KEY': apiKey, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ q: org.searchQuery, num: 10 }),
     })
+    const data = await resp.json()
+    res.json({ org: org.name, query: org.searchQuery, status: resp.status, results: data })
   } catch (err: any) {
     res.status(500).json({ error: err.message })
   }
@@ -266,6 +258,7 @@ router.get('/debug', async (req: Request, res: Response) => {
   const result: Record<string, any> = {
     codeVersion: '3343e4a',
     env: {
+      serperKey:    !!process.env.SERPER_API_KEY,
       geminiKey:    !!process.env.GEMINI_API_KEY,
       anthropicKey: !!process.env.ANTHROPIC_API_KEY,
       databaseUrl:  !!(process.env.DATABASE_PUBLIC_URL || process.env.DATABASE_PRIVATE_URL || process.env.DATABASE_URL),
