@@ -1,50 +1,32 @@
-const cors = require('cors');
-app.use(cors({
-  origin: ['https://career-os-portal-production.up.railway.app', 'http://localhost:3000'],
-  methods: ['GET', 'POST'],
-  credentials: true
-}));
 const express = require('express');
+const cors = require('cors');
 const path = require('path');
-const fs = require('fs');
 const app = express();
 
-const cors = require('cors');
+// 1. Security & Body Parsing
 app.use(cors({
-  origin: [
-    'https://career-os-portal-production.up.railway.app',
-    'http://localhost:3000'
-  ],
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  origin: ['https://career-os-portal-production.up.railway.app', 'http://localhost:3000'],
   credentials: true
 }));
+app.use(express.json());
 
-app.get('/health', (req, res) => {
-  res.status(200).send('OK');
-});
-const PORT = process.env.PORT || 3000;
+// 2. Healthcheck
+app.get('/health', (req, res) => res.status(200).send('OK'));
 
+// 3. LINK THE ENGINE (This connects to your actual logic)
+// We point to the 'dist' folder because Node runs Javascript, not Typescript
+const monitorRouter = require('./backend/dist/api/monitor');
+const jobsRouter = require('./backend/dist/api/jobs');
+
+app.use('/api/monitor', monitorRouter);
+app.use('/api/jobs', jobsRouter);
+
+// 4. Static Files (Next.js export)
 const publicPath = path.join(__dirname, 'public');
-
-// 1. Explicit Health Check (No wildcard, zero room for error)
-app.get('/health', (req, res) => {
-    res.status(200).send('OK');
-});
-
-// 2. Static File Serving
 app.use(express.static(publicPath));
-
-// 3. The "Bulletproof" Catch-all (Regex works in all Express versions)
-app.get(/.*/, (req, res) => {
-    const indexPath = path.join(publicPath, 'index.html');
-    if (fs.existsSync(indexPath)) {
-        res.sendFile(indexPath);
-    } else {
-        res.status(404).send('Portal files missing. Build might have failed.');
-    }
+app.get('*', (req, res) => {
+  res.sendFile(path.join(publicPath, 'index.html'));
 });
 
-// 4. Bind to 0.0.0.0
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`SERVER_FULLY_OPERATIONAL_ON_PORT_${PORT}`);
-});
+const PORT = process.env.PORT || 8080;
+app.listen(PORT, () => console.log('Server running on port ' + PORT));
