@@ -240,11 +240,11 @@ router.get('/test-search', async (req: Request, res: Response) => {
     return res.status(500).json({ error: 'SERPER_API_KEY not set in Railway env vars' })
   }
   try {
-    const org = DJ_MONITOR_ORGS.find(o => o.name === 'EY US Technology Risk') || DJ_MONITOR_ORGS[0]
+    const orgName = (req.query.org as string) || 'Goldman Sachs'; const org = DJ_MONITOR_ORGS.find(o => o.name === orgName) || DJ_MONITOR_ORGS[0]
     const resp = await fetch('https://google.serper.dev/jobs', {
       method: 'POST',
       headers: { 'X-API-KEY': apiKey, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ q: org.searchQuery, num: 10 }),
+      body: JSON.stringify({ q: "IT Audit Manager " + org.name, num: 10 }),
     })
     const data = await resp.json()
     res.json({ org: org.name, query: org.searchQuery, status: resp.status, results: data })

@@ -193,7 +193,7 @@ async function scanViaWebSearchDJ(org: DJMonitorOrg): Promise<DJScannedJob[]> {
       fetch('https://google.serper.dev/jobs', {
         method: 'POST',
         headers: { 'X-API-KEY': apiKey, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ q: org.searchQuery, num: 10 }),
+        body: JSON.stringify({ q: "IT Audit Manager " + org.name, num: 10 }),
       }),
       10000,
       `Serper for ${org.name}`
