@@ -241,7 +241,7 @@ router.get('/test-search', async (req: Request, res: Response) => {
   }
   try {
     const org = DJ_MONITOR_ORGS.find(o => o.name === 'EY US Technology Risk') || DJ_MONITOR_ORGS[0]
-    const resp = await fetch('https://google.serper.dev/search', {
+    const resp = await fetch('https://google.serper.dev/jobs', {
       method: 'POST',
       headers: { 'X-API-KEY': apiKey, 'Content-Type': 'application/json' },
       body: JSON.stringify({ q: org.searchQuery, num: 10 }),
@@ -256,7 +256,7 @@ router.get('/test-search', async (req: Request, res: Response) => {
 // GET /api/monitor/dj/debug — full diagnostic dump
 router.get('/debug', async (req: Request, res: Response) => {
   const result: Record<string, any> = {
-    codeVersion: 'Serper-V1-Success',
+    codeVersion: 'Serper-V2-Jobs-API',
     env: {
       serperKey:    !!process.env.SERPER_API_KEY,
       geminiKey:    !!process.env.GEMINI_API_KEY,
