@@ -174,6 +174,7 @@ export function JobHub() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>(subContext === 'pooja' ? 'list' : 'grid');
   const [sortBy, setSortBy] = useState<'fit' | 'newest' | 'salary' | 'company'>('fit');
   const [apiUsage, setApiUsage] = useState<any>(null);
+  const [timeString, setTimeString] = useState('');
 
   const candidateId = subContext;
 
@@ -210,7 +211,6 @@ export function JobHub() {
   const [assistMode, setAssistMode] = useState<'coverletter' | 'interview' | 'skillgap'>('coverletter');
   const [assistResult, setAssistResult] = useState<string | null>(null);
   const [loadingAssist, setLoadingAssist] = useState(false);
-  const [updatedAt, setUpdatedAt] = useState('');
 
   const fetchJobs = useCallback(async () => {
     setLoading(true);
@@ -231,13 +231,16 @@ export function JobHub() {
         lastJobIds: state.lastJobIds.size === 0 ? new Set(data.jobs.map((j: any) => j.id)) : state.lastJobIds 
       });
       setTimeLeft(45 * 60);
-      setUpdatedAt(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
     } catch (err) {
       setError('Failed to fetch jobs. Please check your connection.');
     } finally {
       setLoading(false);
     }
   }, [subContext, state.page, isRemote, country, state.lastJobIds, setState]);
+
+  useEffect(() => {
+    setTimeString(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+  }, []);
 
   useEffect(() => {
     if (activePanel === 'hub' && state.jobs.length === 0) fetchJobs();
@@ -430,7 +433,7 @@ export function JobHub() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
             {/* Results count */}
             <span style={{ color: 'var(--text-muted)', fontSize: 13, flex: 1 }}>
-              {state.totalResults || 0} {isRemote || subContext === 'dj' ? 'remote ' : ''} {CP_PROFILES[subContext].role.replace(' Manager', '')} positions · {subContext === 'dj' ? 'USA' : country === 'all' ? 'GLOBAL' : country.toUpperCase()}{updatedAt ? ` · Updated ${updatedAt}` : ''}
+              {state.totalResults || 0} {isRemote || subContext === 'dj' ? 'remote ' : ''} {CP_PROFILES[subContext].role.replace(' Manager', '')} positions · {subContext === 'dj' ? 'USA' : country === 'all' ? 'GLOBAL' : country.toUpperCase()} · Updated {timeString}
             </span>
 
             {/* Sort dropdown — DJ only */}

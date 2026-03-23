@@ -6,7 +6,12 @@
       "Bash(cat:*)",
       "Bash(head:*)",
       "Bash(cd:*)",
-      "Bash(wc:*)"
+      "Bash(wc:*)",
+      "Bash(npx ts-node:*)",
+      "Bash(node -e \":*)",
+      "WebFetch(domain:career-os-backend-production.up.railway.app)",
+      "Bash(adb version:*)",
+      "Bash(winget install:*)"
     ]
   }
 }
