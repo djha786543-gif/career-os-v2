@@ -1,7 +1,7 @@
-export const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://career-os-backend-production.up.railway.app/api'
+﻿export const API_BASE = '/api';
 
 export const api = {
-  get: (path: string) => 
+  get: (path: string) =>
     fetch(`${API_BASE}${path}`).then(r => {
       if (!r.ok) throw new Error(`GET ${path} failed: ${r.statusText}`);
       return r.json();
@@ -17,7 +17,7 @@ export const api = {
     }),
   patch: (path: string, body: unknown) =>
     fetch(`${API_BASE}${path}`, {
-      method: 'PATCH', 
+      method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
     }).then(r => {

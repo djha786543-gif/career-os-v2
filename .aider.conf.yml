@@ -1,0 +1,7 @@
+model: sonnet
+architect: true
+thinking-tokens: 2048
+cache-prompts: true
+auto-test: false
+auto-lint: false
+map-tokens: 1024

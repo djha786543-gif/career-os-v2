@@ -1,30 +1,63 @@
-﻿const express = require('express');
+const express = require('express');
+const cors = require('cors');
 const path = require('path');
-const fs = require('fs');
 const app = express();
-const PORT = process.env.PORT || 3000;
 
+app.use(cors());
+app.use(express.json());
+
+// Healthcheck for Railway
+app.get('/health', (req, res) => res.status(200).send('OK'));
+
+// The Bridge - Targeting the Agentic AI logic
+const BACKEND_DIR = path.join(__dirname, 'backend', 'dist', 'api');
+const BACKEND_DIST = path.join(__dirname, 'backend', 'dist');
+console.log('Targeting Logic at:', BACKEND_DIR);
+
+const load = (f) => {
+  const m = require(path.join(BACKEND_DIR, f));
+  // Unwraps default exports, named 'router' exports, or the module itself
+  return m.default || m.router || (typeof m === 'function' ? m : m);
+};
+
+// Mount DJ monitor BEFORE Pooja monitor to avoid /api/monitor prefix collision
+try {
+  app.use('/api/monitor/dj', load('monitorDJ.js'));
+  console.log('✅ API Bridge: DJ Monitor Mounted at /api/monitor/dj');
+} catch (e) {
+  console.error('❌ API Bridge: DJ Monitor FAILED ->', e.message);
+}
+
+try {
+  app.use('/api/monitor', load('monitor.js'));
+  app.use('/api/jobs', load('jobs.js'));
+  console.log('✅ API Bridge: Pooja Monitor + Jobs Mounted');
+} catch (e) {
+  console.error('❌ API Bridge: FAILED ->', e.message);
+}
+
+// Run DB init + org seeding on startup (non-fatal if DB unreachable)
+try {
+  const { dbInit }     = require(path.join(BACKEND_DIST, 'db', 'init.js'));
+  const { seedOrgs }   = require(path.join(BACKEND_DIST, 'opportunity-monitor', 'monitorEngine.js'));
+  const { seedOrgsDJ } = require(path.join(BACKEND_DIST, 'opportunity-monitor', 'monitorEngineDJ.js'));
+  Promise.resolve()
+    .then(() => dbInit())
+    .then(() => seedOrgs().catch(e => console.warn('[Seed] Pooja orgs:', e.message)))
+    .then(() => seedOrgsDJ().catch(e => console.warn('[Seed] DJ orgs:', e.message)))
+    .catch(e => console.error('[Init]', e.message));
+} catch (e) {
+  console.error('❌ DB Init load failed:', e.message);
+}
+
+// Static UI serving
 const publicPath = path.join(__dirname, 'public');
-
-// 1. Explicit Health Check (No wildcard, zero room for error)
-app.get('/health', (req, res) => {
-    res.status(200).send('OK');
-});
-
-// 2. Static File Serving
 app.use(express.static(publicPath));
 
-// 3. The "Bulletproof" Catch-all (Regex works in all Express versions)
-app.get(/.*/, (req, res) => {
-    const indexPath = path.join(publicPath, 'index.html');
-    if (fs.existsSync(indexPath)) {
-        res.sendFile(indexPath);
-    } else {
-        res.status(404).send('Portal files missing. Build might have failed.');
-    }
+// Catch-all for React/Next routes (Regex prevents hijacking /api)
+app.get(/^(?!\/api).+/, (req, res) => {
+  res.sendFile(path.join(publicPath, 'index.html'));
 });
 
-// 4. Bind to 0.0.0.0
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`SERVER_FULLY_OPERATIONAL_ON_PORT_${PORT}`);
-});
+const PORT = process.env.PORT || 8080;
+app.listen(PORT, '0.0.0.0', () => console.log(`Audit Suite Live on port ${PORT}`));
