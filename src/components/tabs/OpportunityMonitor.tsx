@@ -100,6 +100,7 @@ interface Job {
   high_suitability: boolean;
   match_score: number;
   suitability_score?: number;
+  fail_reason?: string;
   sector: string;
   detected_at: string;
   ead_friendly?: boolean;
@@ -202,6 +203,8 @@ export const OpportunityMonitor = () => {
     try {
       const params = new URLSearchParams({ sector: activeSector, limit: '100' });
       if (showNewOnly) params.set('isNew', 'true');
+      // TASK 2: tell the API to pre-filter when the high-score slider is active
+      if (minScore >= 70) params.set('highSuitability', 'true');
 
       const res = await fetch(`${API_BASE}${API_PATH}/jobs?${params}`);
       if (!res.ok) throw new Error(`Server error: ${res.status}`);
@@ -211,9 +214,12 @@ export const OpportunityMonitor = () => {
         .filter((j: Job) => !isGarbageTitle(j.title))
         .map((j: Job) => ({
           ...j,
-          match_score: isDJ
-            ? djClientScore(j.title, j.snippet || '', j.org_name)
-            : poojaClientScore(j.title, j.snippet || '', j.org_name, j.sector),
+          // TASK 3: backend-demoted jobs always show 0 — never a misleading green score
+          match_score: j.high_suitability === false
+            ? 0
+            : (isDJ
+                ? djClientScore(j.title, j.snippet || '', j.org_name)
+                : poojaClientScore(j.title, j.snippet || '', j.org_name, j.sector)),
         }))
         .sort((a: Job, b: Job) => b.match_score - a.match_score);
 
@@ -241,7 +247,9 @@ export const OpportunityMonitor = () => {
     setJobs(filtered);
   }, [allJobs, activeRegion, minScore]);
 
-  useEffect(() => { fetchData(); }, [activeSector, showNewOnly, profile]);
+  // Re-fetch when sector, newOnly, profile, or the high-suitability boundary (≥70) changes
+  const highSuitabilityMode = minScore >= 70;
+  useEffect(() => { fetchData(); }, [activeSector, showNewOnly, profile, highSuitabilityMode]);
 
   const handleScan = async () => {
     setScanning(true);
@@ -263,10 +271,11 @@ export const OpportunityMonitor = () => {
 
   const getCount = (sector: string) => counts.find(c => c.sector === sector);
 
+  // TASK 1: strong-fit count must only include backend-confirmed high_suitability jobs
   const scoreBreakdown = jobs.length > 0 ? {
-    strong:  jobs.filter(j => (j.match_score || 0) >= 70).length,
-    good:    jobs.filter(j => (j.match_score || 0) >= 50 && (j.match_score || 0) < 70).length,
-    partial: jobs.filter(j => (j.match_score || 0) < 50).length,
+    strong:  jobs.filter(j => j.high_suitability !== false && (j.match_score || 0) >= 70).length,
+    good:    jobs.filter(j => j.high_suitability !== false && (j.match_score || 0) >= 50 && (j.match_score || 0) < 70).length,
+    partial: jobs.filter(j => j.high_suitability === false || (j.match_score || 0) < 50).length,
   } : null;
 
   const subtitle = isDJ
@@ -419,24 +428,26 @@ export const OpportunityMonitor = () => {
         <div style={{ display: 'grid', gap: '10px' }}>
           {jobs.map((job, idx) => {
             const score = job.match_score || 0;
+            const isDemoted = job.high_suitability === false;
             return (
               <div
                 key={idx}
                 style={{
                   padding: '14px 16px',
-                  background: scoreBg(score),
+                  background: isDemoted ? 'rgba(100,116,139,0.05)' : scoreBg(score),
                   backgroundColor: '#1e293b',
                   borderRadius: '10px',
-                  borderLeft: `4px solid ${borderColor(score, job.is_new)}`,
+                  borderLeft: `4px solid ${isDemoted ? '#334155' : borderColor(score, job.is_new)}`,
                   display: 'grid',
                   gap: '6px',
-                  position: 'relative'
+                  position: 'relative',
+                  opacity: isDemoted ? 0.6 : 1,
                 }}
               >
                 {/* Title row */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px' }}>
                   <div style={{ flex: 1 }}>
-                    <h3 style={{ margin: '0 0 4px 0', fontSize: '14px', color: '#f8fafc', lineHeight: '1.3' }}>
+                    <h3 style={{ margin: '0 0 4px 0', fontSize: '14px', color: isDemoted ? '#94a3b8' : '#f8fafc', lineHeight: '1.3' }}>
                       {job.is_new && (
                         <span style={{ fontSize: '9px', background: '#166534', color: '#86efac', padding: '2px 5px', borderRadius: '3px', marginRight: '6px', fontWeight: 'bold', verticalAlign: 'middle' }}>
                           NEW
@@ -445,6 +456,11 @@ export const OpportunityMonitor = () => {
                       {isDJ && job.ead_friendly && (
                         <span style={{ fontSize: '9px', background: '#1e3a5f', color: '#93c5fd', padding: '2px 5px', borderRadius: '3px', marginRight: '6px', fontWeight: 'bold', verticalAlign: 'middle' }}>
                           EAD
+                        </span>
+                      )}
+                      {isDemoted && (
+                        <span style={{ fontSize: '9px', background: '#1c1917', color: '#78716c', padding: '2px 5px', borderRadius: '3px', marginRight: '6px', fontWeight: 'bold', verticalAlign: 'middle', border: '1px solid #292524' }}>
+                          DEMOTED{job.fail_reason ? ` · ${job.fail_reason}` : ''}
                         </span>
                       )}
                       {job.title}
