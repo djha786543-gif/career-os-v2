@@ -101,6 +101,18 @@ export function AppLayout({ activeTab, onTabChange, children }: Props) {
                 <span style={{ marginRight: 6 }}>{tab.icon}</span>{tab.label}
               </button>
             ))}
+            <a
+              href="/india-portal"
+              style={{
+                ...styles.ntab,
+                color: 'rgba(255,255,255,0.4)',
+                borderBottom: '2px solid transparent',
+                borderRadius: 0,
+                textDecoration: 'none',
+              }}
+            >
+              <span style={{ marginRight: 6 }}>🇮🇳</span>India PhD Portal
+            </a>
           </nav>
         </div>
       </header>
