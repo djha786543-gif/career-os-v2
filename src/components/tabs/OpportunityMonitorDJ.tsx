@@ -127,6 +127,7 @@ function scoreDJJob(job: any): DJScoredJob | null {
 
 type DJSector = 'all' | 'big4' | 'banking' | 'tech-cloud' | 'manufacturing';
 type DJCountry = 'all' | 'USA' | 'India';
+type DJSource = 'all' | 'monitor' | 'indeed';
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
@@ -181,11 +182,20 @@ const ManagerialBadge = () => (
   </span>
 );
 
+const IndeedBadge = () => (
+  <span style={{ fontSize: 9, fontWeight: 900, padding: '2px 7px',
+    background: 'rgba(20,184,166,0.12)', color: '#2dd4bf',
+    border: '1px solid rgba(20,184,166,0.3)', borderRadius: 4, flexShrink: 0 }}>
+    Indeed Live
+  </span>
+);
+
 const JobCard = ({ scored }: { scored: DJScoredJob }) => {
   const { raw: job, score, tier, matchedAnchors, eadFriendly, managerialGrade } = scored;
   const borderColor = tier === 'elite' ? '#22d3ee' : tier === 'strong' ? '#10b981' : '#f59e0b';
   const orgName = job.org_name || job.company || '';
   const applyUrl = job.apply_url || job.applyUrl || '#';
+  const isIndeed = job.source === 'indeed';
 
   const visibleTags = matchedAnchors.slice(0, 4).map(a => a.toUpperCase());
 
@@ -200,6 +210,7 @@ const JobCard = ({ scored }: { scored: DJScoredJob }) => {
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 5, flexWrap: 'wrap' }}>
           <span style={{ fontWeight: 800, fontSize: 13.5, color: '#f8fafc' }}>{job.title}</span>
           <TierBadge tier={tier} />
+          {isIndeed     && <IndeedBadge />}
           {eadFriendly  && <EADBadge />}
           {managerialGrade && <ManagerialBadge />}
         </div>
@@ -211,6 +222,11 @@ const JobCard = ({ scored }: { scored: DJScoredJob }) => {
             <span style={{ marginLeft: 8, fontSize: 10, color: '#475569',
               padding: '1px 6px', background: 'rgba(255,255,255,0.04)', borderRadius: 3 }}>
               {job.country}
+            </span>
+          )}
+          {job.salary && job.salary !== 'Not disclosed' && (
+            <span style={{ marginLeft: 8, fontSize: 10, fontWeight: 700, color: '#10b981' }}>
+              {job.salary}
             </span>
           )}
         </div>
@@ -289,17 +305,32 @@ const SummaryBar = ({ jobs }: { jobs: DJScoredJob[] }) => {
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export const OpportunityMonitorDJ: React.FC = () => {
-  const [sector,       setSector]       = useState<DJSector>('all');
-  const [country,      setCountry]      = useState<DJCountry>('all');
-  const [jobs,         setJobs]         = useState<DJScoredJob[]>([]);
-  const [loading,      setLoading]      = useState(false);
-  const [scanning,     setScanning]     = useState(false);
-  const [error,        setError]        = useState<string | null>(null);
-  const [totalFetched, setTotalFetched] = useState(0);
-  const [lastScan,     setLastScan]     = useState<string | null>(null);
-  const [tierFilter,   setTierFilter]   = useState<DJTier | 'all'>('all');
-  const [fallbackUsed, setFallbackUsed] = useState<string | null>(null);
+  const [sector,        setSector]        = useState<DJSector>('all');
+  const [country,       setCountry]       = useState<DJCountry>('all');
+  const [jobs,          setJobs]          = useState<DJScoredJob[]>([]);
+  const [loading,       setLoading]       = useState(false);
+  const [scanning,      setScanning]      = useState(false);
+  const [error,         setError]         = useState<string | null>(null);
+  const [totalFetched,  setTotalFetched]  = useState(0);
+  const [lastScan,      setLastScan]      = useState<string | null>(null);
+  const [tierFilter,    setTierFilter]    = useState<DJTier | 'all'>('all');
+  const [sourceFilter,  setSourceFilter]  = useState<DJSource>('all');
+  const [fallbackUsed,  setFallbackUsed]  = useState<string | null>(null);
+  const [indeedLoading, setIndeedLoading] = useState(false);
   const seenIds = useRef(new Set<string>());
+
+  const fetchIndeedJobs = useCallback(async (): Promise<any[]> => {
+    setIndeedLoading(true);
+    try {
+      const data = await api.get('/monitor/dj/indeed-jobs');
+      const list: any[] = Array.isArray(data?.jobs) ? data.jobs : [];
+      return list.map(j => ({ ...j, source: 'indeed' }));
+    } catch {
+      return [];
+    } finally {
+      setIndeedLoading(false);
+    }
+  }, []);
 
   const fetchJobs = useCallback(async (s: DJSector, c: DJCountry) => {
     setLoading(true);
@@ -317,42 +348,58 @@ export const OpportunityMonitorDJ: React.FC = () => {
       const primaryPath = `/monitor/dj/jobs?${primaryParams.toString()}`;
       const raw: any[] = [];
 
-      try {
-        const data = await api.get(primaryPath);
-        const list: any[] = Array.isArray(data?.jobs) ? data.jobs : [];
-        list.forEach(job => {
-          const key = job.id ?? `${job.title}__${job.org_name}`;
-          if (!seenIds.current.has(key)) { seenIds.current.add(key); raw.push(job); }
-        });
-      } catch { /* fallback below */ }
+      // Fetch monitor DB jobs + Indeed in parallel
+      const [, indeedRaw] = await Promise.allSettled([
+        (async () => {
+          try {
+            const data = await api.get(primaryPath);
+            const list: any[] = Array.isArray(data?.jobs) ? data.jobs : [];
+            list.forEach(job => {
+              const key = job.id ?? `${job.title}__${job.org_name}`;
+              if (!seenIds.current.has(key)) { seenIds.current.add(key); raw.push(job); }
+            });
+          } catch { /* fallback below */ }
 
-      // Layer 1 fallback: /api/jobs with IT Audit Manager query (US)
-      if (raw.length === 0) {
-        setFallbackUsed('Layer 1: Broadening to live IT Audit Manager search (US)');
-        try {
-          const data = await api.get('/jobs?q=IT+Audit+Manager&country=US&candidate=dj');
-          const list: any[] = Array.isArray(data?.jobs) ? data.jobs : Array.isArray(data) ? data : [];
-          list.forEach(job => {
-            const key = job.id ?? `${job.title}__${job.company}`;
-            if (!seenIds.current.has(key)) { seenIds.current.add(key); raw.push({ ...job, country: 'USA', ead_friendly: true }); }
-          });
-        } catch { /* continue to layer 2 */ }
-      }
+          // Layer 1 fallback: /api/jobs with IT Audit Manager query (US)
+          if (raw.length === 0) {
+            setFallbackUsed('Layer 1: Broadening to live IT Audit Manager search (US)');
+            try {
+              const data = await api.get('/jobs?q=IT+Audit+Manager&country=US&candidate=dj');
+              const list: any[] = Array.isArray(data?.jobs) ? data.jobs : Array.isArray(data) ? data : [];
+              list.forEach(job => {
+                const key = job.id ?? `${job.title}__${job.company}`;
+                if (!seenIds.current.has(key)) { seenIds.current.add(key); raw.push({ ...job, country: 'USA', ead_friendly: true }); }
+              });
+            } catch { /* continue to layer 2 */ }
+          }
 
-      // Layer 2 fallback: Cloud Risk Audit — India
-      if (raw.length === 0) {
-        setFallbackUsed('Layer 2: Broadening to Cloud Risk Audit search (India)');
-        try {
-          const data = await api.get('/jobs?q=Cloud+Risk+Audit&country=India&candidate=dj');
-          const list: any[] = Array.isArray(data?.jobs) ? data.jobs : Array.isArray(data) ? data : [];
-          list.forEach(job => {
-            const key = job.id ?? `${job.title}__${job.company}`;
-            if (!seenIds.current.has(key)) { seenIds.current.add(key); raw.push({ ...job, country: 'India', managerial_grade: true }); }
-          });
-        } catch { /* give up */ }
-      }
+          // Layer 2 fallback: Cloud Risk Audit — India
+          if (raw.length === 0) {
+            setFallbackUsed('Layer 2: Broadening to Cloud Risk Audit search (India)');
+            try {
+              const data = await api.get('/jobs?q=Cloud+Risk+Audit&country=India&candidate=dj');
+              const list: any[] = Array.isArray(data?.jobs) ? data.jobs : Array.isArray(data) ? data : [];
+              list.forEach(job => {
+                const key = job.id ?? `${job.title}__${job.company}`;
+                if (!seenIds.current.has(key)) { seenIds.current.add(key); raw.push({ ...job, country: 'India', managerial_grade: true }); }
+              });
+            } catch { /* give up */ }
+          }
 
-      if (raw.length > 0) setFallbackUsed(null);
+          if (raw.length > 0) setFallbackUsed(null);
+        })(),
+        fetchIndeedJobs(),
+      ]);
+
+      // Merge Indeed results (deduped by title+company)
+      const indeedJobs: any[] = indeedRaw.status === 'fulfilled' ? indeedRaw.value : [];
+      indeedJobs.forEach(job => {
+        const key = `indeed__${(job.title || '').toLowerCase()}__${(job.company || job.org_name || '').toLowerCase()}`;
+        if (!seenIds.current.has(key)) {
+          seenIds.current.add(key);
+          raw.push(job);
+        }
+      });
 
       setTotalFetched(raw.length);
       const scored = raw.map(scoreDJJob).filter(Boolean) as DJScoredJob[];
@@ -364,7 +411,7 @@ export const OpportunityMonitorDJ: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [fetchIndeedJobs]);
 
   useEffect(() => { fetchJobs('all', 'all'); }, [fetchJobs]);
 
@@ -404,7 +451,14 @@ export const OpportunityMonitorDJ: React.FC = () => {
     { key: 'India', label: '🇮🇳 India'  },
   ];
 
-  const visibleJobs = jobs.filter(j => tierFilter === 'all' || j.tier === tierFilter);
+  const visibleJobs = jobs.filter(j => {
+    if (tierFilter !== 'all' && j.tier !== tierFilter) return false;
+    if (sourceFilter === 'indeed'  && j.raw.source !== 'indeed') return false;
+    if (sourceFilter === 'monitor' && j.raw.source === 'indeed') return false;
+    return true;
+  });
+  const indeedCount  = jobs.filter(j => j.raw.source === 'indeed').length;
+  const monitorCount = jobs.filter(j => j.raw.source !== 'indeed').length;
 
   return (
     <div style={{ color: 'white', fontFamily: 'var(--font-sans, sans-serif)' }}>
@@ -454,7 +508,7 @@ export const OpportunityMonitorDJ: React.FC = () => {
       </div>
 
       {/* Country Toggle */}
-      <div style={{ display: 'flex', gap: 2, marginBottom: 14 }}>
+      <div style={{ display: 'flex', gap: 2, marginBottom: 8 }}>
         {COUNTRIES.map(({ key, label }) => (
           <button key={key} onClick={() => handleCountryChange(key)} style={{
             padding: '6px 14px',
@@ -468,6 +522,30 @@ export const OpportunityMonitorDJ: React.FC = () => {
             {key === 'India' && <span style={{ marginLeft: 5, fontSize: 9, color: '#fbbf24' }}>Mgr+</span>}
           </button>
         ))}
+      </div>
+
+      {/* Source Toggle */}
+      <div style={{ display: 'flex', gap: 2, marginBottom: 14, alignItems: 'center' }}>
+        {([
+          { key: 'all',     label: `All Sources (${jobs.length})` },
+          { key: 'monitor', label: `Monitor DB (${monitorCount})` },
+          { key: 'indeed',  label: `Indeed Live (${indeedCount})` },
+        ] as { key: DJSource; label: string }[]).map(({ key, label }) => (
+          <button key={key} onClick={() => setSourceFilter(key)} style={{
+            padding: '5px 13px',
+            background: sourceFilter === key ? (key === 'indeed' ? 'rgba(20,184,166,0.12)' : 'rgba(34,211,238,0.1)') : 'transparent',
+            border: `1px solid ${sourceFilter === key ? (key === 'indeed' ? '#2dd4bf' : '#22d3ee') : '#334155'}`,
+            color: sourceFilter === key ? (key === 'indeed' ? '#2dd4bf' : '#22d3ee') : '#64748b',
+            cursor: 'pointer', fontWeight: 700, fontSize: 11, borderRadius: 5,
+          }}>
+            {label}
+          </button>
+        ))}
+        {indeedLoading && (
+          <span style={{ fontSize: 10, color: '#2dd4bf', marginLeft: 6 }}>
+            ↻ fetching Indeed…
+          </span>
+        )}
       </div>
 
       {/* Fallback notice */}
