@@ -523,6 +523,7 @@ const LiveMonitorSection: React.FC = () => {
   const [error,        setError]        = useState<string | null>(null);
   const [catFilter,    setCatFilter]    = useState<MonitorCategory>('all');
   const [scanMsg,      setScanMsg]      = useState<string | null>(null);
+  const [highOnly,     setHighOnly]     = useState(false);
 
   // Load cached results on mount
   const loadJobs = useCallback(async () => {
@@ -595,14 +596,15 @@ const LiveMonitorSection: React.FC = () => {
     }
   };
 
-  const visible = catFilter === 'all'
-    ? jobs
-    : jobs.filter(j => j.portal_category === catFilter);
+  // Apply category filter, then optional quality filter (score ≥ 2)
+  const base = catFilter === 'all' ? jobs : jobs.filter(j => j.portal_category === catFilter);
+  const visible = highOnly ? base.filter(j => j.relevance_score >= 2) : base;
 
   const counts = MONITOR_CATS.reduce((acc, cat) => {
+    const pool = highOnly ? jobs.filter(j => j.relevance_score >= 2) : jobs;
     acc[cat.id] = cat.id === 'all'
-      ? jobs.length
-      : jobs.filter(j => j.portal_category === cat.id).length;
+      ? pool.length
+      : pool.filter(j => j.portal_category === cat.id).length;
     return acc;
   }, {} as Record<string, number>);
 
@@ -623,7 +625,7 @@ const LiveMonitorSection: React.FC = () => {
             )}
           </div>
           <p style={{ margin: '4px 0 0 0', fontSize: 11, color: '#475569' }}>
-            Serper searches across {MONITOR_CATS.length - 1} categories · {jobs.length} active listings
+            Past 30 days · {MONITOR_CATS.length - 1} categories · {visible.length} listings shown
             {lastScan && (
               <span style={{ marginLeft: 8, color: '#334155' }}>
                 · Last scan: {new Date(lastScan).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
@@ -653,8 +655,8 @@ const LiveMonitorSection: React.FC = () => {
         </div>
       )}
 
-      {/* Category filter */}
-      <div style={{ display: 'flex', gap: 5, marginBottom: 14, flexWrap: 'wrap' }}>
+      {/* Category filter + quality toggle */}
+      <div style={{ display: 'flex', gap: 5, marginBottom: 14, flexWrap: 'wrap', alignItems: 'center' }}>
         {MONITOR_CATS.map(cat => {
           const active = catFilter === cat.id;
           return (
@@ -669,6 +671,22 @@ const LiveMonitorSection: React.FC = () => {
             </button>
           );
         })}
+        {/* Quality toggle — separate visually */}
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6 }}>
+          <button
+            onClick={() => setHighOnly(h => !h)}
+            style={{
+              padding: '5px 13px', fontSize: 11, fontWeight: 700, cursor: 'pointer',
+              borderRadius: 6,
+              border: `1px solid ${highOnly ? '#a855f7' : '#334155'}`,
+              background: highOnly ? 'rgba(168,85,247,0.12)' : 'transparent',
+              color: highOnly ? '#a855f7' : '#475569',
+            }}
+            title="Show only HIGH MATCH results (relevance ≥ 2)"
+          >
+            ★ High Match only
+          </button>
+        </div>
       </div>
 
       {/* Error */}
@@ -686,11 +704,22 @@ const LiveMonitorSection: React.FC = () => {
       ) : visible.length === 0 ? (
         <div style={{ padding: '40px 24px', textAlign: 'center', background: 'rgba(255,255,255,0.02)', border: '1px dashed rgba(168,85,247,0.2)', borderRadius: 12, color: '#475569' }}>
           <div style={{ fontSize: 22, marginBottom: 8 }}>🔍</div>
-          <div style={{ fontWeight: 700, fontSize: 13, color: '#94a3b8', marginBottom: 6 }}>No results yet.</div>
-          <div style={{ fontSize: 12 }}>
-            Click <strong style={{ color: '#a855f7' }}>⚡ Scan Now</strong> to search across all portals.
-            Fellowship section is intentionally excluded — check those manually.
-          </div>
+          {jobs.length > 0 ? (
+            <>
+              <div style={{ fontWeight: 700, fontSize: 13, color: '#94a3b8', marginBottom: 6 }}>No high-match results in this view.</div>
+              <div style={{ fontSize: 12 }}>
+                Turn off <strong style={{ color: '#a855f7' }}>★ High Match only</strong> or switch category to see all {jobs.length} listings.
+              </div>
+            </>
+          ) : (
+            <>
+              <div style={{ fontWeight: 700, fontSize: 13, color: '#94a3b8', marginBottom: 6 }}>No results yet (past 30 days).</div>
+              <div style={{ fontSize: 12 }}>
+                Click <strong style={{ color: '#a855f7' }}>⚡ Scan Now</strong> to search across all portals.
+                Results older than 30 days are automatically removed.
+              </div>
+            </>
+          )}
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -761,7 +790,7 @@ const LiveMonitorSection: React.FC = () => {
       {/* Footer note */}
       {visible.length > 0 && (
         <div style={{ marginTop: 16, padding: '10px 14px', background: '#0f172a', borderRadius: 8, border: '1px solid #1e293b', fontSize: 10.5, color: '#334155', lineHeight: 1.7 }}>
-          <strong style={{ color: '#475569' }}>Note:</strong> Results from Google index via Serper. Some PDF-only government notifications may not appear.
+          <strong style={{ color: '#475569' }}>Note:</strong> Results from Google index via Serper (past 3 months). Guides, syllabus pages, admit cards, and non-science roles are filtered out automatically. Listings older than 30 days are purged on each scan.
           Fellowship portals (Ramalingaswami, INSPIRE, BioCARe, etc.) are excluded here — check the Fellowships tab for those.
           Click <strong style={{ color: '#10b981' }}>✓ Applied</strong> to permanently remove a listing you have already applied to.
         </div>
