@@ -532,9 +532,15 @@ const LiveMonitorSection: React.FC = () => {
       const data = await api.get('/monitor/pooja-india/jobs');
       setJobs(Array.isArray(data?.jobs) ? data.jobs : []);
       if (data?.lastScan) setLastScan(data.lastScan);
-    } catch {
-      setError('Could not load results. Try scanning now.');
-      setJobs([]);
+      setError(null);
+    } catch (err: any) {
+      // 404 = routes not deployed yet; treat as empty (not an error to shout about)
+      if (err?.message?.includes('404')) {
+        setJobs([]);
+      } else {
+        setError(`Load failed: ${err?.message || 'Network error'}`);
+        setJobs([]);
+      }
     } finally {
       setLoading(false);
     }
@@ -548,12 +554,27 @@ const LiveMonitorSection: React.FC = () => {
     setError(null);
     setScanMsg(null);
     try {
-      await api.post('/monitor/pooja-india/scan', {});
-      setScanMsg('Scan running in background (~30 sec). Results will refresh shortly.');
-      // Poll once after 35 sec
+      const base = process.env.NEXT_PUBLIC_API_URL || 'https://career-os-backend-production.up.railway.app/api';
+      const resp = await fetch(`${base}/monitor/pooja-india/scan`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      if (!resp.ok) {
+        let detail = `HTTP ${resp.status}`;
+        if (resp.status === 404) detail = '404 — route not found. Backend may still be deploying.';
+        if (resp.status === 503) detail = '503 — SERPER_API_KEY not configured on backend.';
+        if (resp.status === 500) {
+          try { const j = await resp.json(); detail = `500 — ${j.error || resp.statusText}`; } catch { /* */ }
+        }
+        setError(`Scan failed: ${detail}`);
+        setScanning(false);
+        return;
+      }
+      setScanMsg('Scan running in background (~30 sec). Refreshing results...');
       setTimeout(() => { loadJobs(); setScanMsg(null); setScanning(false); }, 35000);
-    } catch {
-      setError('Scan failed. Check backend status.');
+    } catch (err: any) {
+      setError(`Scan failed: ${err?.message || 'Network error — check backend is reachable.'}`);
       setScanning(false);
     }
   };
