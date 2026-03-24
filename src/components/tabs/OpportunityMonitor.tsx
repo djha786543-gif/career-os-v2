@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { API_BASE } from '../../config/api';
 import { useProfile } from '../../context/ProfileContext';
 
 // ─── Pooja Client-Side Scorer ─────────────────────────────────────────────────
 const WET_LAB_RE = /\b(genotyping|pcr|qpcr|rt.?pcr|western blot|protein analysis|protein expression|immunohistochemistry|ihc|elisa|cell culture|primary cell|flow cytometry|immunofluorescence|confocal|microscopy|molecular biology|biochemistry|cloning|rna.?seq|transcriptomics|crispr|gene expression|sequencing|rna isolation|dna isolation|immunoprecipitation|chromatin|chip.?seq|atac.?seq|single.cell)\b/i;
 const IN_VIVO_RE  = /\b(animal model|mouse model|in.?vivo|transgenic|knockout|knock.?in|conditional knockout|animal surgery|echocardiography|langendorff|cardiac perfusion|animal handling|rodent|murine|rat model|zebrafish|drosophila|genetically modified|cre.?lox)\b/i;
-const PRIMARY_DOMAIN_RE   = /\b(cardiovascular|cardiomyopathy|peripartum|cardiac|heart failure|heart disease|cardiomyocyte|cardio|vascular|heme|haemo|hemoglobin|haematology|hematology|molecular genetics|genomics|genetics|gene|transcriptomics|rna.?seq)\b/i;
+const PRIMARY_DOMAIN_RE   = /\b(cardiovascular|cardiomyopathy|peripartum|cardiac|heart failure|heart disease|cardiomyocyte|cardio|vascular|arrhythmia|cardiology|myocardial|coronary|atrial|ventricular|aortic|electrophysiology|heme|haemo|hemoglobin|haematology|hematology|molecular genetics|genomics|genetics|gene therapy|gene editing|gene|transcriptomics|rna.?seq)\b/i;
 const SECONDARY_DOMAIN_RE = /\b(cancer|oncology|tumor|tumour|immunology|immune|inflammation|inflammatory|metabolism|metabolic|liver|fibrosis|neuroscience|neurological|pulmonary|renal|kidney|diabetes|obesity)\b/i;
 const SENIOR_TITLE_RE  = /\b(senior scientist|principal scientist|staff scientist|group leader|team leader|associate investigator|lead scientist|scientist [2-9]|scientist ii|scientist iii|scientist iv)\b/i;
 const FACULTY_TITLE_RE = /\b(assistant professor|associate professor|professor|faculty|tenure.?track|principal investigator|pi\b)\b/i;
@@ -14,7 +14,7 @@ const POSTDOC_TITLE_RE   = /\b(postdoc|postdoctoral|research fellow|research ass
 const LIFESCI_PHD_RE  = /\b(ph\.?d|doctorate|life science|biology|biochemistry|molecular|genetics|biomedical|bioscience)\b/i;
 const MOLBIO_CONTEXT_RE = /\b(molecular biology|molecular|biochemistry|cell biology|genetics|genomics|protein|rna|dna|assay|experiment|laboratory|research)\b/i;
 const LIFESCI_ANCHOR_RE = /\b(metabolism|molecular|biotech|cardiovascular|immunology|ph\.?d|biology|biological|biochem(?:istry|ical)?|genomics|genetics|genetic|research|faculty|staff|science|sciences|investigator|oncology|neuroscience|microbiology|virology|pharmacology|pharma(?:ceutical)?|proteomics|transcriptomics|bioinformatics|crispr|rna|sequencing|cancer|cardiac|immunobiology|epigenetics|haematology|hematology|cell biology|molecular genetics)\b/i;
-const GARBAGE_TITLE_RE = /^\$|^\d+\s+(job|position|opening|result|postdoc|researcher)|\s+jobs(,\s+employment)?\s*$|^(careers?|admissions?|home|about\s+us?|open\s+positions?|join\s+our\s+team|our\s+team|opportunities|apply\s+now|contact\s+us?|sitemap|menu|navigation|explore|learn\s+more|vacancies)\s*$/i;
+const GARBAGE_TITLE_RE = /^\$|^\d+\s+(job|position|opening|result|postdoc|researcher)|\s+jobs?(,\s+employment)?\s*$|\s+jobs?\s+(in|at|for|near)\s+|^(careers?|admissions?|home|about\s+us?|open\s+positions?|join\s+our\s+team|our\s+team|opportunities|apply\s+now|contact\s+us?|sitemap|menu|navigation|explore|learn\s+more|vacancies)\s*$/i;
 
 const TIER1_ORGS = new Set([
   'Harvard Medical School','Stanford Medicine','MIT Biology','UCSF','Broad Institute',
@@ -45,6 +45,12 @@ function poojaClientScore(title: string, snippet: string, orgName: string, secto
     score += (TIER1_ORGS.has(orgName) || sector === 'academia' || sector === 'international') ? 12 : 8;
   }
   if (TIER1_ORGS.has(orgName)) score += 10;
+  // Title–domain synergy: confirmed relevant role in core domain deserves extra signal
+  // (short snippets often lack wet-lab keywords even for strong positions)
+  if ((FACULTY_TITLE_RE.test(tl) || SENIOR_TITLE_RE.test(tl) || SCIENTIST_TITLE_RE.test(tl)) &&
+      PRIMARY_DOMAIN_RE.test(text)) {
+    score += 12;
+  }
   if (LIFESCI_PHD_RE.test(text) && MOLBIO_CONTEXT_RE.test(text) &&
       (LIFESCI_ANCHOR_RE.test(title) || SCIENTIST_TITLE_RE.test(title) || FACULTY_TITLE_RE.test(title)) &&
       score < 50) score = 50;
@@ -263,6 +269,20 @@ export const OpportunityMonitor = () => {
 
   const getCount = (sector: string) => counts.find(c => c.sector === sector);
 
+  // Per-country job counts derived from loaded allJobs — drives the count badges on region buttons
+  const regionCounts = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const job of allJobs) {
+      const haystack = ((job.location || '') + ' ' + (job.country || '')).toLowerCase();
+      for (const r of REGIONS) {
+        if (r.value && haystack.includes(r.value)) {
+          map[r.value] = (map[r.value] || 0) + 1;
+        }
+      }
+    }
+    return map;
+  }, [allJobs, isDJ]);
+
   const scoreBreakdown = jobs.length > 0 ? {
     strong:  jobs.filter(j => (j.match_score || 0) >= 70).length,
     good:    jobs.filter(j => (j.match_score || 0) >= 50 && (j.match_score || 0) < 70).length,
@@ -374,19 +394,27 @@ export const OpportunityMonitor = () => {
 
       {/* Region filter */}
       <div style={{ display: 'flex', gap: '4px', marginBottom: '20px', flexWrap: 'wrap' }}>
-        {REGIONS.map(r => (
-          <button
-            key={r.label}
-            onClick={() => setActiveRegion(r.value)}
-            style={{
-              padding: '4px 10px', fontSize: '11px',
-              background: activeRegion === r.value ? '#22c55e' : '#1e293b',
-              border: '1px solid #334155', color: 'white', cursor: 'pointer', borderRadius: '4px'
-            }}
-          >
-            {r.label}
-          </button>
-        ))}
+        {REGIONS.map(r => {
+          const cnt = r.value ? (regionCounts[r.value] || 0) : null;
+          return (
+            <button
+              key={r.label}
+              onClick={() => setActiveRegion(r.value)}
+              style={{
+                padding: '4px 10px', fontSize: '11px',
+                background: activeRegion === r.value ? '#22c55e' : '#1e293b',
+                border: '1px solid #334155', color: 'white', cursor: 'pointer', borderRadius: '4px'
+              }}
+            >
+              {r.label}
+              {cnt !== null && cnt > 0 && (
+                <span style={{ marginLeft: '4px', fontSize: '10px', color: activeRegion === r.value ? 'rgba(255,255,255,0.8)' : '#94a3b8' }}>
+                  {cnt}
+                </span>
+              )}
+            </button>
+          );
+        })}
       </div>
 
       {/* Status banners */}
