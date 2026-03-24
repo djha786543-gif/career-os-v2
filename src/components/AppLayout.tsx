@@ -1,4 +1,5 @@
 import React from 'react';
+import Link from 'next/link';
 import { useProfile, ProfileId } from '../context/ProfileContext';
 
 export type TabId =
@@ -101,7 +102,7 @@ export function AppLayout({ activeTab, onTabChange, children }: Props) {
                 <span style={{ marginRight: 6 }}>{tab.icon}</span>{tab.label}
               </button>
             ))}
-            <a
+            <Link
               href="/india-portal"
               style={{
                 ...styles.ntab,
@@ -112,7 +113,7 @@ export function AppLayout({ activeTab, onTabChange, children }: Props) {
               }}
             >
               <span style={{ marginRight: 6 }}>🇮🇳</span>India PhD Portal
-            </a>
+            </Link>
           </nav>
         </div>
       </header>
