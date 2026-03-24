@@ -406,7 +406,7 @@ const PORTALS: Portal[] = [
     deadline: 'Rolling — instem.res.in',
     url: 'https://instem.res.in',
     priority: true,
-    note: 'Strong cardiovascular / stem cell focus — aligns closely with Pooja's research profile.',
+    note: "Strong cardiovascular / stem cell focus — aligns closely with Pooja's research profile.",
   },
 
   // ═══ AGGREGATORS ═══
