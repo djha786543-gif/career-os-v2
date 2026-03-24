@@ -531,6 +531,10 @@ export const IndiaPhDPortal: React.FC = () => {
           All positions where <strong style={{ color: '#a855f7' }}>a PhD is the minimum eligibility</strong> — experience not counted as a gate.
           {' '}{PORTALS.length} portals across fellowships, central govt, state PSCs, academia, and aggregators.
         </p>
+        <div style={{ marginTop: 8, display: 'inline-flex', alignItems: 'center', gap: 6, padding: '3px 10px', background: '#1e293b', borderRadius: 6, border: '1px solid #334155' }}>
+          <span style={{ fontSize: 10, color: '#475569' }}>●</span>
+          <span style={{ fontSize: 11, color: '#64748b' }}>Last reviewed: <strong style={{ color: '#94a3b8' }}>24 Mar 2026</strong></span>
+        </div>
       </div>
 
       {/* Search + filters */}
