@@ -1,0 +1,51 @@
+name: India Portal Weekly Review Reminder
+
+on:
+  schedule:
+    - cron: '0 9 * * 1'   # Every Monday at 9:00 AM UTC
+  workflow_dispatch:       # Allow manual trigger
+
+jobs:
+  create-reminder-issue:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Create weekly review issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const today = new Date().toISOString().slice(0, 10);
+
+            // Check if a reminder issue already exists and is open
+            const existing = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: 'india-portal-review',
+              state: 'open',
+            });
+
+            if (existing.data.length > 0) {
+              console.log('Open reminder issue already exists — skipping.');
+              return;
+            }
+
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `[Weekly] Review India PhD Portal deadlines — ${today}`,
+              body: [
+                '## India PhD Portal — Weekly Deadline Review',
+                '',
+                'Please review the following items in `src/components/tabs/IndiaPhDPortal.tsx`:',
+                '',
+                '- [ ] Check fellowship deadline windows (DBT Ramalingaswami, DST-INSPIRE, Wellcome India Alliance)',
+                '- [ ] Verify any "Active YYYY cycle" notes are still current (e.g. MPPSC 2026)',
+                '- [ ] Confirm rolling schemes are still accepting applications (CSIR RA, ICMR RA, SERB)',
+                '- [ ] Scan IndiaBioscience jobs board for any new schemes worth adding',
+                '- [ ] Update the **Last reviewed** date in the portal header after changes',
+                '',
+                '> This issue is auto-created every Monday. Close it once the review is done.',
+              ].join('\n'),
+              labels: ['india-portal-review'],
+            });
