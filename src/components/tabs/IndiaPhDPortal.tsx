@@ -529,18 +529,23 @@ const LiveMonitorSection: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await api.get('/monitor/pooja-india/jobs');
+      const base = process.env.NEXT_PUBLIC_API_URL || 'https://career-os-backend-production.up.railway.app/api';
+      const resp = await fetch(`${base}/monitor/pooja-india/jobs`);
+      if (!resp.ok) {
+        // 404 = not deployed yet — treat silently as empty
+        if (resp.status === 404) { setJobs([]); return; }
+        let detail = `HTTP ${resp.status}`;
+        try { const j = await resp.json(); detail = `HTTP ${resp.status} — ${j.error || 'unknown'}`; } catch { /* */ }
+        setError(`Load failed: ${detail}`);
+        setJobs([]);
+        return;
+      }
+      const data = await resp.json();
       setJobs(Array.isArray(data?.jobs) ? data.jobs : []);
       if (data?.lastScan) setLastScan(data.lastScan);
-      setError(null);
     } catch (err: any) {
-      // 404 = routes not deployed yet; treat as empty (not an error to shout about)
-      if (err?.message?.includes('404')) {
-        setJobs([]);
-      } else {
-        setError(`Load failed: ${err?.message || 'Network error'}`);
-        setJobs([]);
-      }
+      setError(`Load failed: ${err?.message || 'Network error'}`);
+      setJobs([]);
     } finally {
       setLoading(false);
     }
