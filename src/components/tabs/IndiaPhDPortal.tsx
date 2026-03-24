@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { api } from '../../config/api';
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
@@ -406,7 +407,7 @@ const PORTALS: Portal[] = [
     deadline: 'Rolling — instem.res.in',
     url: 'https://instem.res.in',
     priority: true,
-    note: "Strong cardiovascular / stem cell focus — aligns closely with Pooja's research profile.",
+    note: 'Strong cardiovascular / stem cell focus — aligns closely with Pooja's research profile.',
   },
 
   // ═══ AGGREGATORS ═══
@@ -479,11 +480,276 @@ const CAT_COLOR: Record<string, string> = {
   aggregator:   '#06b6d4',
 };
 
+// ─── Live Monitor Types ───────────────────────────────────────────────────────
+
+type MonitorCategory = 'all' | 'central-govt' | 'state-psc' | 'academia' | 'aggregator';
+
+interface LiveJob {
+  id:               string;
+  title:            string;
+  org_name:         string;
+  portal_category:  string;
+  snippet:          string;
+  apply_url:        string;
+  posted_date:      string;
+  source_portal:    string;
+  relevance_score:  number;
+  is_new:           boolean;
+  detected_at:      string;
+}
+
+const MONITOR_CATS: { id: MonitorCategory; label: string; color: string }[] = [
+  { id: 'all',          label: 'All',          color: '#64748b' },
+  { id: 'central-govt', label: 'Central Govt', color: '#3b82f6' },
+  { id: 'state-psc',    label: 'State PSC',    color: '#f59e0b' },
+  { id: 'academia',     label: 'Academia',     color: '#22c55e' },
+  { id: 'aggregator',   label: 'Aggregators',  color: '#06b6d4' },
+];
+
+const MON_CAT_COLOR: Record<string, string> = {
+  'central-govt': '#3b82f6',
+  'state-psc':    '#f59e0b',
+  academia:       '#22c55e',
+  aggregator:     '#06b6d4',
+};
+
+// ─── Live Monitor Section ─────────────────────────────────────────────────────
+
+const LiveMonitorSection: React.FC = () => {
+  const [jobs,         setJobs]         = useState<LiveJob[]>([]);
+  const [loading,      setLoading]      = useState(false);
+  const [scanning,     setScanning]     = useState(false);
+  const [lastScan,     setLastScan]     = useState<string | null>(null);
+  const [error,        setError]        = useState<string | null>(null);
+  const [catFilter,    setCatFilter]    = useState<MonitorCategory>('all');
+  const [scanMsg,      setScanMsg]      = useState<string | null>(null);
+
+  // Load cached results on mount
+  const loadJobs = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await api.get('/monitor/pooja-india/jobs');
+      setJobs(Array.isArray(data?.jobs) ? data.jobs : []);
+      if (data?.lastScan) setLastScan(data.lastScan);
+    } catch {
+      setError('Could not load results. Try scanning now.');
+      setJobs([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { loadJobs(); }, [loadJobs]);
+
+  // Trigger Serper scan
+  const handleScan = async () => {
+    setScanning(true);
+    setError(null);
+    setScanMsg(null);
+    try {
+      await api.post('/monitor/pooja-india/scan', {});
+      setScanMsg('Scan running in background (~30 sec). Results will refresh shortly.');
+      // Poll once after 35 sec
+      setTimeout(() => { loadJobs(); setScanMsg(null); setScanning(false); }, 35000);
+    } catch {
+      setError('Scan failed. Check backend status.');
+      setScanning(false);
+    }
+  };
+
+  // Dismiss a job (applied / done)
+  const handleDismiss = async (id: string) => {
+    // Optimistic UI — remove immediately
+    setJobs(prev => prev.filter(j => j.id !== id));
+    try {
+      await api.delete(`/monitor/pooja-india/jobs/${id}`);
+    } catch {
+      // Non-fatal — job already removed from UI
+    }
+  };
+
+  const visible = catFilter === 'all'
+    ? jobs
+    : jobs.filter(j => j.portal_category === catFilter);
+
+  const counts = MONITOR_CATS.reduce((acc, cat) => {
+    acc[cat.id] = cat.id === 'all'
+      ? jobs.length
+      : jobs.filter(j => j.portal_category === cat.id).length;
+    return acc;
+  }, {} as Record<string, number>);
+
+  const newCount = jobs.filter(j => j.is_new).length;
+
+  return (
+    <div>
+      {/* Header bar */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#22c55e', display: 'inline-block', boxShadow: '0 0 6px #22c55e' }} />
+            <span style={{ fontSize: 14, fontWeight: 800, color: '#f1f5f9' }}>Live Openings Monitor</span>
+            {newCount > 0 && (
+              <span style={{ fontSize: 10, fontWeight: 900, padding: '2px 8px', background: 'rgba(34,197,94,0.15)', color: '#22c55e', borderRadius: 10 }}>
+                {newCount} new
+              </span>
+            )}
+          </div>
+          <p style={{ margin: '4px 0 0 0', fontSize: 11, color: '#475569' }}>
+            Serper searches across {MONITOR_CATS.length - 1} categories · {jobs.length} active listings
+            {lastScan && (
+              <span style={{ marginLeft: 8, color: '#334155' }}>
+                · Last scan: {new Date(lastScan).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+              </span>
+            )}
+          </p>
+        </div>
+        <button
+          onClick={handleScan}
+          disabled={scanning || loading}
+          style={{
+            padding: '8px 18px', fontWeight: 900, fontSize: 12,
+            background: scanning ? '#1e293b' : '#a855f7',
+            color: scanning ? '#64748b' : '#fff',
+            border: `1px solid ${scanning ? '#334155' : '#a855f7'}`,
+            borderRadius: 7, cursor: scanning ? 'default' : 'pointer', flexShrink: 0,
+          }}
+        >
+          {scanning ? '↻ Scanning...' : '⚡ Scan Now'}
+        </button>
+      </div>
+
+      {/* Scan message */}
+      {scanMsg && (
+        <div style={{ padding: '8px 14px', background: 'rgba(168,85,247,0.08)', border: '1px solid rgba(168,85,247,0.2)', borderRadius: 8, fontSize: 11.5, color: '#c084fc', marginBottom: 12 }}>
+          {scanMsg}
+        </div>
+      )}
+
+      {/* Category filter */}
+      <div style={{ display: 'flex', gap: 5, marginBottom: 14, flexWrap: 'wrap' }}>
+        {MONITOR_CATS.map(cat => {
+          const active = catFilter === cat.id;
+          return (
+            <button key={cat.id} onClick={() => setCatFilter(cat.id)} style={{
+              padding: '5px 13px', fontSize: 11.5, fontWeight: 700, cursor: 'pointer',
+              borderRadius: 6, border: `1px solid ${active ? cat.color : '#334155'}`,
+              background: active ? cat.color + '22' : 'transparent',
+              color: active ? cat.color : '#64748b',
+            }}>
+              {cat.label}
+              <span style={{ marginLeft: 5, fontSize: 10, opacity: 0.75 }}>({counts[cat.id] ?? 0})</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Error */}
+      {error && (
+        <div style={{ padding: '10px 14px', background: 'rgba(244,63,94,0.07)', border: '1px solid rgba(244,63,94,0.2)', borderRadius: 8, fontSize: 12, color: '#f43f5e', marginBottom: 12 }}>
+          {error}
+        </div>
+      )}
+
+      {/* Job list */}
+      {loading ? (
+        <div style={{ padding: 40, textAlign: 'center', color: '#475569', fontSize: 13 }}>
+          Loading cached results...
+        </div>
+      ) : visible.length === 0 ? (
+        <div style={{ padding: '40px 24px', textAlign: 'center', background: 'rgba(255,255,255,0.02)', border: '1px dashed rgba(168,85,247,0.2)', borderRadius: 12, color: '#475569' }}>
+          <div style={{ fontSize: 22, marginBottom: 8 }}>🔍</div>
+          <div style={{ fontWeight: 700, fontSize: 13, color: '#94a3b8', marginBottom: 6 }}>No results yet.</div>
+          <div style={{ fontSize: 12 }}>
+            Click <strong style={{ color: '#a855f7' }}>⚡ Scan Now</strong> to search across all portals.
+            Fellowship section is intentionally excluded — check those manually.
+          </div>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {visible.map(job => {
+            const catColor = MON_CAT_COLOR[job.portal_category] || '#64748b';
+            const borderColor = job.relevance_score >= 3 ? '#a855f7' : job.relevance_score >= 2 ? catColor : '#334155';
+            return (
+              <div key={job.id} style={{
+                padding: '13px 16px', background: '#1e293b', borderRadius: 10,
+                borderLeft: `3px solid ${borderColor}`,
+                display: 'flex', gap: 12, alignItems: 'flex-start',
+              }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  {/* Title + badges */}
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: 5, alignItems: 'center' }}>
+                    <span style={{ fontWeight: 700, fontSize: 13, color: '#f1f5f9' }}>{job.title}</span>
+                    {job.is_new && (
+                      <span style={{ fontSize: 9, fontWeight: 900, padding: '2px 6px', background: 'rgba(34,197,94,0.12)', color: '#22c55e', borderRadius: 4 }}>NEW</span>
+                    )}
+                    {job.relevance_score >= 3 && (
+                      <span style={{ fontSize: 9, fontWeight: 900, padding: '2px 6px', background: 'rgba(168,85,247,0.12)', color: '#a855f7', borderRadius: 4 }}>HIGH MATCH</span>
+                    )}
+                  </div>
+                  {/* Org + category + date */}
+                  <div style={{ fontSize: 11.5, color: '#64748b', marginBottom: job.snippet ? 6 : 0 }}>
+                    <span style={{ fontWeight: 700, color: '#94a3b8' }}>{job.org_name}</span>
+                    <span style={{ marginLeft: 6, fontSize: 9, fontWeight: 700, padding: '1px 6px',
+                      background: catColor + '18', color: catColor, borderRadius: 3 }}>
+                      {job.portal_category.replace('-', ' ').toUpperCase()}
+                    </span>
+                    {job.posted_date && job.posted_date !== 'Recent' && (
+                      <span style={{ marginLeft: 8, color: '#475569' }}>{job.posted_date}</span>
+                    )}
+                  </div>
+                  {/* Snippet */}
+                  {job.snippet && (
+                    <p style={{ margin: 0, fontSize: 11, color: '#475569', lineHeight: 1.5,
+                      display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                      {job.snippet}
+                    </p>
+                  )}
+                </div>
+
+                {/* Action buttons */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flexShrink: 0 }}>
+                  {job.apply_url && job.apply_url !== '#' && (
+                    <button
+                      onClick={() => window.open(job.apply_url, '_blank')}
+                      style={{ padding: '5px 12px', background: '#1d4ed8', color: '#fff', border: 'none', borderRadius: 5, cursor: 'pointer', fontWeight: 700, fontSize: 10, whiteSpace: 'nowrap' }}
+                    >
+                      Open →
+                    </button>
+                  )}
+                  <button
+                    onClick={() => handleDismiss(job.id)}
+                    title="Mark as applied / remove"
+                    style={{ padding: '5px 10px', background: 'rgba(16,185,129,0.1)', color: '#10b981', border: '1px solid rgba(16,185,129,0.25)', borderRadius: 5, cursor: 'pointer', fontWeight: 700, fontSize: 10, whiteSpace: 'nowrap' }}
+                  >
+                    ✓ Applied
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Footer note */}
+      {visible.length > 0 && (
+        <div style={{ marginTop: 16, padding: '10px 14px', background: '#0f172a', borderRadius: 8, border: '1px solid #1e293b', fontSize: 10.5, color: '#334155', lineHeight: 1.7 }}>
+          <strong style={{ color: '#475569' }}>Note:</strong> Results from Google index via Serper. Some PDF-only government notifications may not appear.
+          Fellowship portals (Ramalingaswami, INSPIRE, BioCARe, etc.) are excluded here — check the Fellowships tab for those.
+          Click <strong style={{ color: '#10b981' }}>✓ Applied</strong> to permanently remove a listing you have already applied to.
+        </div>
+      )}
+    </div>
+  );
+};
+
 // ─── Component ────────────────────────────────────────────────────────────────
 export const IndiaPhDPortal: React.FC = () => {
+  const [activeView,     setActiveView]     = useState<'portals' | 'monitor'>('portals');
   const [activeCategory, setActiveCategory] = useState<Category | 'all'>('all');
-  const [search, setSearch] = useState('');
-  const [showWomenOnly, setShowWomenOnly] = useState(false);
+  const [search,         setSearch]         = useState('');
+  const [showWomenOnly,  setShowWomenOnly]  = useState(false);
   const [showPriorityOnly, setShowPriorityOnly] = useState(false);
 
   const filtered = useMemo(() => {
@@ -520,22 +786,57 @@ export const IndiaPhDPortal: React.FC = () => {
     <div style={{ padding: '24px 20px', color: 'white', minHeight: '100vh', fontFamily: 'sans-serif', maxWidth: 1000, margin: '0 auto' }}>
 
       {/* Header */}
-      <div style={{ marginBottom: 24 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-          <span style={{ fontSize: 22 }}>🇮🇳</span>
-          <h1 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: '#f8fafc' }}>
-            India PhD-Eligible Positions
-          </h1>
+      <div style={{ marginBottom: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 6, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ fontSize: 22 }}>🇮🇳</span>
+            <h1 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: '#f8fafc' }}>
+              India PhD-Eligible Positions
+            </h1>
+          </div>
+          {/* View toggle */}
+          <div style={{ display: 'flex', gap: 4 }}>
+            <button
+              onClick={() => setActiveView('portals')}
+              style={{
+                padding: '7px 16px', fontSize: 12, fontWeight: 700, cursor: 'pointer', borderRadius: 6,
+                background: activeView === 'portals' ? 'rgba(168,85,247,0.15)' : 'transparent',
+                border: `1px solid ${activeView === 'portals' ? '#a855f7' : '#334155'}`,
+                color: activeView === 'portals' ? '#a855f7' : '#64748b',
+              }}
+            >
+              Portal Directory
+            </button>
+            <button
+              onClick={() => setActiveView('monitor')}
+              style={{
+                padding: '7px 16px', fontSize: 12, fontWeight: 700, cursor: 'pointer', borderRadius: 6,
+                background: activeView === 'monitor' ? 'rgba(34,197,94,0.12)' : 'transparent',
+                border: `1px solid ${activeView === 'monitor' ? '#22c55e' : '#334155'}`,
+                color: activeView === 'monitor' ? '#22c55e' : '#64748b',
+                display: 'flex', alignItems: 'center', gap: 6,
+              }}
+            >
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#22c55e', display: 'inline-block' }} />
+              Live Monitor
+            </button>
+          </div>
         </div>
         <p style={{ margin: 0, fontSize: 12, color: '#64748b', lineHeight: 1.6 }}>
           All positions where <strong style={{ color: '#a855f7' }}>a PhD is the minimum eligibility</strong> — experience not counted as a gate.
           {' '}{PORTALS.length} portals across fellowships, central govt, state PSCs, academia, and aggregators.
         </p>
-        <div style={{ marginTop: 8, display: 'inline-flex', alignItems: 'center', gap: 6, padding: '3px 10px', background: '#1e293b', borderRadius: 6, border: '1px solid #334155' }}>
-          <span style={{ fontSize: 10, color: '#475569' }}>●</span>
-          <span style={{ fontSize: 11, color: '#64748b' }}>Last reviewed: <strong style={{ color: '#94a3b8' }}>24 Mar 2026</strong></span>
-        </div>
       </div>
+
+      {/* ── Live Monitor View ────────────────────────────────────────────── */}
+      {activeView === 'monitor' && (
+        <div style={{ paddingTop: 4 }}>
+          <LiveMonitorSection />
+        </div>
+      )}
+
+      {/* ── Portal Directory View ────────────────────────────────────────── */}
+      {activeView === 'portals' && (<>
 
       {/* Search + filters */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -691,6 +992,8 @@ export const IndiaPhDPortal: React.FC = () => {
         Experience requirements listed in individual advertisements are preferred, not mandatory, unless explicitly stated as essential.
         For fellowships, check the host institution requirement — some (like INSPIRE Faculty) do not require one at the time of application.
       </div>
+
+      </>)}
     </div>
   );
 };
