@@ -10,6 +10,7 @@ import { Tracker }         from '../src/components/tabs/Tracker';
 import { LearningTracks }  from '../src/components/tabs/LearningTracks';
 import { OpportunityMonitor }   from '../src/components/tabs/OpportunityMonitor';
 import { OpportunityMonitorDJ } from '../src/components/tabs/OpportunityMonitorDJ';
+import { SkillGaps }            from '../src/components/tabs/SkillGaps';
 import { useProfile } from '../src/context/ProfileContext';
 
 // Profile-aware router: renders DJ monitor for DJ, Pooja monitor for Pooja.
@@ -29,6 +30,7 @@ const TAB_VIEWS: Record<TabId, React.ReactElement> = {
   'job-hub':             <JobHub />,
   'tracker':             <Tracker />,
   'opportunity-monitor': <OpportunityMonitorRouter />,
+  'skill-gaps':          <SkillGaps />,
 };
 
 export default function Home() {

@@ -52,7 +52,7 @@ export function MarketHeatmap() {
             <h3 style={s.cardTitle}>Market Pressure</h3>
             <div style={s.gaugeWrap}>
               <svg viewBox="0 0 100 55" style={s.gaugeSvg}>
-                <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="8" strokeLinecap="round" />
+                <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="rgba(0,0,0,0.08)" strokeWidth="8" strokeLinecap="round" />
                 <path 
                   d="M 10 50 A 40 40 0 0 1 90 50" 
                   fill="none" 
@@ -63,7 +63,7 @@ export function MarketHeatmap() {
                   strokeDashoffset={125.6 - (125.6 * (data.gaugeVal / 100))}
                   style={{ transition: 'stroke-dashoffset 1.5s ease-out 0.5s' }}
                 />
-                <text x="50" y="45" textAnchor="middle" fill="white" fontSize="12" fontWeight="800">{data.gaugeVal}%</text>
+                <text x="50" y="45" textAnchor="middle" fill="#1C1917" fontSize="12" fontWeight="800">{data.gaugeVal}%</text>
               </svg>
               <div style={s.gaugeTrend}>{data.gaugeTrend}</div>
             </div>
@@ -127,7 +127,7 @@ const s: Record<string, React.CSSProperties> = {
   barStack: { display: 'flex', flexDirection: 'column', gap: 16 },
   barRow: { display: 'flex', flexDirection: 'column', gap: 6 },
   barLabel: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 12, fontWeight: 600 },
-  barBg: { height: 8, background: 'rgba(255,255,255,0.03)', borderRadius: 4, overflow: 'hidden' },
+  barBg: { height: 8, background: 'rgba(0,0,0,0.07)', borderRadius: 4, overflow: 'hidden' },
   barFill: { height: '100%', borderRadius: 4 },
   sideCol: { display: 'flex', flexDirection: 'column' },
   gaugeWrap: { position: 'relative', textAlign: 'center', marginBottom: 20 },
@@ -136,12 +136,12 @@ const s: Record<string, React.CSSProperties> = {
   gaugeBars: { display: 'flex', flexDirection: 'column', gap: 10 },
   miniBarRow: { display: 'flex', flexDirection: 'column', gap: 4 },
   miniBarLabel: { fontSize: 9, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' },
-  miniBarBg: { height: 4, background: 'rgba(255,255,255,0.03)', borderRadius: 2, overflow: 'hidden' },
+  miniBarBg: { height: 4, background: 'rgba(0,0,0,0.07)', borderRadius: 2, overflow: 'hidden' },
   miniBarFill: { height: '100%', borderRadius: 2 },
   list: { display: 'flex', flexDirection: 'column', gap: 12 },
   listItem: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 },
   listItemMain: { display: 'flex', flexDirection: 'column', gap: 2 },
   skillName: { fontSize: 12, fontWeight: 700 },
   signalBadge: { fontSize: 10, fontWeight: 700, color: 'var(--accent-active)' },
-  tagBadge: { fontSize: 9, fontWeight: 800, padding: '2px 6px', background: 'rgba(255,255,255,0.05)', borderRadius: 4, color: 'var(--text-secondary)' }
+  tagBadge: { fontSize: 9, fontWeight: 800, padding: '2px 6px', background: 'rgba(0,0,0,0.06)', borderRadius: 4, color: 'var(--text-secondary)' }
 };

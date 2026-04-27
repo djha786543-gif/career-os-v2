@@ -11,7 +11,8 @@ RUN npm install
 RUN npm run build
 
 # 4. Rename out/ → public/ for server.js
-RUN mv out public || true
+# Remove source public/ (static assets already copied into out/ by Next.js export) then promote out/
+RUN rm -rf public && mv out public
 
 ENV PORT=3000
 EXPOSE 3000

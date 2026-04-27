@@ -64,7 +64,7 @@ export const Tracker = () => {
   const accent = profile === 'dj' ? '#22D3EE' : '#F472B6';
 
   if (loading) return (
-    <div style={{textAlign:'center',padding:'60px',color:'#9ca3b8'}}>
+    <div style={{textAlign:'center',padding:'60px',color:'#78716C'}}>
       <div className="spinner" style={{margin:'0 auto 12px'}} />
       Loading tracker...
     </div>
@@ -82,20 +82,20 @@ export const Tracker = () => {
         ].map(s => (
           <div key={s.label} style={{
             flex:'1',minWidth:'140px',padding:'16px',
-            background:'#12131f',border:'1px solid rgba(255,255,255,0.05)',
+            background:'#fff',border:'1px solid rgba(0,0,0,0.08)',
             borderRadius:'12px'
           }}>
             <div style={{fontSize:'24px',fontWeight:800,color:accent,fontFamily:'var(--font-mono)'}}>{s.val}</div>
-            <div style={{fontSize:'11px',color:'#5f6580',marginTop:'4px',letterSpacing:'.06em'}}>{s.label.toUpperCase()}</div>
+            <div style={{fontSize:'11px',color:'#78716C',marginTop:'4px',letterSpacing:'.06em'}}>{s.label.toUpperCase()}</div>
           </div>
         ))}
       </div>
 
       {/* Kanban board */}
       {cards.length === 0 ? (
-        <div style={{textAlign:'center',padding:'60px',color:'#5f6580'}}>
+        <div style={{textAlign:'center',padding:'60px',color:'#78716C'}}>
           <div style={{fontSize:'40px',marginBottom:'12px'}}>📋</div>
-          <div style={{fontSize:'14px',fontWeight:600,color:'#9ca3b8',marginBottom:'6px'}}>No applications tracked yet</div>
+          <div style={{fontSize:'14px',fontWeight:600,color:'#44403C',marginBottom:'6px'}}>No applications tracked yet</div>
           <div style={{fontSize:'12px'}}>Save jobs from the Job Hub to start tracking your applications.</div>
         </div>
       ) : (
@@ -105,32 +105,32 @@ export const Tracker = () => {
             return (
               <div key={col} style={{
                 minWidth:'200px',flex: 1,
-                background:'#12131f',border:'1px solid rgba(255,255,255,0.05)',
+                background:'#fff',border:'1px solid rgba(0,0,0,0.08)',
                 borderRadius:'12px',padding:'12px'
               }}>
                 <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'10px'}}>
                   <span style={{fontSize:'11px',fontWeight:700,letterSpacing:'.08em',color:'#5f6580',textTransform:'uppercase'}}>{col}</span>
-                  <span style={{fontSize:'10px',background:'#1a1b2e',borderRadius:'4px',padding:'2px 6px',fontFamily:'monospace',color:'#9ca3b8'}}>{colCards.length}</span>
+                  <span style={{fontSize:'10px',background:'rgba(0,0,0,0.06)',borderRadius:'4px',padding:'2px 6px',fontFamily:'monospace',color:'#78716C'}}>{colCards.length}</span>
                 </div>
                 <div style={{display:'flex',flexDirection:'column',gap:'7px',minHeight:'60px'}}>
                   {colCards.length === 0 && (
-                    <div style={{border:'1px dashed rgba(255,255,255,0.05)',borderRadius:'8px',padding:'12px',fontSize:'11px',color:'#5f6580',textAlign:'center'}}>Empty</div>
+                    <div style={{border:'1px dashed rgba(0,0,0,0.08)',borderRadius:'8px',padding:'12px',fontSize:'11px',color:'#5f6580',textAlign:'center'}}>Empty</div>
                   )}
                   {colCards.map(card => (
                     <div key={card.id} style={{
-                      background:'#1a1b2e',border:'1px solid rgba(255,255,255,0.05)',
+                      background:'#FAFAF8',border:'1px solid rgba(0,0,0,0.08)',
                       borderRadius:'8px',padding:'10px',fontSize:'12px'
                     }}>
-                      <div style={{fontWeight:600,color:'#e8e9f3',marginBottom:'3px',fontSize:'12px'}}>{card.title}</div>
-                      <div style={{color:'#5f6580',fontSize:'11px',marginBottom:'5px'}}>{card.company}</div>
+                      <div style={{fontWeight:600,color:'#1C1917',marginBottom:'3px',fontSize:'12px'}}>{card.title}</div>
+                      <div style={{color:'#78716C',fontSize:'11px',marginBottom:'5px'}}>{card.company}</div>
                       {card.ey_connection && <div style={{fontSize:'10px',color:'#f59e0b',marginBottom:'4px'}}>⭐ EY Alumni Advantage</div>}
-                      <div style={{fontSize:'10px',color:'#5f6580',marginBottom:'6px'}}>{new Date(card.date_saved || Date.now()).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</div>
+                      <div style={{fontSize:'10px',color:'#78716C',marginBottom:'6px'}}>{new Date(card.date_saved || Date.now()).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</div>
                       <div style={{display:'flex',gap:'4px',flexWrap:'wrap'}}>
                         {card.apply_url && (
-                          <a href={card.apply_url} target="_blank" rel="noreferrer" style={{fontSize:'10px',padding:'3px 7px',borderRadius:'4px',border:'1px solid rgba(255,255,255,0.1)',color:'#9ca3b8',textDecoration:'none'}}>Apply</a>
+                          <a href={card.apply_url} target="_blank" rel="noreferrer" style={{fontSize:'10px',padding:'3px 7px',borderRadius:'4px',border:'1px solid rgba(0,0,0,0.1)',color:'#78716C',textDecoration:'none'}}>Apply</a>
                         )}
                         {cols.indexOf(card.column_name) < cols.length - 1 && (
-                          <button onClick={() => advance(card)} style={{fontSize:'10px',padding:'3px 7px',borderRadius:'4px',border:'1px solid rgba(255,255,255,0.1)',background:'transparent',color:'#9ca3b8',cursor:'pointer'}}>→ Advance</button>
+                          <button onClick={() => advance(card)} style={{fontSize:'10px',padding:'3px 7px',borderRadius:'4px',border:'1px solid rgba(0,0,0,0.1)',background:'transparent',color:'#78716C',cursor:'pointer'}}>→ Advance</button>
                         )}
                         <button onClick={() => remove(card.id)} style={{fontSize:'10px',padding:'3px 7px',borderRadius:'4px',border:'1px solid rgba(255,255,255,0.1)',background:'transparent',color:'#f43f5e',cursor:'pointer'}}>✕ Remove</button>
                       </div>

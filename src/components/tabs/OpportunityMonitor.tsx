@@ -249,7 +249,7 @@ const ScoreRing = ({ score, tier }: { score: number; tier: Tier }) => {
   return (
     <div style={{ position: 'relative', width: 36, height: 36, flexShrink: 0 }}>
       <svg width="36" height="36" style={{ transform: 'rotate(-90deg)' }}>
-        <circle cx="18" cy="18" r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="3" />
+        <circle cx="18" cy="18" r={r} fill="none" stroke="rgba(0,0,0,0.08)" strokeWidth="3" />
         <circle cx="18" cy="18" r={r} fill="none" stroke={color} strokeWidth="3"
           strokeDasharray={circ} strokeDashoffset={offset} strokeLinecap="round"
           style={{ transition: 'stroke-dashoffset 0.8s ease-out' }} />
@@ -287,14 +287,14 @@ const JobCard = ({ scored }: { scored: ScoredJob }) => {
 
   return (
     <div style={{
-      padding: '14px 18px', background: 'rgba(255,255,255,0.025)', borderRadius: 12,
-      border: '1px solid rgba(255,255,255,0.07)', borderLeft: `3px solid ${borderColor}`,
+      padding: '14px 18px', background: '#fff', borderRadius: 12,
+      border: '1px solid rgba(0,0,0,0.07)', borderLeft: `3px solid ${borderColor}`,
       display: 'flex', alignItems: 'flex-start', gap: 14,
     }}>
       <div style={{ paddingTop: 2 }}><ScoreRing score={score} tier={tier} /></div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
-          <span style={{ fontWeight: 800, fontSize: 13.5, color: '#f8fafc' }}>{job.title}</span>
+          <span style={{ fontWeight: 800, fontSize: 13.5, color: '#1C1917' }}>{job.title}</span>
           {isEliteMatch(job.title) && (
             <span style={{ fontSize: 9, fontWeight: 900, padding: '2px 8px',
               background: 'rgba(251,191,36,0.15)', color: '#fbbf24',
@@ -311,16 +311,16 @@ const JobCard = ({ scored }: { scored: ScoredJob }) => {
             </span>
           )}
         </div>
-        <div style={{ fontSize: 12, color: '#94a3b8', marginBottom: 5 }}>
+        <div style={{ fontSize: 12, color: '#78716C', marginBottom: 5 }}>
           <span style={{ fontWeight: 600 }}>{job.company}</span>
           &nbsp;&middot;&nbsp;
-          <span style={{ color: '#22d3ee' }}>{job.location}</span>
+          <span style={{ color: '#0369A1' }}>{job.location}</span>
           {matchedRole && (
-            <span style={{ marginLeft: 8, fontSize: 10, color: '#64748b' }}>({matchedRole})</span>
+            <span style={{ marginLeft: 8, fontSize: 10, color: '#78716C' }}>({matchedRole})</span>
           )}
         </div>
         {job.snippet && (
-          <div style={{ fontSize: 11, color: '#64748b', lineHeight: 1.5,
+          <div style={{ fontSize: 11, color: '#78716C', lineHeight: 1.5,
             display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
             {job.snippet}
           </div>
@@ -330,9 +330,9 @@ const JobCard = ({ scored }: { scored: ScoredJob }) => {
             {displaySkills.map((sk: string) => (
               <span key={sk} style={{ fontSize: 9, fontWeight: 700, padding: '2px 7px',
                 background: matchedExpertise.includes(sk) || matchedInstitutions.map(k=>k.trim()).includes(sk)
-                  ? 'rgba(34,211,238,0.08)' : 'rgba(255,255,255,0.04)',
+                  ? 'rgba(3,105,161,0.08)' : 'rgba(0,0,0,0.04)',
                 color: matchedExpertise.includes(sk) || matchedInstitutions.map(k=>k.trim()).includes(sk)
-                  ? '#22d3ee' : '#64748b', borderRadius: 10 }}>
+                  ? '#0369A1' : '#78716C', borderRadius: 10 }}>
                 {sk}
               </span>
             ))}
@@ -514,15 +514,16 @@ export const OpportunityMonitor = () => {
     .filter(j => tierFilter === 'all' || j.tier === tierFilter)
     .filter(j => sector !== 'india' || indiaSubsector === 'All' ||
       getIndiaSubsector(j.raw.org_name ?? j.raw.company ?? '') === indiaSubsector)
-    .filter(j => sector !== 'industry' || matchesIndustryRegion(j.raw, industryRegion));
+    .filter(j => sector !== 'industry' || matchesIndustryRegion(j.raw, industryRegion))
+    .slice(0, 30);
 
   return (
-    <div style={{ color: 'white', fontFamily: 'var(--font-sans, sans-serif)' }}>
+    <div style={{ color: '#1C1917', fontFamily: 'var(--font-sans, sans-serif)' }}>
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
         <div>
-          <h1 style={{ fontSize: 21, fontWeight: 900, margin: 0 }}>Opportunity Monitor</h1>
-          <p style={{ fontSize: 11.5, color: '#64748b', margin: '4px 0 0 0', lineHeight: 1.6 }}>
+          <h1 style={{ fontSize: 21, fontWeight: 900, margin: 0, color: '#1C1917' }}>Opportunity Monitor</h1>
+          <p style={{ fontSize: 11.5, color: '#78716C', margin: '4px 0 0 0', lineHeight: 1.6 }}>
             Pooja Choubey · Life Sciences · Holistic match engine active
             {lastScan && <span style={{ color: '#10b981', marginLeft: 10 }}>↻ {lastScan}</span>}
           </p>
@@ -531,15 +532,15 @@ export const OpportunityMonitor = () => {
           <button onClick={handleForceRefresh} disabled={loading}
             title="Clear cached results and re-fetch from backend (bypasses browser cache)"
             style={{ padding: '9px 16px', background: 'transparent',
-              color: loading ? '#475569' : '#94a3b8',
-              border: `1px solid ${loading ? '#334155' : '#475569'}`,
+              color: loading ? '#A8A29E' : '#78716C',
+              border: `1px solid ${loading ? 'rgba(0,0,0,0.08)' : 'rgba(0,0,0,0.15)'}`,
               borderRadius: 8, cursor: loading ? 'default' : 'pointer',
               fontWeight: 700, fontSize: 11.5 }}>
             ↺ Clear Cache
           </button>
           <button onClick={handleScan} disabled={scanning || loading}
-            style={{ padding: '9px 22px', background: (scanning || loading) ? '#334155' : '#22c55e',
-              color: 'white', border: 'none', borderRadius: 8, cursor: (scanning||loading) ? 'default' : 'pointer',
+            style={{ padding: '9px 22px', background: (scanning || loading) ? 'rgba(0,0,0,0.08)' : '#22c55e',
+              color: (scanning || loading) ? '#A8A29E' : 'white', border: 'none', borderRadius: 8, cursor: (scanning||loading) ? 'default' : 'pointer',
               fontWeight: 900, fontSize: 12.5 }}>
             {scanning ? 'Scanning...' : 'Run Scan'}
           </button>
@@ -551,9 +552,9 @@ export const OpportunityMonitor = () => {
         {SECTORS.map(({ key, label }) => (
           <button key={key} onClick={() => handleSectorChange(key)} style={{
             padding: '8px 16px',
-            background: sector === key ? '#334155' : '#1e293b',
-            border: `1px solid ${sector === key ? '#475569' : '#334155'}`,
-            color: sector === key ? '#f8fafc' : '#94a3b8',
+            background: sector === key ? '#F4F0E6' : 'transparent',
+            border: `1px solid ${sector === key ? 'rgba(0,0,0,0.15)' : 'rgba(0,0,0,0.08)'}`,
+            color: sector === key ? '#1C1917' : '#78716C',
             cursor: 'pointer', fontWeight: sector === key ? 800 : 500, fontSize: 12.5, borderRadius: 6,
           }}>{label}</button>
         ))}
@@ -579,9 +580,9 @@ export const OpportunityMonitor = () => {
               }
             }} style={{
               padding: '6px 14px',
-              background: industryRegion === r ? 'rgba(52,211,153,0.15)' : '#1e293b',
-              border: `1px solid ${industryRegion === r ? '#34d399' : '#334155'}`,
-              color: industryRegion === r ? '#34d399' : '#94a3b8',
+              background: industryRegion === r ? 'rgba(52,211,153,0.12)' : 'transparent',
+              border: `1px solid ${industryRegion === r ? '#34d399' : 'rgba(0,0,0,0.08)'}`,
+              color: industryRegion === r ? '#059669' : '#78716C',
               cursor: 'pointer', fontWeight: industryRegion === r ? 800 : 500, fontSize: 12, borderRadius: 5,
             }}>
               {r === 'North America' ? '🌎 N. America'
@@ -605,9 +606,9 @@ export const OpportunityMonitor = () => {
               }
             }} style={{
               padding: '6px 14px',
-              background: indiaSubsector === sub ? 'rgba(236,72,153,0.15)' : '#1e293b',
-              border: `1px solid ${indiaSubsector === sub ? '#ec4899' : '#334155'}`,
-              color: indiaSubsector === sub ? '#ec4899' : '#94a3b8',
+              background: indiaSubsector === sub ? 'rgba(236,72,153,0.1)' : 'transparent',
+              border: `1px solid ${indiaSubsector === sub ? '#ec4899' : 'rgba(0,0,0,0.08)'}`,
+              color: indiaSubsector === sub ? '#be185d' : '#78716C',
               cursor: 'pointer', fontWeight: indiaSubsector === sub ? 800 : 500, fontSize: 12, borderRadius: 5,
             }}>{sub}</button>
           ))}
@@ -629,9 +630,9 @@ export const OpportunityMonitor = () => {
           {INT_REGIONS.map(r => (
             <button key={r ?? 'ALL'} onClick={() => handleRegionChange(r)} style={{
               padding: '6px 13px',
-              background: region === r ? '#6366f1' : '#1e293b',
-              border: `1px solid ${region === r ? '#6366f1' : '#334155'}`,
-              color: region === r ? 'white' : '#94a3b8',
+              background: region === r ? 'rgba(99,102,241,0.1)' : 'transparent',
+              border: `1px solid ${region === r ? '#6366f1' : 'rgba(0,0,0,0.08)'}`,
+              color: region === r ? '#4f46e5' : '#78716C',
               cursor: 'pointer', fontWeight: 700, fontSize: 11.5, borderRadius: 5,
             }}>{r ?? 'ALL'}</button>
           ))}
@@ -644,9 +645,9 @@ export const OpportunityMonitor = () => {
           {(['all', 'high', 'good', 'broad'] as const).map(t => (
             <button key={t} onClick={() => setTierFilter(t)} style={{
               padding: '5px 12px',
-              background: tierFilter === t ? 'rgba(255,255,255,0.08)' : 'transparent',
-              border: `1px solid ${tierFilter === t ? 'rgba(255,255,255,0.15)' : '#334155'}`,
-              color: tierFilter === t ? '#f8fafc' : '#64748b',
+              background: tierFilter === t ? 'rgba(0,0,0,0.07)' : 'transparent',
+              border: `1px solid ${tierFilter === t ? 'rgba(0,0,0,0.15)' : 'rgba(0,0,0,0.08)'}`,
+              color: tierFilter === t ? '#1C1917' : '#78716C',
               cursor: 'pointer', fontWeight: 700, fontSize: 11, borderRadius: 5,
             }}>
               {t === 'all' ? `All (${jobs.length})`
@@ -655,7 +656,7 @@ export const OpportunityMonitor = () => {
                : `Broad (${jobs.filter(j=>j.tier==='broad').length})`}
             </button>
           ))}
-          <span style={{ marginLeft: 'auto', fontSize: 10.5, color: '#475569', alignSelf: 'center' }}>
+          <span style={{ marginLeft: 'auto', fontSize: 10.5, color: '#A8A29E', alignSelf: 'center' }}>
             {totalFetched} fetched · {jobs.length} matched
           </span>
         </div>
@@ -667,7 +668,7 @@ export const OpportunityMonitor = () => {
       {/* Results */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
         {loading ? (
-          <div style={{ padding: 48, textAlign: 'center', color: '#64748b', fontSize: 13 }}>
+          <div style={{ padding: 48, textAlign: 'center', color: '#78716C', fontSize: 13 }}>
             Scanning across{sector === 'all' ? ' all tracks' : ` ${sector}`}...
           </div>
         ) : error ? (
@@ -676,12 +677,12 @@ export const OpportunityMonitor = () => {
         ) : visibleJobs.length > 0 ? (
           visibleJobs.map((scored, idx) => <JobCard key={scored.raw.id ?? idx} scored={scored} />)
         ) : (
-          <div style={{ padding: '44px 24px', textAlign: 'center', background: 'rgba(255,255,255,0.02)',
-            border: '1px dashed rgba(255,255,255,0.07)', borderRadius: 12, color: '#64748b' }}>
+          <div style={{ padding: '44px 24px', textAlign: 'center', background: 'rgba(0,0,0,0.02)',
+            border: '1px dashed rgba(0,0,0,0.08)', borderRadius: 12, color: '#78716C' }}>
             <div style={{ fontSize: 24, marginBottom: 10 }}>🔬</div>
             <div style={{ fontWeight: 700, marginBottom: 6, fontSize: 14 }}>No matches for current filters.</div>
             <div style={{ fontSize: 12 }}>
-              Try <strong style={{ color: '#94a3b8' }}>All</strong> tier or click{' '}
+              Try <strong style={{ color: '#44403C' }}>All</strong> tier or click{' '}
               <strong style={{ color: '#22c55e' }}>Run Scan</strong> to refresh from the live backend.
             </div>
           </div>

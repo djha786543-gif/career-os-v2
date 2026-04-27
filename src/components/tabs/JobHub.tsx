@@ -14,7 +14,7 @@ const FitScoreRing = ({ score }: { score: number }) => {
   return (
     <div style={{ position: 'relative', width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <svg width="44" height="44" style={{ transform: 'rotate(-90deg)' }}>
-        <circle cx="22" cy="22" r={radius} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="4" />
+        <circle cx="22" cy="22" r={radius} fill="none" stroke="rgba(0,0,0,0.08)" strokeWidth="4" />
         <circle cx="22" cy="22" r={radius} fill="none" stroke={color} strokeWidth="4" strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round" style={{ transition: 'stroke-dashoffset 1s ease-out' }} />
       </svg>
       <span style={{ position: 'absolute', fontSize: 11, fontWeight: 900, color }}>{score}</span>
@@ -96,7 +96,7 @@ function ListJobCard({ job, onSave }: { job: any; onSave: (j: any) => void }) {
     }}>
       {/* Left: title + company + location */}
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontWeight: 700, fontSize: 14, color: 'white', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+        <div style={{ fontWeight: 700, fontSize: 14, color: '#1C1917', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
           {job.title}
         </div>
         <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
@@ -352,8 +352,8 @@ export function JobHub() {
     <div style={s.container}>
       <div style={s.topBar}>
         <div style={s.profileToggle}>
-          <button onClick={() => { setSubContext('dj'); setProfile('dj'); setViewMode('grid'); }} style={{ ...s.subPsw, background: subContext === 'dj' ? '#22D3EE' : 'transparent', color: subContext === 'dj' ? '#000' : 'white' }}>⚡ DJ Context</button>
-          <button onClick={() => { setSubContext('pooja'); setProfile('pooja'); setViewMode('list'); }} style={{ ...s.subPsw, background: subContext === 'pooja' ? '#F472B6' : 'transparent', color: subContext === 'pooja' ? '#000' : 'white' }}>🔬 Pooja Context</button>
+          <button onClick={() => { setSubContext('dj'); setProfile('dj'); setViewMode('grid'); }} style={{ ...s.subPsw, background: subContext === 'dj' ? '#FDE68A' : 'transparent', color: subContext === 'dj' ? '#92400E' : '#78716C', border: '1px solid ' + (subContext === 'dj' ? '#D97706' : 'rgba(0,0,0,0.1)') }}>⚡ DJ Context</button>
+          <button onClick={() => { setSubContext('pooja'); setProfile('pooja'); setViewMode('list'); }} style={{ ...s.subPsw, background: subContext === 'pooja' ? '#FCE7F3' : 'transparent', color: subContext === 'pooja' ? '#9D174D' : '#78716C', border: '1px solid ' + (subContext === 'pooja' ? '#DB2777' : 'rgba(0,0,0,0.1)') }}>🔬 Pooja Context</button>
         </div>
         <div style={s.panelTabs}>
           <button onClick={() => setActivePanel('hub')} style={{ ...s.panelTab, color: activePanel === 'hub' ? 'var(--accent-active)' : 'var(--text-muted)' }}>Job Hub</button>
@@ -439,9 +439,9 @@ export function JobHub() {
                 value={sortBy}
                 onChange={e => setSortBy(e.target.value as any)}
                 style={{
-                  background: 'rgba(0,0,0,0.2)',
-                  color: 'white',
-                  border: '1px solid rgba(255,255,255,0.1)',
+                  background: '#fff',
+                  color: '#1C1917',
+                  border: '1px solid rgba(0,0,0,0.12)',
                   borderRadius: 6,
                   padding: '4px 8px',
                   fontSize: 13,
@@ -456,7 +456,7 @@ export function JobHub() {
             )}
 
             {/* View toggle */}
-            <div style={{ display: 'flex', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, overflow: 'hidden' }}>
+            <div style={{ display: 'flex', border: '1px solid rgba(0,0,0,0.12)', borderRadius: 6, overflow: 'hidden' }}>
               {(['grid', 'list'] as const).map(mode => (
                 <button
                   key={mode}
@@ -566,14 +566,14 @@ export function JobHub() {
 const s: Record<string, React.CSSProperties> = {
   container: { animation: 'fadeInUp 0.5s ease-out' },
   topBar: { display: 'flex', justifyContent: 'space-between', marginBottom: 24, alignItems: 'center' },
-  profileToggle: { display: 'flex', gap: 8, background: 'rgba(255,255,255,0.03)', padding: 4, borderRadius: 10 },
+  profileToggle: { display: 'flex', gap: 8, background: 'rgba(0,0,0,0.04)', padding: 4, borderRadius: 10, border: '1px solid rgba(0,0,0,0.08)' },
   subPsw: { border: 'none', borderRadius: 8, padding: '6px 16px', fontSize: 11, fontWeight: 800, cursor: 'pointer', transition: 'all 0.3s' },
   panelTabs: { display: 'flex', gap: 20 },
   panelTab: { background: 'transparent', border: 'none', fontSize: 13, fontWeight: 800, cursor: 'pointer' },
   hubContent: { display: 'flex', flexDirection: 'column', gap: 20 },
   searchBar: { padding: 16, display: 'flex', gap: 12, alignItems: 'center' },
-  searchInput: { flex: 1, background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: '10px 16px', color: 'white' },
-  countrySelect: { background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: '10px 12px', color: 'white' },
+  searchInput: { flex: 1, background: '#fff', border: '1px solid rgba(0,0,0,0.12)', borderRadius: 8, padding: '10px 16px', color: '#1C1917' },
+  countrySelect: { background: '#fff', border: '1px solid rgba(0,0,0,0.12)', borderRadius: 8, padding: '10px 12px', color: '#1C1917' },
   remoteToggle: { display: 'flex', alignItems: 'center', gap: 8 },
   toggleLabel: { fontSize: 11, fontWeight: 700, color: 'var(--text-muted)' },
   searchBtn: { padding: '0 24px', height: 42, border: 'none', borderRadius: 8, color: '#000', fontWeight: 900, cursor: 'pointer' },
@@ -595,7 +595,7 @@ const s: Record<string, React.CSSProperties> = {
   eyBadge: { fontSize: 9, fontWeight: 900, padding: '2px 8px', background: 'rgba(245,158,11,0.2)', color: '#f59e0b', borderRadius: 4, border: '1px solid rgba(245,158,11,0.3)' },
   fitReason: { fontSize: 11, color: 'var(--text-secondary)', fontStyle: 'italic', lineHeight: '1.4' },
   skillRow: { display: 'flex', gap: 6, flexWrap: 'wrap' },
-  skillChip: { fontSize: 9, fontWeight: 700, background: 'rgba(255,255,255,0.05)', padding: '2px 8px', borderRadius: 12, color: 'var(--text-muted)' },
+  skillChip: { fontSize: 9, fontWeight: 700, background: 'rgba(0,0,0,0.05)', padding: '2px 8px', borderRadius: 12, color: 'var(--text-muted)' },
   jobFooter: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto', paddingTop: 12, borderTop: '1px solid var(--border-subtle)' },
   salaryText: { fontSize: 12, fontWeight: 800, color: '#10b981', fontFamily: 'var(--font-mono)' },
   jobActions: { display: 'flex', gap: 8 },
@@ -605,8 +605,8 @@ const s: Record<string, React.CSSProperties> = {
   kanban: { display: 'flex', gap: 16, overflowX: 'auto', paddingBottom: 20 },
   column: { minWidth: 280, flex: 1, display: 'flex', flexDirection: 'column', gap: 12 },
   colHeader: { fontSize: 12, fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', display: 'flex', justifyContent: 'space-between' },
-  colCount: { background: 'rgba(255,255,255,0.05)', padding: '2px 8px', borderRadius: 10, fontSize: 10 },
-  colCards: { display: 'flex', flexDirection: 'column', gap: 10, minHeight: 400, border: '1px dashed rgba(255,255,255,0.05)', borderRadius: 12, padding: 8 },
+  colCount: { background: 'rgba(0,0,0,0.06)', padding: '2px 8px', borderRadius: 10, fontSize: 10 },
+  colCards: { display: 'flex', flexDirection: 'column', gap: 10, minHeight: 400, border: '1px dashed rgba(0,0,0,0.08)', borderRadius: 12, padding: 8 },
   kanbanCard: { padding: 12, display: 'flex', flexDirection: 'column', gap: 6 },
   kCardTitle: { fontSize: 13, fontWeight: 800 },
   kCardSub: { fontSize: 11, color: 'var(--text-muted)' },
@@ -615,14 +615,14 @@ const s: Record<string, React.CSSProperties> = {
   kBtn: { background: 'transparent', border: 'none', fontSize: 10, fontWeight: 800, color: 'var(--text-secondary)', cursor: 'pointer' },
   assistContent: { display: 'flex', flexDirection: 'column', gap: 20 },
   assistForm: { padding: 20, display: 'flex', flexDirection: 'column', gap: 16 },
-  assistSelect: { background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: '12px', color: 'white' },
+  assistSelect: { background: '#fff', border: '1px solid rgba(0,0,0,0.12)', borderRadius: 8, padding: '12px', color: '#1C1917' },
   assistModes: { display: 'flex', gap: 12 },
-  assistModeBtn: { flex: 1, background: 'rgba(255,255,255,0.03)', border: '1px solid transparent', borderRadius: 8, padding: '12px', color: 'white', fontSize: 12, fontWeight: 700, cursor: 'pointer' },
+  assistModeBtn: { flex: 1, background: 'rgba(0,0,0,0.03)', border: '1px solid transparent', borderRadius: 8, padding: '12px', color: '#44403C', fontSize: 12, fontWeight: 700, cursor: 'pointer' },
   assistRun: { height: 44, background: 'var(--accent-active)', border: 'none', borderRadius: 8, color: '#000', fontWeight: 900, cursor: 'pointer' },
   assistResult: { padding: 24, minHeight: 400 },
   assistOutputWrap: { position: 'relative' },
-  assistCopy: { position: 'absolute', top: 0, right: 0, background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--text-muted)', fontSize: 9, padding: '4px 8px', borderRadius: 4, cursor: 'pointer' },
-  assistOutput: { fontSize: 13, lineHeight: '1.6', whiteSpace: 'pre-wrap', color: '#e8e9f3' },
+  assistCopy: { position: 'absolute', top: 0, right: 0, background: 'transparent', border: '1px solid rgba(0,0,0,0.12)', color: 'var(--text-muted)', fontSize: 9, padding: '4px 8px', borderRadius: 4, cursor: 'pointer' },
+  assistOutput: { fontSize: 13, lineHeight: '1.6', whiteSpace: 'pre-wrap', color: '#1C1917' },
   assistEmpty: { color: 'var(--text-muted)', textAlign: 'center', marginTop: 150, fontSize: 13 },
   error: { padding: 12, background: 'rgba(244,63,94,0.1)', color: '#f43f5e', borderRadius: 8, fontSize: 12, fontWeight: 600, textAlign: 'center' }
 };

@@ -10,7 +10,8 @@ export type TabId =
   | 'prep-vault'
   | 'job-hub'
   | 'tracker'
-  | 'opportunity-monitor';
+  | 'opportunity-monitor'
+  | 'skill-gaps';
 
 const TABS: { id: TabId; icon: string; label: string }[] = [
   { id: 'heatmap',         icon: '📡', label: 'Market Heatmap'  },
@@ -22,6 +23,7 @@ const TABS: { id: TabId; icon: string; label: string }[] = [
   { id: 'job-hub',         icon: '💼', label: 'Job Hub'         },
   { id: 'tracker',         icon: '📋', label: 'Tracker'         },
   { id: 'opportunity-monitor', icon: '🔬', label: 'Opportunity Monitor' },
+  { id: 'skill-gaps',          icon: '🧠', label: 'Skill Gaps'          },
 ];
 
 interface Props {
@@ -34,7 +36,7 @@ export function AppLayout({ activeTab, onTabChange, children }: Props) {
   const { profile: activeProfile, setProfile, metadata } = useProfile();
 
   return (
-    <div style={{ position: 'relative', minHeight: '100vh', background: activeProfile === 'dj' ? '#001E2B' : '#1A0020', color: 'white', transition: 'background 0.5s ease' }}>
+    <div style={{ position: 'relative', minHeight: '100vh', background: activeProfile === 'dj' ? '#FDFAF0' : '#FDF8F2', color: '#1C1917', transition: 'background 0.5s ease' }}>
       <div className="amb">
         <div className="orb o1" />
         <div className="orb o2" />
@@ -52,9 +54,10 @@ export function AppLayout({ activeTab, onTabChange, children }: Props) {
               onClick={() => setProfile('dj')}
               style={{
                 ...styles.psw,
-                background: activeProfile === 'dj' ? '#22D3EE' : 'transparent',
-                color: activeProfile === 'dj' ? '#000' : 'rgba(255,255,255,0.4)',
-                border: '1px solid ' + (activeProfile === 'dj' ? '#22D3EE' : 'rgba(255,255,255,0.1)'),
+                background: activeProfile === 'dj' ? '#FDE68A' : 'transparent',
+                color: activeProfile === 'dj' ? '#92400E' : '#78716C',
+                border: '1px solid ' + (activeProfile === 'dj' ? '#D97706' : 'rgba(0,0,0,0.1)'),
+                fontWeight: activeProfile === 'dj' ? 900 : 700,
               }}
             >
               ⚡ DJ
@@ -63,9 +66,10 @@ export function AppLayout({ activeTab, onTabChange, children }: Props) {
               onClick={() => setProfile('pooja')}
               style={{
                 ...styles.psw,
-                background: activeProfile === 'pooja' ? '#F472B6' : 'transparent',
-                color: activeProfile === 'pooja' ? '#000' : 'rgba(255,255,255,0.4)',
-                border: '1px solid ' + (activeProfile === 'pooja' ? '#F472B6' : 'rgba(255,255,255,0.1)'),
+                background: activeProfile === 'pooja' ? '#FCE7F3' : 'transparent',
+                color: activeProfile === 'pooja' ? '#9D174D' : '#78716C',
+                border: '1px solid ' + (activeProfile === 'pooja' ? '#DB2777' : 'rgba(0,0,0,0.1)'),
+                fontWeight: activeProfile === 'pooja' ? 900 : 700,
               }}
             >
               🔬 POOJA
@@ -93,8 +97,9 @@ export function AppLayout({ activeTab, onTabChange, children }: Props) {
                 onClick={() => onTabChange(tab.id)}
                 style={{
                   ...styles.ntab,
-                  color:      activeTab === tab.id ? 'white' : 'rgba(255,255,255,0.4)',
+                  color:      activeTab === tab.id ? '#1C1917' : '#A8A29E',
                   borderBottom: activeTab === tab.id ? '2px solid var(--accent-active)' : '2px solid transparent',
+                  fontWeight: activeTab === tab.id ? 800 : 600,
                   borderRadius: 0,
                 }}
               >
@@ -119,9 +124,10 @@ const styles: Record<string, React.CSSProperties> = {
     position:       'sticky',
     top:            0,
     zIndex:         100,
-    background:     'rgba(0,0,0,0.3)',
+    background:     'rgba(253, 250, 245, 0.95)',
     backdropFilter: 'blur(20px)',
-    borderBottom:   '1px solid rgba(255,255,255,0.05)',
+    borderBottom:   '1px solid rgba(0,0,0,0.08)',
+    boxShadow:      '0 1px 12px rgba(0,0,0,0.06)',
   },
   headerInner: {
     display:       'flex',
@@ -136,16 +142,16 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize:      16,
     fontWeight:    900,
     letterSpacing: '0.1em',
-    color:         'white',
+    color:         '#1C1917',
     flexShrink:    0,
   },
   profileSwitch: {
     display:       'flex',
     gap:           8,
-    background:    'rgba(255,255,255,0.03)',
+    background:    'rgba(0,0,0,0.04)',
     borderRadius:  12,
     padding:       4,
-    border:        '1px solid rgba(255,255,255,0.05)',
+    border:        '1px solid rgba(0,0,0,0.08)',
     flexShrink:    0,
   },
    psw: {
@@ -162,7 +168,7 @@ const styles: Record<string, React.CSSProperties> = {
      gap: 12,
      flexShrink: 0,
      padding: '0 16px',
-     borderLeft: '1px solid rgba(255,255,255,0.05)',
+     borderLeft: '1px solid rgba(0,0,0,0.08)',
    },
    avatar: {
      width: 32,
@@ -174,8 +180,8 @@ const styles: Record<string, React.CSSProperties> = {
      fontSize: 12,
      fontWeight: 800,
    },
-   userName: { fontSize: 13, fontWeight: 700, whiteSpace: 'nowrap' },
-   userTitle: { fontSize: 10, color: 'rgba(255,255,255,0.4)', whiteSpace: 'nowrap' },
+   userName: { fontSize: 13, fontWeight: 700, whiteSpace: 'nowrap', color: '#1C1917' },
+   userTitle: { fontSize: 10, color: '#78716C', whiteSpace: 'nowrap' },
    navTabs: {
      display: 'flex',
      flexWrap: 'wrap',
