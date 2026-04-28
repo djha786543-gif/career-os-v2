@@ -4,6 +4,9 @@ export default function Document() {
   return (
     <Html lang="en">
       <Head>
+        {/* ── Viewport (critical for mobile — without this browsers render at 980px) ── */}
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+
         {/* ── Web App Manifest ── */}
         <link rel="manifest" href="/manifest.json" />
 

@@ -50,3 +50,110 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
 /* ── Utility ── */
 .mono { font-family: var(--font-mono); }
 .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   APP LAYOUT — responsive shell
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.app-root {
+  position: relative;
+  min-height: 100vh;
+  min-height: 100dvh; /* dynamic viewport height — accounts for mobile browser chrome */
+  color: #1C1917;
+  transition: background 0.4s ease;
+}
+.theme-dj   { background: #FDFAF0; }
+.theme-pooja { background: #FDF8F2; }
+
+/* ── Header ── */
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(253, 250, 245, 0.96);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(0,0,0,0.08);
+  box-shadow: 0 1px 12px rgba(0,0,0,0.05);
+}
+
+/* Top row: brand + profile toggle + avatar */
+.header-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 52px;
+  padding: 0 16px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* Hide avatar on mobile to save space */
+.user-pill-desktop {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+  padding-left: 12px;
+  border-left: 1px solid rgba(0,0,0,0.08);
+}
+
+/* Tab strip — scrollable row */
+.tab-strip {
+  display: flex;
+  align-items: stretch;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  border-top: 1px solid rgba(0,0,0,0.05);
+  padding: 0 8px;
+  max-width: 1400px;
+  margin: 0 auto;
+  gap: 2px;
+}
+.tab-strip::-webkit-scrollbar { display: none; }
+
+.tab-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 10px;
+  height: 38px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #A8A29E;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+  flex-shrink: 0;
+  text-decoration: none;
+}
+.tab-btn:hover  { color: #78716C; }
+.tab-active     { color: #1C1917 !important; border-bottom-color: var(--accent-active) !important; font-weight: 800 !important; }
+
+/* ── Main content ── */
+.app-main {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+}
+
+.app-wrap {
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 20px 16px env(safe-area-inset-bottom, 20px);
+}
+
+/* ── Mobile overrides (≤ 640px) ── */
+@media (max-width: 640px) {
+  .user-pill-desktop { display: none; }
+  .header-top { height: 48px; gap: 8px; padding: 0 12px; }
+  .app-wrap { padding: 12px 10px env(safe-area-inset-bottom, 16px); }
+  .tab-btn { font-size: 10px; padding: 0 8px; height: 36px; }
+  /* Reduce ambient orbs on mobile for performance */
+  .orb { opacity: .07; filter: blur(80px); }
+}
