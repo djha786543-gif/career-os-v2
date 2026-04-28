@@ -9,24 +9,37 @@ import { CertVault }       from '../src/components/tabs/CertVault';
 import { TrendRadar }      from '../src/components/tabs/TrendRadar';
 import { Tracker }         from '../src/components/tabs/Tracker';
 import { LearningTracks }  from '../src/components/tabs/LearningTracks';
+import { SkillGaps }       from '../src/components/tabs/SkillGaps';
+import { useProfile }      from '../src/context/ProfileContext';
 
-// Load OpportunityMonitor client-side only to avoid SSR/hydration mismatch
-// (component uses useProfile context + fetch which are browser-only)
+// Load monitors client-side only (they use useProfile context + fetch)
 const OpportunityMonitor = dynamic(
   () => import('../src/components/tabs/OpportunityMonitor').then(m => ({ default: m.OpportunityMonitor })),
   { ssr: false, loading: () => <div style={{ padding: 40, color: '#64748b', textAlign: 'center' }}>Loading...</div> }
 );
 
+const OpportunityMonitorDJ = dynamic(
+  () => import('../src/components/tabs/OpportunityMonitorDJ').then(m => ({ default: m.OpportunityMonitorDJ })),
+  { ssr: false, loading: () => <div style={{ padding: 40, color: '#64748b', textAlign: 'center' }}>Loading...</div> }
+);
+
+// Routes to DJ or Pooja monitor based on active profile
+function OpportunityMonitorRouter() {
+  const { profile } = useProfile();
+  return profile === 'dj' ? <OpportunityMonitorDJ /> : <OpportunityMonitor />;
+}
+
 const TAB_VIEWS: Record<TabId, React.ReactElement> = {
-  'heatmap':         <MarketHeatmap />,
-  'skill-engine':    <SkillEngine />,
-  'cert-vault':      <CertVault />,
-  'learning-tracks': <LearningTracks />,
-  'trend-radar':     <TrendRadar />,
-  'prep-vault':      <PrepVault />,
-  'job-hub':         <JobHub />,
-  'tracker':         <Tracker />,
-  'opportunity-monitor': <OpportunityMonitor />,
+  'heatmap':             <MarketHeatmap />,
+  'skill-engine':        <SkillEngine />,
+  'cert-vault':          <CertVault />,
+  'learning-tracks':     <LearningTracks />,
+  'trend-radar':         <TrendRadar />,
+  'prep-vault':          <PrepVault />,
+  'job-hub':             <JobHub />,
+  'tracker':             <Tracker />,
+  'opportunity-monitor': <OpportunityMonitorRouter />,
+  'skill-gaps':          <SkillGaps />,
 };
 
 export default function Home() {

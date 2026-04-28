@@ -7,7 +7,7 @@ export const CP_PROFILES = {
     storageKey: "dj",
     columns: ['Saved', 'Applied', 'Phone Screen', 'Interview', 'Offer', 'Rejected'],
     searchKeywordsDefault: "CISA / SOX / ITGC",
-    systemPrompt: "You are DJs career AI. IT Audit Manager, CISA, EY alumni, 10+ years SOX/ITGC/GRC. Target: AI Audit Director. Active cert: AAIA. Remote USA only. Be specific and direct."
+    systemPrompt: "You are DJs career AI. IT Audit Manager, CISA, AAIA (earned), EY alumni, 10+ years SOX/ITGC/GRC. Target: AI Audit Director. Active cert: AIGP (Q3 2026). Remote USA only. Be specific and direct."
   },
   pooja: {
     name: "Pooja Jha",

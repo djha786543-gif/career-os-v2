@@ -217,6 +217,12 @@ export const OpportunityMonitor = () => {
 
       const fetched: Job[] = (Array.isArray(data?.jobs) ? data.jobs : [])
         .filter((j: Job) => !isGarbageTitle(j.title))
+        // Drop jobs older than 30 days
+        .filter((j: Job) => {
+          if (!j.posted_date) return true;
+          const diff = Date.now() - new Date(j.posted_date).getTime();
+          return Math.floor(diff / 86_400_000) <= 30;
+        })
         .map((j: Job) => {
           // Always run the client scorer — it's more nuanced than the backend's 0–6 signal.
           // Backend hard-filters remove spam/wrong-roles; client scorer ranks what remains.
@@ -230,7 +236,13 @@ export const OpportunityMonitor = () => {
             : clientScore;
           return { ...j, match_score };
         })
-        .sort((a: Job, b: Job) => b.match_score - a.match_score);
+        // Sort: newest first, then by match score descending
+        .sort((a: Job, b: Job) => {
+          const dA = a.posted_date ? Date.now() - new Date(a.posted_date).getTime() : 0;
+          const dB = b.posted_date ? Date.now() - new Date(b.posted_date).getTime() : 0;
+          if (Math.abs(dA - dB) > 86_400_000) return dA - dB; // >1 day apart: newer first
+          return b.match_score - a.match_score;                // same-day: higher score first
+        });
 
       setAllJobs(fetched);
       setCounts(Array.isArray(data?.counts) ? data.counts : []);

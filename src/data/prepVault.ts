@@ -1,7 +1,7 @@
 export const PREP_VAULT = {
   dj: {
-    title: "Preparation Vault — AAIA + AIGP (DJ)",
-    sub: "Pre-built reference for ISACA AAIA (March 2026) and IAPP AIGP — definitions, formulas, frameworks, exam traps",
+    title: "Preparation Vault — AIGP (DJ)",
+    sub: "Pre-built reference for IAPP AIGP (Q3 2026) — AI governance frameworks, EU AI Act, NIST AI RMF, definitions, exam traps",
     quickTopics: [
       "NIST AI RMF Core Functions", "ISO 42001 vs ISO 27001", "EU AI Act Risk Tiers", "AI Model Drift Types",
       "FAIR Quantification Formulas", "SOC 2 vs SOC 1 Differences", "Compensating Controls Analysis", "AI Bias Metrics"

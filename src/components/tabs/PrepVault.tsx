@@ -68,7 +68,7 @@ export function PrepVault() {
         <div style={s.vaultWrap}>
           <div style={s.filters}>
             {['All', '🔴 Critical', '🟠 High', '📐 Formulas', '⚠️ Traps'].map(f => (
-              <button key={f} onClick={() => setFilter(f)} style={{ ...s.filterBtn, background: filter === f ? 'var(--accent-active)' : 'rgba(255,255,255,0.03)', color: filter === f ? '#000' : 'var(--text-secondary)' }}>{f}</button>
+              <button key={f} onClick={() => setFilter(f)} style={{ ...s.filterBtn, background: filter === f ? 'var(--accent-active)' : 'rgba(0,0,0,0.05)', color: filter === f ? '#fff' : 'var(--text-secondary)', border: `1px solid ${filter === f ? 'transparent' : 'rgba(0,0,0,0.09)'}` }}>{f}</button>
             ))}
           </div>
           <div style={s.sectionList}>
@@ -175,20 +175,20 @@ export function PrepVault() {
       )}
       
       <style>{`
-        .prep-vault-content { font-size: 13px; line-height: 1.6; color: #e8e9f3; }
-        .pv-def { background: rgba(255,255,255,0.03); border-left: 3px solid var(--accent-active); padding: 12px 16px; margin: 16px 0; border-radius: 0 8px 8px 0; }
-        .pv-formula { background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 16px; margin: 16px 0; }
+        .prep-vault-content { font-size: 13px; line-height: 1.6; color: #1C1917; }
+        .pv-def { background: rgba(0,0,0,0.03); border-left: 3px solid var(--accent-active); padding: 12px 16px; margin: 16px 0; border-radius: 0 8px 8px 0; }
+        .pv-formula { background: #FEF9EE; border: 1px solid rgba(0,0,0,0.08); border-radius: 8px; padding: 16px; margin: 16px 0; }
         .pv-formula-title { font-size: 10px; fontWeight: 900; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px; }
         .pv-formula-math { font-family: var(--font-mono); font-size: 16px; color: var(--accent-active); margin-bottom: 8px; }
         .pv-formula-example { font-size: 11px; color: var(--text-muted); }
         .pv-trap { background: rgba(244,63,94,0.05); border: 1px solid rgba(244,63,94,0.2); border-radius: 8px; padding: 12px 16px; margin: 16px 0; }
         .pv-trap::before { content: '⚠️ EXAM TRAP'; display: block; font-size: 10px; font-weight: 900; color: #f43f5e; margin-bottom: 4px; }
         .pv-tip { background: rgba(16,185,129,0.05); border: 1px solid rgba(16,185,129,0.2); border-radius: 8px; padding: 12px 16px; margin: 16px 0; }
-        .pv-tip::before { content: '💡 PRO TIP'; display: block; font-size: 10px; font-weight: 900; color: #10b981; margin-bottom: 4px; }
+        .pv-tip::before { content: '💡 PRO TIP'; display: block; font-size: 10px; font-weight: 900; color: #059669; margin-bottom: 4px; }
         .pv-table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 12px; }
-        .pv-table th { text-align: left; padding: 10px; background: rgba(255,255,255,0.03); color: var(--text-secondary); border-bottom: 1px solid var(--border-subtle); }
+        .pv-table th { text-align: left; padding: 10px; background: rgba(0,0,0,0.04); color: var(--text-secondary); border-bottom: 1px solid var(--border-subtle); }
         .pv-table td { padding: 10px; border-bottom: 1px solid var(--border-subtle); }
-        .pv-tree { font-family: var(--font-mono); font-size: 12px; white-space: pre; background: rgba(0,0,0,0.2); padding: 16px; border-radius: 8px; margin: 16px 0; overflow-x: auto; color: var(--accent-emerald); }
+        .pv-tree { font-family: var(--font-mono); font-size: 12px; white-space: pre; background: #F5F2EB; padding: 16px; border-radius: 8px; margin: 16px 0; overflow-x: auto; color: #059669; }
       `}</style>
     </div>
   );
@@ -209,14 +209,14 @@ const s: Record<string, React.CSSProperties> = {
   sectionMeta: { display: 'flex', gap: 8, flexShrink: 0 },
   weightBadge: { fontSize: 8, fontWeight: 900, padding: '2px 6px', borderRadius: 4 },
   sectionTag: { fontSize: 10, fontWeight: 700, color: 'var(--text-muted)' },
-  sectionTitle: { flex: 1, fontSize: 14, fontWeight: 800, color: 'white' },
+  sectionTitle: { flex: 1, fontSize: 14, fontWeight: 800, color: '#1C1917' },
   arrow: { fontSize: 10, color: 'var(--text-muted)', transition: 'transform 0.3s' },
   sectionBody: { padding: '0 20px 24px', borderTop: '1px solid var(--border-subtle)', paddingTop: 24 },
   fcWrap: { display: 'flex', flexDirection: 'column', gap: 24 },
   fcHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
   fcProgress: { fontSize: 12, fontWeight: 800, color: 'var(--text-muted)' },
   fcActions: { display: 'flex', gap: 10 },
-  fcBtn: { background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 6, padding: '6px 12px', color: 'white', fontSize: 10, fontWeight: 700, cursor: 'pointer' },
+  fcBtn: { background: 'rgba(0,0,0,0.04)', border: '1px solid rgba(0,0,0,0.09)', borderRadius: 6, padding: '6px 12px', color: '#44403C', fontSize: 10, fontWeight: 700, cursor: 'pointer' },
   fcGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 20 },
   fcCardOuter: { height: 200, perspective: 1000, cursor: 'pointer' },
   fcCardInner: { position: 'relative', width: '100%', height: '100%', transition: 'transform 0.6s', transformStyle: 'preserve-3d' },
@@ -227,11 +227,11 @@ const s: Record<string, React.CSSProperties> = {
   aiWrap: { display: 'flex', flexDirection: 'column', gap: 20 },
   aiControls: { padding: 24, display: 'flex', flexDirection: 'column', gap: 16 },
   aiInputGroup: { display: 'flex', gap: 12 },
-  input: { flex: 1, background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: '12px 16px', color: 'white', fontSize: 13 },
-  select: { background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: '12px 16px', color: 'white', fontSize: 13 },
+  input: { flex: 1, background: '#fff', border: '1px solid rgba(0,0,0,0.12)', borderRadius: 8, padding: '12px 16px', color: '#1C1917', fontSize: 13 },
+  select: { background: '#fff', border: '1px solid rgba(0,0,0,0.12)', borderRadius: 8, padding: '12px 16px', color: '#1C1917', fontSize: 13 },
   genBtn: { padding: '0 24px', background: 'var(--accent-active)', border: 'none', borderRadius: 8, color: '#000', fontWeight: 800, fontSize: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: 120 },
   quickTopics: { display: 'flex', gap: 8, flexWrap: 'wrap' },
-  quickBtn: { background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 20, padding: '4px 12px', color: 'var(--text-secondary)', fontSize: 10, fontWeight: 700, cursor: 'pointer' },
+  quickBtn: { background: 'rgba(0,0,0,0.04)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: 20, padding: '4px 12px', color: 'var(--text-secondary)', fontSize: 10, fontWeight: 700, cursor: 'pointer' },
   aiResults: { padding: 24, minHeight: 400 },
   aiLoading: { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, marginTop: 120 },
   loadingText: { fontSize: 12, color: 'var(--text-muted)', fontWeight: 600 },
@@ -239,6 +239,6 @@ const s: Record<string, React.CSSProperties> = {
   resultContainer: { display: 'flex', flexDirection: 'column', gap: 16 },
   resultHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
   cacheBadge: { fontSize: 10, fontWeight: 800, color: 'var(--accent-active)', padding: '2px 8px', background: 'rgba(34, 211, 238, 0.1)', borderRadius: 12 },
-  copyBtn: { background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--text-secondary)', fontSize: 9, fontWeight: 800, padding: '4px 8px', borderRadius: 4, cursor: 'pointer' },
-  resultContent: { fontSize: 13, lineHeight: '1.6', whiteSpace: 'pre-wrap', color: '#e8e9f3' }
+  copyBtn: { background: 'transparent', border: '1px solid rgba(0,0,0,0.12)', color: 'var(--text-secondary)', fontSize: 9, fontWeight: 800, padding: '4px 8px', borderRadius: 4, cursor: 'pointer' },
+  resultContent: { fontSize: 13, lineHeight: '1.6', whiteSpace: 'pre-wrap', color: '#1C1917' }
 };

@@ -34,8 +34,8 @@ export function LearningTracks() {
       <div style={s.header}>
         <h2 style={s.title}>LEARNING TRACKS / <span style={{ color: 'var(--accent-active)' }}>CURRICULUM BUILDER</span></h2>
         <div style={s.tabs}>
-          <button onClick={() => setSubtab('static')} style={{ ...s.tabBtn, borderBottom: subtab === 'static' ? '2px solid var(--accent-active)' : '2px solid transparent', color: subtab === 'static' ? 'white' : 'var(--text-muted)' }}>Structured Tracks</button>
-          <button onClick={() => setSubtab('ai')} style={{ ...s.tabBtn, borderBottom: subtab === 'ai' ? '2px solid var(--accent-active)' : '2px solid transparent', color: subtab === 'ai' ? 'white' : 'var(--text-muted)' }}>AI Custom Track</button>
+          <button onClick={() => setSubtab('static')} style={{ ...s.tabBtn, borderBottom: subtab === 'static' ? '2px solid var(--accent-active)' : '2px solid transparent', color: subtab === 'static' ? '#1C1917' : 'var(--text-muted)' }}>Structured Tracks</button>
+          <button onClick={() => setSubtab('ai')} style={{ ...s.tabBtn, borderBottom: subtab === 'ai' ? '2px solid var(--accent-active)' : '2px solid transparent', color: subtab === 'ai' ? '#1C1917' : 'var(--text-muted)' }}>AI Custom Track</button>
         </div>
       </div>
 
@@ -77,7 +77,7 @@ export function LearningTracks() {
             <input 
               value={query} 
               onChange={e => setQuery(e.target.value)}
-              placeholder="e.g. 4-week AAIA exam sprint focusing on AI Ethics" 
+              placeholder="e.g. 4-week AIGP exam sprint focusing on EU AI Act"
               style={s.input}
             />
             <button onClick={handleGenerate} style={s.genBtn} disabled={loading}>
@@ -119,7 +119,7 @@ const s: Record<string, React.CSSProperties> = {
   trackHeader: { padding: 20, display: 'flex', alignItems: 'center', gap: 20, cursor: 'pointer' },
   iconCircle: { width: 48, height: 48, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, flexShrink: 0 },
   trackMeta: { flex: 1 },
-  trackTitle: { fontSize: 15, fontWeight: 800, color: 'white' },
+  trackTitle: { fontSize: 15, fontWeight: 800, color: '#1C1917' },
   trackDesc: { fontSize: 12, color: 'var(--text-muted)', marginTop: 2 },
   arrow: { fontSize: 10, color: 'var(--text-muted)', transition: 'transform 0.3s' },
   trackBody: { padding: '0 20px 24px 88px', display: 'flex', flexDirection: 'column', gap: 20, borderTop: '1px solid var(--border-subtle)', paddingTop: 24 },
@@ -130,7 +130,7 @@ const s: Record<string, React.CSSProperties> = {
   dot: { width: 4, height: 4, borderRadius: '50%', background: 'var(--accent-active)', marginTop: 7, flexShrink: 0 },
   aiWrap: { display: 'flex', flexDirection: 'column', gap: 20 },
   aiControls: { padding: 20, display: 'flex', gap: 12 },
-  input: { flex: 1, background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: '12px 16px', color: 'white', fontSize: 13 },
+  input: { flex: 1, background: '#fff', border: '1px solid rgba(0,0,0,0.12)', borderRadius: 8, padding: '12px 16px', color: '#1C1917', fontSize: 13 },
   genBtn: { padding: '0 24px', background: 'var(--accent-active)', border: 'none', borderRadius: 8, color: '#000', fontWeight: 800, fontSize: 11, cursor: 'pointer' },
   aiResults: { padding: 24, minHeight: 400 },
   aiLoading: { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, marginTop: 120 },
@@ -139,6 +139,6 @@ const s: Record<string, React.CSSProperties> = {
   resultContainer: { display: 'flex', flexDirection: 'column', gap: 16 },
   resultHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
   cacheBadge: { fontSize: 10, fontWeight: 800, color: 'var(--accent-active)', padding: '2px 8px', background: 'rgba(34, 211, 238, 0.1)', borderRadius: 12 },
-  copyBtn: { background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--text-secondary)', fontSize: 9, fontWeight: 800, padding: '4px 8px', borderRadius: 4, cursor: 'pointer' },
-  resultContent: { fontSize: 13, lineHeight: '1.6', whiteSpace: 'pre-wrap', color: '#e8e9f3' }
+  copyBtn: { background: 'transparent', border: '1px solid rgba(0,0,0,0.12)', color: 'var(--text-secondary)', fontSize: 9, fontWeight: 800, padding: '4px 8px', borderRadius: 4, cursor: 'pointer' },
+  resultContent: { fontSize: 13, lineHeight: '1.6', whiteSpace: 'pre-wrap', color: '#1C1917' }
 };

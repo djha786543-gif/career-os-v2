@@ -34,8 +34,8 @@ export function CertVault() {
       <div style={s.header}>
         <h2 style={s.title}>CERT VAULT / <span style={{ color: 'var(--accent-active)' }}>VALIDATION PATHWAYS</span></h2>
         <div style={s.tabs}>
-          <button onClick={() => setSubtab('static')} style={{ ...s.tabBtn, borderBottom: subtab === 'static' ? '2px solid var(--accent-active)' : '2px solid transparent', color: subtab === 'static' ? 'white' : 'var(--text-muted)' }}>Curated Vault</button>
-          <button onClick={() => setSubtab('ai')} style={{ ...s.tabBtn, borderBottom: subtab === 'ai' ? '2px solid var(--accent-active)' : '2px solid transparent', color: subtab === 'ai' ? 'white' : 'var(--text-muted)' }}>AI Pathway Generator</button>
+          <button onClick={() => setSubtab('static')} style={{ ...s.tabBtn, borderBottom: subtab === 'static' ? '2px solid var(--accent-active)' : '2px solid transparent', color: subtab === 'static' ? '#1C1917' : 'var(--text-muted)' }}>Curated Vault</button>
+          <button onClick={() => setSubtab('ai')} style={{ ...s.tabBtn, borderBottom: subtab === 'ai' ? '2px solid var(--accent-active)' : '2px solid transparent', color: subtab === 'ai' ? '#1C1917' : 'var(--text-muted)' }}>AI Pathway Generator</button>
         </div>
       </div>
 
@@ -139,24 +139,24 @@ const s: Record<string, React.CSSProperties> = {
   certGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))', gap: 20 },
   certCard: { padding: 24, display: 'flex', flexDirection: 'column', gap: 16 },
   certHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' },
-  certName: { fontSize: 16, fontWeight: 800, color: 'white' },
+  certName: { fontSize: 16, fontWeight: 800, color: '#1C1917' },
   certIssuer: { fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' },
-  timelineBadge: { fontSize: 10, fontWeight: 800, padding: '4px 10px', background: 'rgba(255,255,255,0.05)', borderRadius: 20 },
+  timelineBadge: { fontSize: 10, fontWeight: 800, padding: '4px 10px', background: 'rgba(0,0,0,0.06)', borderRadius: 20 },
   certMeta: { display: 'flex', gap: 20, borderTop: '1px solid var(--border-subtle)', borderBottom: '1px solid var(--border-subtle)', padding: '12px 0' },
   metaItem: { display: 'flex', flexDirection: 'column', gap: 2, fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' },
   certWhy: { fontSize: 12, lineHeight: '1.6', color: 'var(--text-secondary)' },
   pathway: { display: 'flex', flexDirection: 'column', gap: 8 },
   pathTitle: { fontSize: 10, fontWeight: 900, color: 'var(--text-muted)', marginBottom: 4 },
   pathStep: { display: 'flex', alignItems: 'center', gap: 12, fontSize: 11, color: 'var(--text-primary)' },
-  stepNum: { width: 18, height: 18, borderRadius: '50%', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 800, color: 'var(--accent-active)', flexShrink: 0 },
+  stepNum: { width: 18, height: 18, borderRadius: '50%', background: 'rgba(0,0,0,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 800, color: 'var(--accent-active)', flexShrink: 0 },
   stepTask: { flex: 1 },
   stepDur: { color: 'var(--text-muted)', fontSize: 10, fontWeight: 600 },
   aiWrap: { display: 'flex', flexDirection: 'column', gap: 20 },
   aiControls: { padding: 24, display: 'flex', gap: 20, alignItems: 'flex-end' },
   inputGroup: { display: 'flex', flexDirection: 'column', gap: 8, flex: 1 },
   label: { fontSize: 10, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' },
-  input: { background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: '10px 16px', color: 'white', fontSize: 13 },
-  select: { background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: '10px 16px', color: 'white', fontSize: 13 },
+  input: { background: '#fff', border: '1px solid rgba(0,0,0,0.12)', borderRadius: 8, padding: '10px 16px', color: '#1C1917', fontSize: 13 },
+  select: { background: '#fff', border: '1px solid rgba(0,0,0,0.12)', borderRadius: 8, padding: '10px 16px', color: '#1C1917', fontSize: 13 },
   genBtn: { height: 42, padding: '0 24px', background: 'var(--accent-active)', border: 'none', borderRadius: 8, color: '#000', fontWeight: 800, fontSize: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' },
   aiResults: { padding: 24, minHeight: 400 },
   aiLoading: { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, marginTop: 120 },
@@ -165,6 +165,6 @@ const s: Record<string, React.CSSProperties> = {
   resultContainer: { display: 'flex', flexDirection: 'column', gap: 16 },
   resultHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
   cacheBadge: { fontSize: 10, fontWeight: 800, color: 'var(--accent-active)', padding: '2px 8px', background: 'rgba(34, 211, 238, 0.1)', borderRadius: 12 },
-  copyBtn: { background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--text-secondary)', fontSize: 9, fontWeight: 800, padding: '4px 8px', borderRadius: 4, cursor: 'pointer' },
-  resultContent: { fontSize: 13, lineHeight: '1.6', whiteSpace: 'pre-wrap', color: '#e8e9f3' }
+  copyBtn: { background: 'transparent', border: '1px solid rgba(0,0,0,0.12)', color: 'var(--text-secondary)', fontSize: 9, fontWeight: 800, padding: '4px 8px', borderRadius: 4, cursor: 'pointer' },
+  resultContent: { fontSize: 13, lineHeight: '1.6', whiteSpace: 'pre-wrap', color: '#1C1917' }
 };

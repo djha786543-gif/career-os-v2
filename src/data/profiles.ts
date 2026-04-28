@@ -8,8 +8,8 @@ export const PROFILES = {
     colorDim: "rgba(6,182,212,.15)",
     colorBorder: "rgba(6,182,212,.35)",
     currentRole: "IT Audit Manager at Public Storage Corporation",
-    certs: "CISA, AWS Cloud Practitioner, Lean Six Sigma Black Belt, Certified Scrum Master",
-    activeCert: "ISACA AAIA (AI Auditing & Assurance) — exam March 2026",
+    certs: "CISA, AAIA, AWS Cloud Practitioner, Lean Six Sigma Black Belt, Certified Scrum Master",
+    activeCert: "IAPP AIGP (AI Governance Professional) — Q3 2026",
     targetRole: "AI Audit Director / VP of IT Risk / CISO",
     skills: "SOX 404, ITGC Testing, AI/ML Governance, AWS Cloud Audit, SAP S/4HANA, Risk Assessment, NIST Framework, ISO 27001, Python, Power BI, IAM, COBIT/COSO",
     yoe: "10+ years",
@@ -49,22 +49,6 @@ export const PROFILES = {
     ],
     vault: {
       immediate: [
-        {
-          name: "ISACA AAIA",
-          issuer: "ISACA",
-          timeline: "March 2026",
-          demand: 97,
-          salaryImpact: "+$18–28K",
-          difficulty: "Intermediate",
-          why: "Highest ROI cert in your pipeline — AI governance demand up 8 pts MoM. First-mover advantage before market saturation.",
-          pathway: [
-            { n: 1, task: "Complete AAIA modules 1–3 (AI Governance, Ethics, Risk)", dur: "Wk 1–2" },
-            { n: 2, task: "AAIA modules 4–6 (Controls, Compliance, Audit Methodology)", dur: "Wk 3–4" },
-            { n: 3, task: "Full mock exam in CertLab (target ≥85%)", dur: "Wk 5" },
-            { n: 4, task: "Review weak domains via CertLab weakness tracker", dur: "Wk 6" },
-            { n: 5, task: "Sit ISACA AAIA exam", dur: "Mar 2026" }
-          ]
-        },
         {
           name: "IAPP AIGP",
           issuer: "IAPP",
@@ -201,9 +185,9 @@ export const PROFILES = {
     ],
     timing: [
       { skill: "AIGP (IAPP)", status: "BUY NOW", color: "#f43f5e", reason: "EU AI Act enforcement Aug 2026 — window closes Q4 2026" },
-      { skill: "AAIA (ISACA)", status: "BUY NOW", color: "#f43f5e", reason: "First-mover advantage still available — market not saturated" },
-      { skill: "CCAK", status: "Q1 2027", color: "#f59e0b", reason: "After AAIA+AIGP — cloud audit gap growing but not urgent" },
-      { skill: "CISM", status: "Q4 2026", color: "#f59e0b", reason: "After AAIA — unlocks CGEIT pathway" }
+      { skill: "AAIA (ISACA)", status: "✅ EARNED", color: "#10b981", reason: "Completed — first-mover advantage secured" },
+      { skill: "CCAK", status: "Q1 2027", color: "#f59e0b", reason: "After AIGP — cloud audit gap growing but not urgent" },
+      { skill: "CISM", status: "Q4 2026", color: "#f59e0b", reason: "After AIGP — unlocks CGEIT pathway" }
     ],
     trendStats: [
       { val: "97", lbl: "AI Governance Demand", delta: "↑ +8 MoM", up: true },
@@ -213,20 +197,8 @@ export const PROFILES = {
     ],
     tracks: [
       {
-        icon: "🤖",
-        title: "AAIA Exam Sprint (6 Weeks)",
-        color: "#f43f5e",
-        desc: "Intensive certification prep — exam March 2026",
-        weeks: [
-          { lbl: "Wk 1–2", tasks: ["AAIA Domains 1–2: AI Governance Frameworks + AI Ethics", "CertLab: Complete 60 practice questions", "Read: NIST AI RMF 1.0 full document"] },
-          { lbl: "Wk 3–4", tasks: ["AAIA Domains 3–4: AI Risk Management + AI Controls", "CertLab lab simulations: AI audit scenario exercises", "Study ISACA AI Auditing guidance whitepaper"] },
-          { lbl: "Wk 5", tasks: ["AAIA Domains 5–6: Compliance + Audit Methodology", "CertLab full mock exam #1 (target 80%+)", "Review all incorrect answers — map to domain"] },
-          { lbl: "Wk 6", tasks: ["Weak domain intensive review (use CertLab tracker)", "CertLab mock exam #2 (target 85%+)", "Final skim: AAIA glossary + key frameworks"] }
-        ]
-      },
-      {
         icon: "🇪🇺",
-        title: "AIGP 4-Week Prep Plan",
+        title: "AIGP Exam Sprint (4 Weeks)",
         color: "#6366f1",
         desc: "EU AI Act + AI governance certification",
         weeks: [

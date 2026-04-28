@@ -135,26 +135,26 @@ const s: Record<string, React.CSSProperties> = {
   main: { display: 'flex', flexDirection: 'column', gap: 20 },
   controls: { padding: 20, display: 'flex', flexDirection: 'column', gap: 16 },
   modes: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 },
-  modeBtn: { 
-    padding: '10px', 
-    background: 'rgba(255,255,255,0.03)', 
-    border: '1px solid rgba(255,255,255,0.05)', 
-    borderRadius: 8, 
-    color: 'white', 
-    fontSize: 11, 
-    fontWeight: 700, 
+  modeBtn: {
+    padding: '10px',
+    background: 'rgba(0,0,0,0.04)',
+    border: '1px solid rgba(0,0,0,0.09)',
+    borderRadius: 8,
+    color: '#44403C',
+    fontSize: 11,
+    fontWeight: 700,
     cursor: 'pointer',
     transition: 'all 0.2s'
   },
   inputRow: { display: 'flex', gap: 10 },
-  input: { 
-    flex: 1, 
-    background: 'rgba(0,0,0,0.2)', 
-    border: '1px solid rgba(255,255,255,0.1)', 
-    borderRadius: 8, 
-    padding: '0 16px', 
-    color: 'white', 
-    fontSize: 12 
+  input: {
+    flex: 1,
+    background: '#fff',
+    border: '1px solid rgba(0,0,0,0.12)',
+    borderRadius: 8,
+    padding: '0 16px',
+    color: '#1C1917',
+    fontSize: 12
   },
   askBtn: { 
     padding: '0 24px', 
@@ -177,8 +177,8 @@ const s: Record<string, React.CSSProperties> = {
   resultWrap: { display: 'flex', flexDirection: 'column', gap: 16 },
   resultHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
   cacheBadge: { fontSize: 10, fontWeight: 800, color: 'var(--accent-active)', padding: '2px 8px', background: 'rgba(34, 211, 238, 0.1)', borderRadius: 12 },
-  copyBtn: { background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--text-secondary)', fontSize: 9, fontWeight: 800, padding: '4px 8px', borderRadius: 4, cursor: 'pointer' },
-  resultContent: { fontSize: 13, lineHeight: '1.6', whiteSpace: 'pre-wrap', color: '#e8e9f3' },
+  copyBtn: { background: 'transparent', border: '1px solid rgba(0,0,0,0.12)', color: 'var(--text-secondary)', fontSize: 9, fontWeight: 800, padding: '4px 8px', borderRadius: 4, cursor: 'pointer' },
+  resultContent: { fontSize: 13, lineHeight: '1.6', whiteSpace: 'pre-wrap', color: '#1C1917' },
   sidebar: { display: 'flex', flexDirection: 'column' },
   sideCard: { padding: 20 },
   sideTitle: { margin: '0 0 16px 0', fontSize: 10, fontWeight: 900, color: 'var(--text-muted)', letterSpacing: '0.05em' },
