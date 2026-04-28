@@ -20,6 +20,7 @@
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { api } from '../../config/api';
+import { daysAgo, isExpiredJob } from '../../utils/monitorHelpers';
 
 // ─── DJ Scoring — keywords ───────────────────────────────────────────────────
 
@@ -401,9 +402,17 @@ export const OpportunityMonitorDJ: React.FC = () => {
         }
       });
 
-      setTotalFetched(raw.length);
-      const scored = raw.map(scoreDJJob).filter(Boolean) as DJScoredJob[];
-      scored.sort((a, b) => b.score - a.score);
+      // Drop jobs older than 30 days
+      const fresh = raw.filter(j => !isExpiredJob(j.posted_date ?? j.postedDate));
+      setTotalFetched(fresh.length);
+      const scored = fresh.map(scoreDJJob).filter(Boolean) as DJScoredJob[];
+      // Sort: newest first, then score descending
+      scored.sort((a, b) => {
+        const dA = daysAgo(a.raw.posted_date ?? a.raw.postedDate);
+        const dB = daysAgo(b.raw.posted_date ?? b.raw.postedDate);
+        if (dA !== dB) return dA - dB;
+        return b.score - a.score;
+      });
       setJobs(scored);
     } catch {
       setError('Failed to fetch. Check connection or try again.');

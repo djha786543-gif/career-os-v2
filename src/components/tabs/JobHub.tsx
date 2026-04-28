@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useProfile, NormalizedJob, TrackerCard } from '../../context/ProfileContext';
 import { api } from '../../config/api';
 import { CP_PROFILES } from '../../data/cpProfiles';
+import { daysAgo, isExpiredJob } from '../../utils/monitorHelpers';
 
 // ── Shared Sub-components ───────────────────────────────────────────────────
 
@@ -172,7 +173,7 @@ export function JobHub() {
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [timeLeft, setTimeLeft] = useState(45 * 60);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>(subContext === 'pooja' ? 'list' : 'grid');
-  const [sortBy, setSortBy] = useState<'fit' | 'newest' | 'salary' | 'company'>('fit');
+  const [sortBy, setSortBy] = useState<'fit' | 'newest' | 'salary' | 'company'>('newest');
   const [apiUsage, setApiUsage] = useState<any>(null);
 
   const candidateId = subContext;
@@ -188,10 +189,15 @@ export function JobHub() {
   };
 
   const sortedJobs = useMemo(() => {
-    if (candidateId !== 'dj') return state.jobs;
-    return [...state.jobs].sort((a, b) => {
+    // Filter out jobs older than 30 days for both profiles
+    const fresh = state.jobs.filter(j => !isExpiredJob(j.postedDate));
+    if (candidateId !== 'dj') {
+      // Pooja: always newest first
+      return [...fresh].sort((a, b) => daysAgo(a.postedDate) - daysAgo(b.postedDate));
+    }
+    return [...fresh].sort((a, b) => {
       if (sortBy === 'fit') return (b.fitScore ?? 0) - (a.fitScore ?? 0);
-      if (sortBy === 'newest') return (b.postedDate || '').localeCompare(a.postedDate || '');
+      if (sortBy === 'newest') return daysAgo(a.postedDate) - daysAgo(b.postedDate);
       if (sortBy === 'salary') {
         const sa = a.salary?.replace(/[^0-9]/g, '') ? parseInt(a.salary.replace(/[^0-9]/g, '')) : 0;
         const sb = b.salary?.replace(/[^0-9]/g, '') ? parseInt(b.salary.replace(/[^0-9]/g, '')) : 0;

@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { api } from '../../config/api';
+import { daysAgo, isExpiredJob } from '../../utils/monitorHelpers';
 
 // ── Pooja Holistic Profile ──────────────────────────────────────────────────────
 // Weighted scoring: institution hits (×20), expertise hits (×15), role hits (×10)
@@ -422,9 +423,17 @@ export const OpportunityMonitor = () => {
           });
         }
       });
-      setTotalFetched(raw.length);
-      const scored = raw.map(scoreJob).filter(Boolean) as ScoredJob[];
-      scored.sort((a, b) => b.score - a.score);
+      // Drop jobs older than 30 days
+      const fresh = raw.filter(j => !isExpiredJob(j.postedDate ?? j.posted_date));
+      setTotalFetched(fresh.length);
+      const scored = fresh.map(scoreJob).filter(Boolean) as ScoredJob[];
+      // Sort: newest first, then score descending
+      scored.sort((a, b) => {
+        const dA = daysAgo(a.raw.postedDate ?? a.raw.posted_date);
+        const dB = daysAgo(b.raw.postedDate ?? b.raw.posted_date);
+        if (dA !== dB) return dA - dB;
+        return b.score - a.score;
+      });
       setJobs(scored);
     } catch {
       setError('Failed to fetch. Check connection or try again.');
@@ -453,7 +462,12 @@ export const OpportunityMonitor = () => {
         }
       });
       if (newScored.length > 0) {
-        setJobs(prev => [...prev, ...newScored].sort((a, b) => b.score - a.score));
+        setJobs(prev => [...prev, ...newScored].sort((a, b) => {
+          const dA = daysAgo(a.raw.postedDate ?? a.raw.posted_date);
+          const dB = daysAgo(b.raw.postedDate ?? b.raw.posted_date);
+          if (dA !== dB) return dA - dB;
+          return b.score - a.score;
+        }));
         setTotalFetched(prev => prev + list.length);
       }
     } catch { /* non-fatal — existing jobs remain visible */ }
