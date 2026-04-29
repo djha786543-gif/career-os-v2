@@ -484,207 +484,6 @@ const CAT_COLOR: Record<string, string> = {
 
 type MonitorCategory = 'all' | 'central-govt' | 'state-psc' | 'academia' | 'aggregator';
 
-// ─── Static / Curated Positions (Firecrawl-sourced, updated 2026-04-28) ──────
-// Fallback data shown when backend DB is unavailable. Update periodically.
-
-const STATIC_JOBS_APRIL_2026: LiveJob[] = [
-  {
-    id: 'thsti-phd-2026',
-    title: 'Ph.D. Program 2026-27 (Monsoon Session)',
-    org_name: 'THSTI — Translational Health Science & Technology Institute',
-    portal_category: 'academia',
-    snippet: 'Applications invited for Ph.D. Monsoon 2026-27 session. Areas: Vaccinology, Infectious Diseases, Cardiovascular Biology, Maternal & Child Health. Ref: THS/AN/01/2026.',
-    apply_url: 'https://recruitment.thsti.in/application/jobs',
-    posted_date: '2026-04-28',
-    source_portal: 'thsti.res.in',
-    relevance_score: 4,
-    is_new: true,
-    detected_at: '2026-04-28T00:00:00Z',
-  },
-  {
-    id: 'thsti-prs-ii-biochemist',
-    title: 'Project Research Scientist-II (Bioanalytical Chemist)',
-    org_name: 'THSTI — Faridabad',
-    portal_category: 'central-govt',
-    snippet: 'Walk-in interview. Ref: THS/RN/01/2026/04-II. PhD in Chemistry / Biochemistry / Life Sciences. Experience in bioanalytical method development. Deadline: 06 May 2026.',
-    apply_url: 'https://thsti.res.in/en/Jobs',
-    posted_date: '2026-04-28',
-    source_portal: 'thsti.res.in',
-    relevance_score: 3,
-    is_new: true,
-    detected_at: '2026-04-28T00:00:00Z',
-  },
-  {
-    id: 'thsti-prs-iii-medical',
-    title: 'Project Research Scientist-III (Medical)',
-    org_name: 'THSTI — Faridabad',
-    portal_category: 'central-govt',
-    snippet: 'Walk-in interview. Ref: THS/RN/04/2026. MBBS/MD/PhD in Medical Sciences. Translational research focus. Deadline: 07 May 2026.',
-    apply_url: 'https://thsti.res.in/en/Jobs',
-    posted_date: '2026-04-28',
-    source_portal: 'thsti.res.in',
-    relevance_score: 3,
-    is_new: true,
-    detected_at: '2026-04-28T00:00:00Z',
-  },
-  {
-    id: 'thsti-sr-research-scientist-clinical',
-    title: 'Senior Research Scientist (Clinical)',
-    org_name: 'THSTI — Faridabad',
-    portal_category: 'central-govt',
-    snippet: 'Walk-in interview. Ref: THS/RN/04/2026. PhD/MD in Clinical Research / Life Sciences. Strong clinical trials background preferred. Deadline: 07 May 2026.',
-    apply_url: 'https://thsti.res.in/en/Jobs',
-    posted_date: '2026-04-28',
-    source_portal: 'thsti.res.in',
-    relevance_score: 3,
-    is_new: true,
-    detected_at: '2026-04-28T00:00:00Z',
-  },
-  {
-    id: 'thsti-prs-ii-organic',
-    title: 'Project Research Scientist-II (Synthetic Organic Chemist)',
-    org_name: 'THSTI — Faridabad',
-    portal_category: 'central-govt',
-    snippet: 'Walk-in interview. Ref: THS/RN/04/2026. PhD in Organic / Medicinal Chemistry. Drug synthesis / translational research. Deadline: 04 May 2026.',
-    apply_url: 'https://thsti.res.in/en/Jobs',
-    posted_date: '2026-04-28',
-    source_portal: 'thsti.res.in',
-    relevance_score: 2,
-    is_new: true,
-    detected_at: '2026-04-28T00:00:00Z',
-  },
-  {
-    id: 'thsti-principal-pa',
-    title: 'Principal Project Associate',
-    org_name: 'THSTI — Faridabad',
-    portal_category: 'central-govt',
-    snippet: 'Walk-in interview. Ref: THS/RN/01/2026/04-I. MSc/PhD in Life Sciences. Research support role in ongoing translational projects. Deadline: 12 May 2026.',
-    apply_url: 'https://thsti.res.in/en/Jobs',
-    posted_date: '2026-04-28',
-    source_portal: 'thsti.res.in',
-    relevance_score: 2,
-    is_new: true,
-    detected_at: '2026-04-28T00:00:00Z',
-  },
-  {
-    id: 'thsti-senior-pa',
-    title: 'Senior Project Associate',
-    org_name: 'THSTI — Faridabad',
-    portal_category: 'central-govt',
-    snippet: 'Walk-in interview. Ref: THS/RN/01/2026/04-I. MSc/PhD in Life Sciences / Biochemistry. Deadline: 12 May 2026.',
-    apply_url: 'https://thsti.res.in/en/Jobs',
-    posted_date: '2026-04-28',
-    source_portal: 'thsti.res.in',
-    relevance_score: 2,
-    is_new: true,
-    detected_at: '2026-04-28T00:00:00Z',
-  },
-  {
-    id: 'thsti-data-manager',
-    title: 'Data Manager',
-    org_name: 'THSTI — Faridabad',
-    portal_category: 'central-govt',
-    snippet: 'Walk-in interview. Ref: THS/RN/04/2026. MSc/MCA + research data management experience. Biomedical / clinical trial data. Deadline: 07 May 2026.',
-    apply_url: 'https://thsti.res.in/en/Jobs',
-    posted_date: '2026-04-28',
-    source_portal: 'thsti.res.in',
-    relevance_score: 1,
-    is_new: true,
-    detected_at: '2026-04-28T00:00:00Z',
-  },
-  {
-    id: 'icmr-recruitment-2026',
-    title: 'ICMR Scientist-B / Research Officer (Various Institutes)',
-    org_name: 'ICMR — Indian Council of Medical Research',
-    portal_category: 'central-govt',
-    snippet: 'Rolling recruitment cycle 2026 for PhD-holders in Life Sciences, Biomedical Sciences, Molecular Biology, Cardiovascular Research. Check recruitment.icmr.org.in for active notifications.',
-    apply_url: 'https://recruitment.icmr.org.in',
-    posted_date: '2026-04-01',
-    source_portal: 'icmr.gov.in',
-    relevance_score: 3,
-    is_new: false,
-    detected_at: '2026-04-01T00:00:00Z',
-  },
-  {
-    id: 'instem-faculty-2026',
-    title: 'Faculty / Research Scientist — Cardiovascular & Stem Cell Biology',
-    org_name: 'InStem — Institute for Stem Cell Science & Regenerative Medicine, Bangalore',
-    portal_category: 'academia',
-    snippet: "Rolling applications for faculty & research scientists. Special interest in cardiovascular biology, stem cell, molecular cardiology. Strong alignment with Pooja's research profile.",
-    apply_url: 'https://instem.res.in/positions',
-    posted_date: '2026-04-01',
-    source_portal: 'instem.res.in',
-    relevance_score: 4,
-    is_new: false,
-    detected_at: '2026-04-01T00:00:00Z',
-  },
-  {
-    id: 'ncbs-faculty-2026',
-    title: 'Faculty Position — Molecular Biology / Cell Biology',
-    org_name: 'NCBS-TIFR — National Centre for Biological Sciences, Bangalore',
-    portal_category: 'academia',
-    snippet: 'Rolling faculty recruitment. Research areas: molecular biology, cell signaling, cardiovascular, genomics. Competitive TIFR pay scale. Apply via ncbs.res.in/jobs.',
-    apply_url: 'https://ncbs.res.in/jobs',
-    posted_date: '2026-04-01',
-    source_portal: 'ncbs.res.in',
-    relevance_score: 3,
-    is_new: false,
-    detected_at: '2026-04-01T00:00:00Z',
-  },
-  {
-    id: 'iit-bombay-biosciences-2026',
-    title: 'Assistant Professor — Biosciences & Bioengineering',
-    org_name: 'IIT Bombay — Department of Biosciences & Bioengineering',
-    portal_category: 'academia',
-    snippet: 'Year-round rolling applications. Areas: molecular biology, biochemistry, cardiovascular biology, systems biology. Level 12 pay + NPA. Apply at bio.iitb.ac.in/positions.',
-    apply_url: 'https://www.iitb.ac.in/en/education/faculty-recruitment',
-    posted_date: '2026-04-01',
-    source_portal: 'iitsystem.ac.in',
-    relevance_score: 3,
-    is_new: false,
-    detected_at: '2026-04-01T00:00:00Z',
-  },
-  {
-    id: 'indiabioscience-live-board',
-    title: 'Multiple PhD-Level Positions — Life Sciences (Live Board)',
-    org_name: 'IndiaBioscience Jobs Board',
-    portal_category: 'aggregator',
-    snippet: 'Daily updated board listing PhD-level research positions across IITs, IISERs, NCBS, ICMR, DBT institutes, CSIR labs across India. Best single source — check weekly.',
-    apply_url: 'https://indiabioscience.org/jobs/qualification:phd',
-    posted_date: '2026-04-28',
-    source_portal: 'indiabioscience.org',
-    relevance_score: 3,
-    is_new: true,
-    detected_at: '2026-04-28T00:00:00Z',
-  },
-  {
-    id: 'serb-ramalingaswami-2026',
-    title: 'DBT Ramalingaswami Re-entry Fellowship 2026',
-    org_name: 'DBT — Department of Biotechnology',
-    portal_category: 'central-govt',
-    snippet: 'Annual fellowship for scientists returning from abroad. PhD in Life Sciences. ₹1,30,000/month + HRA + ₹5L contingency. Oct-Nov 2026 application window opening soon.',
-    apply_url: 'https://dbtindia.gov.in/schemes-programmes/research-fellowships/ramalingaswami-re-entry-fellowship',
-    posted_date: '2026-04-01',
-    source_portal: 'dbtindia.gov.in',
-    relevance_score: 4,
-    is_new: false,
-    detected_at: '2026-04-01T00:00:00Z',
-  },
-  {
-    id: 'wellcome-india-alliance-2026',
-    title: 'DBT/Wellcome India Alliance — Early Career Fellowship 2026',
-    org_name: 'Wellcome India Alliance',
-    portal_category: 'aggregator',
-    snippet: 'Prestigious 5-year fellowship covering salary + research up to ₹2.5 Cr. PhD ≤ 5 years. Cardiovascular, molecular biology strongly encouraged. Jan 2026 window. Check for next call.',
-    apply_url: 'https://wellcomeindialliance.org/fellowships',
-    posted_date: '2026-04-01',
-    source_portal: 'wellcomeindialliance.org',
-    relevance_score: 4,
-    is_new: false,
-    detected_at: '2026-04-01T00:00:00Z',
-  },
-];
-
 interface LiveJob {
   id:               string;
   title:            string;
@@ -717,49 +516,39 @@ const MON_CAT_COLOR: Record<string, string> = {
 // ─── Live Monitor Section ─────────────────────────────────────────────────────
 
 const LiveMonitorSection: React.FC = () => {
-  const [jobs,         setJobs]         = useState<LiveJob[]>([]);
-  const [loading,      setLoading]      = useState(false);
-  const [scanning,     setScanning]     = useState(false);
-  const [lastScan,     setLastScan]     = useState<string | null>(null);
-  const [error,        setError]        = useState<string | null>(null);
-  const [catFilter,    setCatFilter]    = useState<MonitorCategory>('all');
-  const [scanMsg,      setScanMsg]      = useState<string | null>(null);
-  const [highOnly,     setHighOnly]     = useState(false);
-  const [usingStatic,  setUsingStatic]  = useState(false);
+  const [jobs,      setJobs]      = useState<LiveJob[]>([]);
+  const [loading,   setLoading]   = useState(false);
+  const [scanning,  setScanning]  = useState(false);
+  const [lastScan,  setLastScan]  = useState<string | null>(null);
+  const [error,     setError]     = useState<string | null>(null);
+  const [catFilter, setCatFilter] = useState<MonitorCategory>('all');
+  const [scanMsg,   setScanMsg]   = useState<string | null>(null);
+  const [highOnly,  setHighOnly]  = useState(false);
 
-  // Load cached results on mount; fall back to static data if backend is unavailable
   const loadJobs = useCallback(async () => {
     setLoading(true);
     setError(null);
-    setUsingStatic(false);
     try {
       const base = process.env.NEXT_PUBLIC_API_URL || 'https://career-os-backend-production.up.railway.app/api';
       const resp = await fetch(`${base}/monitor/pooja-india/jobs`);
       if (!resp.ok) {
-        // 404 = route not deployed yet — use static fallback silently
-        if (resp.status === 404 || resp.status === 500 || resp.status === 503) {
-          setJobs(STATIC_JOBS_APRIL_2026);
-          setUsingStatic(true);
+        if (resp.status === 404) {
+          setError('Backend not yet reachable — please wait a moment and retry.');
+          setJobs([]);
           return;
         }
         let detail = `HTTP ${resp.status}`;
-        try { const j = await resp.json(); detail = `HTTP ${resp.status} — ${j.error || 'unknown'}`; } catch { /* */ }
+        try { const j = await resp.json(); detail = `${resp.status} — ${j.error || 'unknown'}`; } catch { /* */ }
         setError(`Load failed: ${detail}`);
-        setJobs(STATIC_JOBS_APRIL_2026);
-        setUsingStatic(true);
+        setJobs([]);
         return;
       }
       const data = await resp.json();
-      const liveJobs = Array.isArray(data?.jobs) ? data.jobs : [];
-      // Merge: live jobs first, then any static ones not already present
-      const liveIds = new Set(liveJobs.map((j: LiveJob) => j.id));
-      const merged = [...liveJobs, ...STATIC_JOBS_APRIL_2026.filter(j => !liveIds.has(j.id))];
-      setJobs(merged);
+      setJobs(Array.isArray(data?.jobs) ? data.jobs : []);
       if (data?.lastScan) setLastScan(data.lastScan);
     } catch (err: any) {
-      // Network error — always fall back to static
-      setJobs(STATIC_JOBS_APRIL_2026);
-      setUsingStatic(true);
+      setError(`Load failed: ${err?.message || 'Network error'}`);
+      setJobs([]);
     } finally {
       setLoading(false);
     }
@@ -767,7 +556,6 @@ const LiveMonitorSection: React.FC = () => {
 
   useEffect(() => { loadJobs(); }, [loadJobs]);
 
-  // Trigger Serper scan
   const handleScan = async () => {
     setScanning(true);
     setError(null);
@@ -781,17 +569,10 @@ const LiveMonitorSection: React.FC = () => {
       });
       if (!resp.ok) {
         let detail = `HTTP ${resp.status}`;
-        if (resp.status === 404) detail = '404 — route not found. Backend may still be deploying.';
-        if (resp.status === 503) detail = '503 — SERPER_API_KEY not configured on backend.';
-        if (resp.status === 500) {
-          try { const j = await resp.json(); detail = `500 — ${j.error || resp.statusText}`; } catch { /* */ }
-          // Fall back to static data on 500 (DB unavailable)
-          setJobs(STATIC_JOBS_APRIL_2026);
-          setUsingStatic(true);
-          setScanning(false);
-          setScanMsg('Backend DB unavailable — showing curated positions instead.');
-          setTimeout(() => setScanMsg(null), 5000);
-          return;
+        if (resp.status === 404) detail = 'Route not found — backend is still deploying. Try again in ~1 minute.';
+        else if (resp.status === 503) detail = 'SERPER_API_KEY not configured on backend.';
+        else if (resp.status === 500) {
+          try { const j = await resp.json(); detail = `Server error — ${j.error || resp.statusText}`; } catch { /* */ }
         }
         setError(`Scan failed: ${detail}`);
         setScanning(false);
@@ -805,28 +586,17 @@ const LiveMonitorSection: React.FC = () => {
     }
   };
 
-  // Dismiss a job (applied / done)
   const handleDismiss = async (id: string) => {
-    // Optimistic UI — remove immediately
     setJobs(prev => prev.filter(j => j.id !== id));
-    if (!usingStatic) {
-      try {
-        await api.delete(`/monitor/pooja-india/jobs/${id}`);
-      } catch {
-        // Non-fatal — job already removed from UI
-      }
-    }
+    try { await api.delete(`/monitor/pooja-india/jobs/${id}`); } catch { /* Non-fatal */ }
   };
 
-  // Apply category filter, then optional quality filter (score ≥ 2)
-  const base = catFilter === 'all' ? jobs : jobs.filter(j => j.portal_category === catFilter);
-  const visible = highOnly ? base.filter(j => j.relevance_score >= 2) : base;
+  const baseJobs = catFilter === 'all' ? jobs : jobs.filter(j => j.portal_category === catFilter);
+  const visible  = highOnly ? baseJobs.filter(j => j.relevance_score >= 2) : baseJobs;
 
   const counts = MONITOR_CATS.reduce((acc, cat) => {
     const pool = highOnly ? jobs.filter(j => j.relevance_score >= 2) : jobs;
-    acc[cat.id] = cat.id === 'all'
-      ? pool.length
-      : pool.filter(j => j.portal_category === cat.id).length;
+    acc[cat.id] = cat.id === 'all' ? pool.length : pool.filter(j => j.portal_category === cat.id).length;
     return acc;
   }, {} as Record<string, number>);
 
@@ -834,7 +604,6 @@ const LiveMonitorSection: React.FC = () => {
 
   return (
     <div>
-      {/* Header bar */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -870,26 +639,12 @@ const LiveMonitorSection: React.FC = () => {
         </button>
       </div>
 
-      {/* Offline / static fallback banner */}
-      {usingStatic && !scanning && (
-        <div style={{ padding: '8px 14px', background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)', borderRadius: 8, fontSize: 11.5, color: '#fbbf24', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span>📋</span>
-          <span>
-            <strong>Curated positions (Apr 2026)</strong> — Live scan backend is temporarily offline.
-            Showing {STATIC_JOBS_APRIL_2026.length} hand-curated openings from THSTI, ICMR, InStem, NCBS, IITs &amp; aggregators.
-            Click <strong>⚡ Scan Now</strong> to retry when backend is available.
-          </span>
-        </div>
-      )}
-
-      {/* Scan message */}
       {scanMsg && (
         <div style={{ padding: '8px 14px', background: 'rgba(168,85,247,0.08)', border: '1px solid rgba(168,85,247,0.2)', borderRadius: 8, fontSize: 11.5, color: '#c084fc', marginBottom: 12 }}>
           {scanMsg}
         </div>
       )}
 
-      {/* Category filter + quality toggle */}
       <div style={{ display: 'flex', gap: 5, marginBottom: 14, flexWrap: 'wrap', alignItems: 'center' }}>
         {MONITOR_CATS.map(cat => {
           const active = catFilter === cat.id;
@@ -905,53 +660,41 @@ const LiveMonitorSection: React.FC = () => {
             </button>
           );
         })}
-        {/* Quality toggle — separate visually */}
-        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6 }}>
+        <div style={{ marginLeft: 'auto' }}>
           <button
             onClick={() => setHighOnly(h => !h)}
             style={{
-              padding: '5px 13px', fontSize: 11, fontWeight: 700, cursor: 'pointer',
-              borderRadius: 6,
+              padding: '5px 13px', fontSize: 11, fontWeight: 700, cursor: 'pointer', borderRadius: 6,
               border: `1px solid ${highOnly ? '#a855f7' : '#334155'}`,
               background: highOnly ? 'rgba(168,85,247,0.12)' : 'transparent',
               color: highOnly ? '#a855f7' : '#475569',
             }}
-            title="Show only HIGH MATCH results (relevance ≥ 2)"
           >
             ★ High Match only
           </button>
         </div>
       </div>
 
-      {/* Error */}
       {error && (
         <div style={{ padding: '10px 14px', background: 'rgba(244,63,94,0.07)', border: '1px solid rgba(244,63,94,0.2)', borderRadius: 8, fontSize: 12, color: '#f43f5e', marginBottom: 12 }}>
           {error}
         </div>
       )}
 
-      {/* Job list */}
       {loading ? (
-        <div style={{ padding: 40, textAlign: 'center', color: '#475569', fontSize: 13 }}>
-          Loading cached results...
-        </div>
+        <div style={{ padding: 40, textAlign: 'center', color: '#475569', fontSize: 13 }}>Loading cached results...</div>
       ) : visible.length === 0 ? (
         <div style={{ padding: '40px 24px', textAlign: 'center', background: 'rgba(255,255,255,0.02)', border: '1px dashed rgba(168,85,247,0.2)', borderRadius: 12, color: '#475569' }}>
           <div style={{ fontSize: 22, marginBottom: 8 }}>🔍</div>
           {jobs.length > 0 ? (
             <>
               <div style={{ fontWeight: 700, fontSize: 13, color: '#94a3b8', marginBottom: 6 }}>No high-match results in this view.</div>
-              <div style={{ fontSize: 12 }}>
-                Turn off <strong style={{ color: '#a855f7' }}>★ High Match only</strong> or switch category to see all {jobs.length} listings.
-              </div>
+              <div style={{ fontSize: 12 }}>Turn off <strong style={{ color: '#a855f7' }}>★ High Match only</strong> or switch category to see all {jobs.length} listings.</div>
             </>
           ) : (
             <>
               <div style={{ fontWeight: 700, fontSize: 13, color: '#94a3b8', marginBottom: 6 }}>No results yet (past 30 days).</div>
-              <div style={{ fontSize: 12 }}>
-                Click <strong style={{ color: '#a855f7' }}>⚡ Scan Now</strong> to search across all portals.
-                Results older than 30 days are automatically removed.
-              </div>
+              <div style={{ fontSize: 12 }}>Click <strong style={{ color: '#a855f7' }}>⚡ Scan Now</strong> to search across all portals. Results older than 30 days are automatically removed.</div>
             </>
           )}
         </div>
@@ -961,57 +704,33 @@ const LiveMonitorSection: React.FC = () => {
             const catColor = MON_CAT_COLOR[job.portal_category] || '#64748b';
             const borderColor = job.relevance_score >= 3 ? '#a855f7' : job.relevance_score >= 2 ? catColor : '#334155';
             return (
-              <div key={job.id} style={{
-                padding: '13px 16px', background: '#1e293b', borderRadius: 10,
-                borderLeft: `3px solid ${borderColor}`,
-                display: 'flex', gap: 12, alignItems: 'flex-start',
-              }}>
+              <div key={job.id} style={{ padding: '13px 16px', background: '#1e293b', borderRadius: 10, borderLeft: `3px solid ${borderColor}`, display: 'flex', gap: 12, alignItems: 'flex-start' }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  {/* Title + badges */}
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: 5, alignItems: 'center' }}>
                     <span style={{ fontWeight: 700, fontSize: 13, color: '#f1f5f9' }}>{job.title}</span>
-                    {job.is_new && (
-                      <span style={{ fontSize: 9, fontWeight: 900, padding: '2px 6px', background: 'rgba(34,197,94,0.12)', color: '#22c55e', borderRadius: 4 }}>NEW</span>
-                    )}
-                    {job.relevance_score >= 3 && (
-                      <span style={{ fontSize: 9, fontWeight: 900, padding: '2px 6px', background: 'rgba(168,85,247,0.12)', color: '#a855f7', borderRadius: 4 }}>HIGH MATCH</span>
-                    )}
+                    {job.is_new && <span style={{ fontSize: 9, fontWeight: 900, padding: '2px 6px', background: 'rgba(34,197,94,0.12)', color: '#22c55e', borderRadius: 4 }}>NEW</span>}
+                    {job.relevance_score >= 3 && <span style={{ fontSize: 9, fontWeight: 900, padding: '2px 6px', background: 'rgba(168,85,247,0.12)', color: '#a855f7', borderRadius: 4 }}>HIGH MATCH</span>}
                   </div>
-                  {/* Org + category + date */}
                   <div style={{ fontSize: 11.5, color: '#64748b', marginBottom: job.snippet ? 6 : 0 }}>
                     <span style={{ fontWeight: 700, color: '#94a3b8' }}>{job.org_name}</span>
-                    <span style={{ marginLeft: 6, fontSize: 9, fontWeight: 700, padding: '1px 6px',
-                      background: catColor + '18', color: catColor, borderRadius: 3 }}>
+                    <span style={{ marginLeft: 6, fontSize: 9, fontWeight: 700, padding: '1px 6px', background: catColor + '18', color: catColor, borderRadius: 3 }}>
                       {job.portal_category.replace('-', ' ').toUpperCase()}
                     </span>
-                    {job.posted_date && job.posted_date !== 'Recent' && (
-                      <span style={{ marginLeft: 8, color: '#475569' }}>{job.posted_date}</span>
-                    )}
+                    {job.posted_date && job.posted_date !== 'Recent' && <span style={{ marginLeft: 8, color: '#475569' }}>{job.posted_date}</span>}
                   </div>
-                  {/* Snippet */}
                   {job.snippet && (
-                    <p style={{ margin: 0, fontSize: 11, color: '#475569', lineHeight: 1.5,
-                      display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                    <p style={{ margin: 0, fontSize: 11, color: '#475569', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                       {job.snippet}
                     </p>
                   )}
                 </div>
-
-                {/* Action buttons */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flexShrink: 0 }}>
                   {job.apply_url && job.apply_url !== '#' && (
-                    <button
-                      onClick={() => window.open(job.apply_url, '_blank')}
-                      style={{ padding: '5px 12px', background: '#1d4ed8', color: '#fff', border: 'none', borderRadius: 5, cursor: 'pointer', fontWeight: 700, fontSize: 10, whiteSpace: 'nowrap' }}
-                    >
+                    <button onClick={() => window.open(job.apply_url, '_blank')} style={{ padding: '5px 12px', background: '#1d4ed8', color: '#fff', border: 'none', borderRadius: 5, cursor: 'pointer', fontWeight: 700, fontSize: 10, whiteSpace: 'nowrap' }}>
                       Open →
                     </button>
                   )}
-                  <button
-                    onClick={() => handleDismiss(job.id)}
-                    title="Mark as applied / remove"
-                    style={{ padding: '5px 10px', background: 'rgba(16,185,129,0.1)', color: '#10b981', border: '1px solid rgba(16,185,129,0.25)', borderRadius: 5, cursor: 'pointer', fontWeight: 700, fontSize: 10, whiteSpace: 'nowrap' }}
-                  >
+                  <button onClick={() => handleDismiss(job.id)} style={{ padding: '5px 10px', background: 'rgba(16,185,129,0.1)', color: '#10b981', border: '1px solid rgba(16,185,129,0.25)', borderRadius: 5, cursor: 'pointer', fontWeight: 700, fontSize: 10, whiteSpace: 'nowrap' }}>
                     ✓ Applied
                   </button>
                 </div>
@@ -1021,22 +740,10 @@ const LiveMonitorSection: React.FC = () => {
         </div>
       )}
 
-      {/* Footer note */}
       {visible.length > 0 && (
         <div style={{ marginTop: 16, padding: '10px 14px', background: '#0f172a', borderRadius: 8, border: '1px solid #1e293b', fontSize: 10.5, color: '#334155', lineHeight: 1.7 }}>
-          {usingStatic ? (
-            <>
-              <strong style={{ color: '#475569' }}>Curated positions (Apr 2026):</strong> Sourced via Firecrawl from THSTI, ICMR, InStem, NCBS, IIT recruitment portals and IndiaBioscience.
-              Check each institution's website for the latest deadlines and requirements.
-              Click <strong style={{ color: '#10b981' }}>✓ Applied</strong> to remove a listing from your view.
-            </>
-          ) : (
-            <>
-              <strong style={{ color: '#475569' }}>Note:</strong> Results from Google index via Serper (past 3 months). Guides, syllabus pages, admit cards, and non-science roles are filtered out automatically. Listings older than 30 days are purged on each scan.
-              Fellowship portals (Ramalingaswami, INSPIRE, BioCARe, etc.) are excluded here — check the Fellowships tab for those.
-              Click <strong style={{ color: '#10b981' }}>✓ Applied</strong> to permanently remove a listing you have already applied to.
-            </>
-          )}
+          <strong style={{ color: '#475569' }}>Note:</strong> Live results from Google index via Serper (past 60 days) across 80+ Indian research portals. Non-science roles, admit cards, and result pages are filtered automatically. Listings older than 30 days are purged on each scan.
+          Click <strong style={{ color: '#10b981' }}>✓ Applied</strong> to permanently remove a listing.
         </div>
       )}
     </div>
