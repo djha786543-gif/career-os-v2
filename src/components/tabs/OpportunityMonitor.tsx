@@ -212,7 +212,10 @@ export const OpportunityMonitor = () => {
       if (minScore >= 70) params.set('highSuitability', 'true');
 
       const res = await fetch(`${API_BASE}${API_PATH}/jobs?${params}`);
-      if (!res.ok) throw new Error(`Server error: ${res.status}`);
+      if (!res.ok) {
+        if (res.status === 500 || res.status === 503) throw new Error('Backend database is temporarily unavailable. Try again in a few minutes.');
+        throw new Error(`Server error: ${res.status}`);
+      }
       const data = await res.json();
 
       const fetched: Job[] = (Array.isArray(data?.jobs) ? data.jobs : [])
@@ -275,12 +278,21 @@ export const OpportunityMonitor = () => {
   const handleScan = async () => {
     setScanning(true);
     setScanNote('');
+    setError(null);
     try {
-      await fetch(`${API_BASE}${API_PATH}/scan`, {
+      const res = await fetch(`${API_BASE}${API_PATH}/scan`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({}),
       });
+      if (!res.ok) {
+        if (res.status === 500 || res.status === 503) {
+          setError('Scan unavailable — backend database is temporarily offline. Existing results are shown above.');
+          return;
+        }
+        setError(`Scan failed: HTTP ${res.status}`);
+        return;
+      }
       setScanNote('Scan running in background — refreshing in 35s...');
       setTimeout(() => { fetchData(); setScanNote(''); }, 35000);
     } catch (err) {
