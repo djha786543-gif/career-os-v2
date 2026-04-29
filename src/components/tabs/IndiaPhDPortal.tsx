@@ -484,6 +484,207 @@ const CAT_COLOR: Record<string, string> = {
 
 type MonitorCategory = 'all' | 'central-govt' | 'state-psc' | 'academia' | 'aggregator';
 
+// ─── Static / Curated Positions (Firecrawl-sourced, updated 2026-04-28) ──────
+// Fallback data shown when backend DB is unavailable. Update periodically.
+
+const STATIC_JOBS_APRIL_2026: LiveJob[] = [
+  {
+    id: 'thsti-phd-2026',
+    title: 'Ph.D. Program 2026-27 (Monsoon Session)',
+    org_name: 'THSTI — Translational Health Science & Technology Institute',
+    portal_category: 'academia',
+    snippet: 'Applications invited for Ph.D. Monsoon 2026-27 session. Areas: Vaccinology, Infectious Diseases, Cardiovascular Biology, Maternal & Child Health. Ref: THS/AN/01/2026.',
+    apply_url: 'https://recruitment.thsti.in/application/jobs',
+    posted_date: '2026-04-28',
+    source_portal: 'thsti.res.in',
+    relevance_score: 4,
+    is_new: true,
+    detected_at: '2026-04-28T00:00:00Z',
+  },
+  {
+    id: 'thsti-prs-ii-biochemist',
+    title: 'Project Research Scientist-II (Bioanalytical Chemist)',
+    org_name: 'THSTI — Faridabad',
+    portal_category: 'central-govt',
+    snippet: 'Walk-in interview. Ref: THS/RN/01/2026/04-II. PhD in Chemistry / Biochemistry / Life Sciences. Experience in bioanalytical method development. Deadline: 06 May 2026.',
+    apply_url: 'https://thsti.res.in/en/Jobs',
+    posted_date: '2026-04-28',
+    source_portal: 'thsti.res.in',
+    relevance_score: 3,
+    is_new: true,
+    detected_at: '2026-04-28T00:00:00Z',
+  },
+  {
+    id: 'thsti-prs-iii-medical',
+    title: 'Project Research Scientist-III (Medical)',
+    org_name: 'THSTI — Faridabad',
+    portal_category: 'central-govt',
+    snippet: 'Walk-in interview. Ref: THS/RN/04/2026. MBBS/MD/PhD in Medical Sciences. Translational research focus. Deadline: 07 May 2026.',
+    apply_url: 'https://thsti.res.in/en/Jobs',
+    posted_date: '2026-04-28',
+    source_portal: 'thsti.res.in',
+    relevance_score: 3,
+    is_new: true,
+    detected_at: '2026-04-28T00:00:00Z',
+  },
+  {
+    id: 'thsti-sr-research-scientist-clinical',
+    title: 'Senior Research Scientist (Clinical)',
+    org_name: 'THSTI — Faridabad',
+    portal_category: 'central-govt',
+    snippet: 'Walk-in interview. Ref: THS/RN/04/2026. PhD/MD in Clinical Research / Life Sciences. Strong clinical trials background preferred. Deadline: 07 May 2026.',
+    apply_url: 'https://thsti.res.in/en/Jobs',
+    posted_date: '2026-04-28',
+    source_portal: 'thsti.res.in',
+    relevance_score: 3,
+    is_new: true,
+    detected_at: '2026-04-28T00:00:00Z',
+  },
+  {
+    id: 'thsti-prs-ii-organic',
+    title: 'Project Research Scientist-II (Synthetic Organic Chemist)',
+    org_name: 'THSTI — Faridabad',
+    portal_category: 'central-govt',
+    snippet: 'Walk-in interview. Ref: THS/RN/04/2026. PhD in Organic / Medicinal Chemistry. Drug synthesis / translational research. Deadline: 04 May 2026.',
+    apply_url: 'https://thsti.res.in/en/Jobs',
+    posted_date: '2026-04-28',
+    source_portal: 'thsti.res.in',
+    relevance_score: 2,
+    is_new: true,
+    detected_at: '2026-04-28T00:00:00Z',
+  },
+  {
+    id: 'thsti-principal-pa',
+    title: 'Principal Project Associate',
+    org_name: 'THSTI — Faridabad',
+    portal_category: 'central-govt',
+    snippet: 'Walk-in interview. Ref: THS/RN/01/2026/04-I. MSc/PhD in Life Sciences. Research support role in ongoing translational projects. Deadline: 12 May 2026.',
+    apply_url: 'https://thsti.res.in/en/Jobs',
+    posted_date: '2026-04-28',
+    source_portal: 'thsti.res.in',
+    relevance_score: 2,
+    is_new: true,
+    detected_at: '2026-04-28T00:00:00Z',
+  },
+  {
+    id: 'thsti-senior-pa',
+    title: 'Senior Project Associate',
+    org_name: 'THSTI — Faridabad',
+    portal_category: 'central-govt',
+    snippet: 'Walk-in interview. Ref: THS/RN/01/2026/04-I. MSc/PhD in Life Sciences / Biochemistry. Deadline: 12 May 2026.',
+    apply_url: 'https://thsti.res.in/en/Jobs',
+    posted_date: '2026-04-28',
+    source_portal: 'thsti.res.in',
+    relevance_score: 2,
+    is_new: true,
+    detected_at: '2026-04-28T00:00:00Z',
+  },
+  {
+    id: 'thsti-data-manager',
+    title: 'Data Manager',
+    org_name: 'THSTI — Faridabad',
+    portal_category: 'central-govt',
+    snippet: 'Walk-in interview. Ref: THS/RN/04/2026. MSc/MCA + research data management experience. Biomedical / clinical trial data. Deadline: 07 May 2026.',
+    apply_url: 'https://thsti.res.in/en/Jobs',
+    posted_date: '2026-04-28',
+    source_portal: 'thsti.res.in',
+    relevance_score: 1,
+    is_new: true,
+    detected_at: '2026-04-28T00:00:00Z',
+  },
+  {
+    id: 'icmr-recruitment-2026',
+    title: 'ICMR Scientist-B / Research Officer (Various Institutes)',
+    org_name: 'ICMR — Indian Council of Medical Research',
+    portal_category: 'central-govt',
+    snippet: 'Rolling recruitment cycle 2026 for PhD-holders in Life Sciences, Biomedical Sciences, Molecular Biology, Cardiovascular Research. Check recruitment.icmr.org.in for active notifications.',
+    apply_url: 'https://recruitment.icmr.org.in',
+    posted_date: '2026-04-01',
+    source_portal: 'icmr.gov.in',
+    relevance_score: 3,
+    is_new: false,
+    detected_at: '2026-04-01T00:00:00Z',
+  },
+  {
+    id: 'instem-faculty-2026',
+    title: 'Faculty / Research Scientist — Cardiovascular & Stem Cell Biology',
+    org_name: 'InStem — Institute for Stem Cell Science & Regenerative Medicine, Bangalore',
+    portal_category: 'academia',
+    snippet: "Rolling applications for faculty & research scientists. Special interest in cardiovascular biology, stem cell, molecular cardiology. Strong alignment with Pooja's research profile.",
+    apply_url: 'https://instem.res.in/positions',
+    posted_date: '2026-04-01',
+    source_portal: 'instem.res.in',
+    relevance_score: 4,
+    is_new: false,
+    detected_at: '2026-04-01T00:00:00Z',
+  },
+  {
+    id: 'ncbs-faculty-2026',
+    title: 'Faculty Position — Molecular Biology / Cell Biology',
+    org_name: 'NCBS-TIFR — National Centre for Biological Sciences, Bangalore',
+    portal_category: 'academia',
+    snippet: 'Rolling faculty recruitment. Research areas: molecular biology, cell signaling, cardiovascular, genomics. Competitive TIFR pay scale. Apply via ncbs.res.in/jobs.',
+    apply_url: 'https://ncbs.res.in/jobs',
+    posted_date: '2026-04-01',
+    source_portal: 'ncbs.res.in',
+    relevance_score: 3,
+    is_new: false,
+    detected_at: '2026-04-01T00:00:00Z',
+  },
+  {
+    id: 'iit-bombay-biosciences-2026',
+    title: 'Assistant Professor — Biosciences & Bioengineering',
+    org_name: 'IIT Bombay — Department of Biosciences & Bioengineering',
+    portal_category: 'academia',
+    snippet: 'Year-round rolling applications. Areas: molecular biology, biochemistry, cardiovascular biology, systems biology. Level 12 pay + NPA. Apply at bio.iitb.ac.in/positions.',
+    apply_url: 'https://www.iitb.ac.in/en/education/faculty-recruitment',
+    posted_date: '2026-04-01',
+    source_portal: 'iitsystem.ac.in',
+    relevance_score: 3,
+    is_new: false,
+    detected_at: '2026-04-01T00:00:00Z',
+  },
+  {
+    id: 'indiabioscience-live-board',
+    title: 'Multiple PhD-Level Positions — Life Sciences (Live Board)',
+    org_name: 'IndiaBioscience Jobs Board',
+    portal_category: 'aggregator',
+    snippet: 'Daily updated board listing PhD-level research positions across IITs, IISERs, NCBS, ICMR, DBT institutes, CSIR labs across India. Best single source — check weekly.',
+    apply_url: 'https://indiabioscience.org/jobs/qualification:phd',
+    posted_date: '2026-04-28',
+    source_portal: 'indiabioscience.org',
+    relevance_score: 3,
+    is_new: true,
+    detected_at: '2026-04-28T00:00:00Z',
+  },
+  {
+    id: 'serb-ramalingaswami-2026',
+    title: 'DBT Ramalingaswami Re-entry Fellowship 2026',
+    org_name: 'DBT — Department of Biotechnology',
+    portal_category: 'central-govt',
+    snippet: 'Annual fellowship for scientists returning from abroad. PhD in Life Sciences. ₹1,30,000/month + HRA + ₹5L contingency. Oct-Nov 2026 application window opening soon.',
+    apply_url: 'https://dbtindia.gov.in/schemes-programmes/research-fellowships/ramalingaswami-re-entry-fellowship',
+    posted_date: '2026-04-01',
+    source_portal: 'dbtindia.gov.in',
+    relevance_score: 4,
+    is_new: false,
+    detected_at: '2026-04-01T00:00:00Z',
+  },
+  {
+    id: 'wellcome-india-alliance-2026',
+    title: 'DBT/Wellcome India Alliance — Early Career Fellowship 2026',
+    org_name: 'Wellcome India Alliance',
+    portal_category: 'aggregator',
+    snippet: 'Prestigious 5-year fellowship covering salary + research up to ₹2.5 Cr. PhD ≤ 5 years. Cardiovascular, molecular biology strongly encouraged. Jan 2026 window. Check for next call.',
+    apply_url: 'https://wellcomeindialliance.org/fellowships',
+    posted_date: '2026-04-01',
+    source_portal: 'wellcomeindialliance.org',
+    relevance_score: 4,
+    is_new: false,
+    detected_at: '2026-04-01T00:00:00Z',
+  },
+];
+
 interface LiveJob {
   id:               string;
   title:            string;
@@ -524,29 +725,41 @@ const LiveMonitorSection: React.FC = () => {
   const [catFilter,    setCatFilter]    = useState<MonitorCategory>('all');
   const [scanMsg,      setScanMsg]      = useState<string | null>(null);
   const [highOnly,     setHighOnly]     = useState(false);
+  const [usingStatic,  setUsingStatic]  = useState(false);
 
-  // Load cached results on mount
+  // Load cached results on mount; fall back to static data if backend is unavailable
   const loadJobs = useCallback(async () => {
     setLoading(true);
     setError(null);
+    setUsingStatic(false);
     try {
       const base = process.env.NEXT_PUBLIC_API_URL || 'https://career-os-backend-production.up.railway.app/api';
       const resp = await fetch(`${base}/monitor/pooja-india/jobs`);
       if (!resp.ok) {
-        // 404 = not deployed yet — treat silently as empty
-        if (resp.status === 404) { setJobs([]); return; }
+        // 404 = route not deployed yet — use static fallback silently
+        if (resp.status === 404 || resp.status === 500 || resp.status === 503) {
+          setJobs(STATIC_JOBS_APRIL_2026);
+          setUsingStatic(true);
+          return;
+        }
         let detail = `HTTP ${resp.status}`;
         try { const j = await resp.json(); detail = `HTTP ${resp.status} — ${j.error || 'unknown'}`; } catch { /* */ }
         setError(`Load failed: ${detail}`);
-        setJobs([]);
+        setJobs(STATIC_JOBS_APRIL_2026);
+        setUsingStatic(true);
         return;
       }
       const data = await resp.json();
-      setJobs(Array.isArray(data?.jobs) ? data.jobs : []);
+      const liveJobs = Array.isArray(data?.jobs) ? data.jobs : [];
+      // Merge: live jobs first, then any static ones not already present
+      const liveIds = new Set(liveJobs.map((j: LiveJob) => j.id));
+      const merged = [...liveJobs, ...STATIC_JOBS_APRIL_2026.filter(j => !liveIds.has(j.id))];
+      setJobs(merged);
       if (data?.lastScan) setLastScan(data.lastScan);
     } catch (err: any) {
-      setError(`Load failed: ${err?.message || 'Network error'}`);
-      setJobs([]);
+      // Network error — always fall back to static
+      setJobs(STATIC_JOBS_APRIL_2026);
+      setUsingStatic(true);
     } finally {
       setLoading(false);
     }
@@ -572,6 +785,13 @@ const LiveMonitorSection: React.FC = () => {
         if (resp.status === 503) detail = '503 — SERPER_API_KEY not configured on backend.';
         if (resp.status === 500) {
           try { const j = await resp.json(); detail = `500 — ${j.error || resp.statusText}`; } catch { /* */ }
+          // Fall back to static data on 500 (DB unavailable)
+          setJobs(STATIC_JOBS_APRIL_2026);
+          setUsingStatic(true);
+          setScanning(false);
+          setScanMsg('Backend DB unavailable — showing curated positions instead.');
+          setTimeout(() => setScanMsg(null), 5000);
+          return;
         }
         setError(`Scan failed: ${detail}`);
         setScanning(false);
@@ -589,10 +809,12 @@ const LiveMonitorSection: React.FC = () => {
   const handleDismiss = async (id: string) => {
     // Optimistic UI — remove immediately
     setJobs(prev => prev.filter(j => j.id !== id));
-    try {
-      await api.delete(`/monitor/pooja-india/jobs/${id}`);
-    } catch {
-      // Non-fatal — job already removed from UI
+    if (!usingStatic) {
+      try {
+        await api.delete(`/monitor/pooja-india/jobs/${id}`);
+      } catch {
+        // Non-fatal — job already removed from UI
+      }
     }
   };
 
@@ -647,6 +869,18 @@ const LiveMonitorSection: React.FC = () => {
           {scanning ? '↻ Scanning...' : '⚡ Scan Now'}
         </button>
       </div>
+
+      {/* Offline / static fallback banner */}
+      {usingStatic && !scanning && (
+        <div style={{ padding: '8px 14px', background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)', borderRadius: 8, fontSize: 11.5, color: '#fbbf24', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span>📋</span>
+          <span>
+            <strong>Curated positions (Apr 2026)</strong> — Live scan backend is temporarily offline.
+            Showing {STATIC_JOBS_APRIL_2026.length} hand-curated openings from THSTI, ICMR, InStem, NCBS, IITs &amp; aggregators.
+            Click <strong>⚡ Scan Now</strong> to retry when backend is available.
+          </span>
+        </div>
+      )}
 
       {/* Scan message */}
       {scanMsg && (
@@ -790,9 +1024,19 @@ const LiveMonitorSection: React.FC = () => {
       {/* Footer note */}
       {visible.length > 0 && (
         <div style={{ marginTop: 16, padding: '10px 14px', background: '#0f172a', borderRadius: 8, border: '1px solid #1e293b', fontSize: 10.5, color: '#334155', lineHeight: 1.7 }}>
-          <strong style={{ color: '#475569' }}>Note:</strong> Results from Google index via Serper (past 3 months). Guides, syllabus pages, admit cards, and non-science roles are filtered out automatically. Listings older than 30 days are purged on each scan.
-          Fellowship portals (Ramalingaswami, INSPIRE, BioCARe, etc.) are excluded here — check the Fellowships tab for those.
-          Click <strong style={{ color: '#10b981' }}>✓ Applied</strong> to permanently remove a listing you have already applied to.
+          {usingStatic ? (
+            <>
+              <strong style={{ color: '#475569' }}>Curated positions (Apr 2026):</strong> Sourced via Firecrawl from THSTI, ICMR, InStem, NCBS, IIT recruitment portals and IndiaBioscience.
+              Check each institution's website for the latest deadlines and requirements.
+              Click <strong style={{ color: '#10b981' }}>✓ Applied</strong> to remove a listing from your view.
+            </>
+          ) : (
+            <>
+              <strong style={{ color: '#475569' }}>Note:</strong> Results from Google index via Serper (past 3 months). Guides, syllabus pages, admit cards, and non-science roles are filtered out automatically. Listings older than 30 days are purged on each scan.
+              Fellowship portals (Ramalingaswami, INSPIRE, BioCARe, etc.) are excluded here — check the Fellowships tab for those.
+              Click <strong style={{ color: '#10b981' }}>✓ Applied</strong> to permanently remove a listing you have already applied to.
+            </>
+          )}
         </div>
       )}
     </div>
