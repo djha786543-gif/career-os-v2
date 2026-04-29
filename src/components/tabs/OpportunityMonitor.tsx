@@ -572,7 +572,7 @@ export const OpportunityMonitor = () => {
             );
           })}
         </div>
-      ) : (
+      ) : !error ? (
         <div style={{ padding: '40px', textAlign: 'center', background: '#1e293b', borderRadius: '12px', border: '1px dashed #334155', color: '#94a3b8' }}>
           <p style={{ margin: '0 0 8px 0', fontSize: '14px' }}>
             No positions found for <strong>{activeSector}</strong>
@@ -586,7 +586,7 @@ export const OpportunityMonitor = () => {
             }
           </p>
         </div>
-      )}
+      ) : null}
     </div>
   );
 };

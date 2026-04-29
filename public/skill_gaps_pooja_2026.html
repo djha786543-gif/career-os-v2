@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pooja — Career Intelligence Portal 2026</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f4f6f9; color: #1a2332; padding: 24px; max-width: 1100px; margin: 0 auto; }
+
+/* ── Profile Header ── */
+.profile-header { display: flex; align-items: center; gap: 16px; background: linear-gradient(135deg, #0d3b6e 0%, #1a6b8a 100%); color: #fff; border-radius: 14px; padding: 20px 24px; margin-bottom: 24px; }
+.profile-avatar { width: 52px; height: 52px; border-radius: 50%; background: #00acc1; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 700; flex-shrink: 0; border: 2px solid rgba(255,255,255,0.3); }
+.profile-name { font-size: 17px; font-weight: 700; }
+.profile-ctx { font-size: 12px; color: rgba(255,255,255,0.75); margin-top: 3px; }
+.profile-refresh { font-size: 11px; color: rgba(255,255,255,0.5); margin-top: 4px; }
+.profile-badge { margin-left: auto; background: #00acc1; color: #fff; font-size: 10px; padding: 4px 12px; border-radius: 20px; font-weight: 600; white-space: nowrap; }
+
+/* ── Page Header ── */
+.page-header { margin-bottom: 24px; }
+.page-header h1 { font-size: 20px; font-weight: 600; margin-bottom: 5px; color: #1a2332; }
+.page-header p { font-size: 12px; color: #667; line-height: 1.6; }
+
+/* ── Stats Grid ── */
+.stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+.stat-card { background: #fff; border: 1px solid #dde3ec; border-radius: 10px; padding: 16px; }
+.stat-val { font-size: 24px; font-weight: 700; color: #0d3b6e; }
+.stat-lbl { font-size: 11px; color: #889; margin-top: 4px; line-height: 1.4; }
+
+/* ── Visual Dashboard ── */
+.dashboard-title { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.7px; color: #889; margin-bottom: 14px; }
+.charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 28px; }
+.chart-card { background: #fff; border: 1px solid #dde3ec; border-radius: 12px; padding: 20px; }
+.chart-card.full { grid-column: 1 / -1; }
+.chart-title { font-size: 13px; font-weight: 600; margin-bottom: 3px; color: #1a2332; }
+.chart-sub { font-size: 11px; color: #889; margin-bottom: 16px; }
+.chart-wrap { position: relative; }
+.chart-wrap.h380 { height: 340px; }
+.chart-wrap.h260 { height: 260px; }
+
+/* ── Filters ── */
+.filters { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+.filter-btn { border: 1px solid #c8d3e0; background: #fff; color: #667; font-size: 12px; padding: 6px 16px; border-radius: 20px; cursor: pointer; transition: all .15s; }
+.filter-btn.active { background: #0d3b6e; color: #fff; border-color: #0d3b6e; }
+
+/* ── Legend ── */
+.legend { display: flex; gap: 20px; margin-bottom: 20px; flex-wrap: wrap; }
+.leg { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #667; }
+.leg-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+/* ── Gap Cards ── */
+.gap-card { background: #fff; border: 1px solid #dde3ec; border-radius: 12px; padding: 20px; margin-bottom: 14px; }
+.card-header { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 12px; }
+.rank-circle { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; flex-shrink: 0; }
+.card-title-block { flex: 1; }
+.title-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 5px; }
+.card-title { font-size: 15px; font-weight: 600; color: #1a2332; }
+.badge { font-size: 10px; padding: 2px 9px; border-radius: 10px; font-weight: 600; }
+.badge-crit { background: #fde8e8; color: #b91c1c; }
+.badge-high { background: #fef3cd; color: #92600a; }
+.badge-emrg { background: #e0f2fe; color: #0369a1; }
+.badge-futr { background: #ede9fe; color: #6d28d9; }
+.wave-badge { font-size: 10px; padding: 2px 9px; border-radius: 10px; background: #f0f4f8; color: #889; }
+.card-desc { font-size: 12px; color: #556; line-height: 1.75; margin-bottom: 14px; }
+
+/* ── Commentary Box ── */
+.commentary { background: #f0f7ff; border-left: 3px solid #0369a1; border-radius: 0 8px 8px 0; padding: 13px 16px; margin-bottom: 14px; }
+.commentary-lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.7px; color: #0369a1; margin-bottom: 6px; }
+.commentary-text { font-size: 12px; color: #334; line-height: 1.78; }
+.opportunity-note { background: #f0fdf4; border-left: 3px solid #16a34a; border-radius: 0 8px 8px 0; padding: 10px 14px; margin-top: 8px; }
+.opportunity-note-lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: #16a34a; margin-bottom: 4px; }
+.opportunity-note-text { font-size: 11px; color: #166534; line-height: 1.65; }
+
+/* ── Metrics ── */
+.metrics-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 14px; }
+.metric { background: #f4f6f9; border-radius: 8px; padding: 10px 12px; }
+.metric-val { font-size: 13px; font-weight: 600; color: #0d3b6e; }
+.metric-lbl { font-size: 10px; color: #889; margin-top: 2px; }
+
+/* ── Gap Bar ── */
+.gap-bar-wrap { margin-bottom: 14px; }
+.gap-bar-labels { display: flex; justify-content: space-between; font-size: 10px; color: #889; margin-bottom: 4px; }
+.gap-bar-track { height: 7px; background: #e8eef5; border-radius: 4px; position: relative; overflow: visible; margin-bottom: 3px; }
+.gap-bar-demand { position: absolute; left: 0; top: 0; height: 100%; border-radius: 4px; background: linear-gradient(90deg,#0d3b6e,#0ea5e9); }
+.gap-bar-supply { position: absolute; left: 0; top: 0; height: 100%; border-radius: 4px; background: linear-gradient(90deg,#16a34a,#4ade80); opacity: 0.85; }
+.gap-score-chip { display: inline-block; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 10px; background: #dbeafe; color: #1e40af; margin-left: 6px; }
+.gap-bar-note { font-size: 10px; color: #aab; margin-top: 4px; }
+
+/* ── Skills ── */
+.skills-section { margin-bottom: 14px; }
+.section-lbl { font-size: 10px; text-transform: uppercase; letter-spacing: 0.6px; color: #aab; margin-bottom: 6px; }
+.skills-wrap { display: flex; flex-wrap: wrap; gap: 5px; }
+.skill-pill { font-size: 11px; padding: 3px 10px; border-radius: 10px; border: 1px solid #dde3ec; color: #556; background: #fff; }
+
+/* ── Cert Box ── */
+.cert-box { background: #f4f6f9; border-radius: 10px; padding: 14px 16px; }
+.cert-title { font-size: 12px; font-weight: 600; color: #1a2332; margin-bottom: 5px; }
+.cert-desc { font-size: 11px; color: #667; line-height: 1.65; margin-bottom: 10px; }
+.cert-meta { display: flex; flex-wrap: wrap; gap: 16px; }
+.cert-meta-item { font-size: 11px; color: #889; }
+.cert-meta-item strong { color: #1a2332; }
+.forecast-track { height: 4px; background: #dde3ec; border-radius: 2px; margin-top: 10px; overflow: hidden; }
+.forecast-fill { height: 100%; border-radius: 2px; }
+.forecast-note { font-size: 10px; color: #aab; margin-top: 3px; }
+
+.hidden { display: none; }
+.source-note { font-size: 10px; color: #aab; margin-top: 24px; padding-top: 16px; border-top: 1px solid #dde3ec; line-height: 1.7; }
+
+@media (max-width: 700px) {
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .charts-grid { grid-template-columns: 1fr; }
+  .metrics-row { grid-template-columns: repeat(2, 1fr); }
+  .chart-card.full { grid-column: 1; }
+}
+</style>
+</head>
+<body>
+
+<!-- Profile Header -->
+<div class="profile-header">
+  <div class="profile-avatar">PO</div>
+  <div>
+    <div class="profile-name">Pooja's Career Intelligence Portal</div>
+    <div class="profile-ctx">Post-Doctoral Fellow · Lundquist Institute · Michelle Matter Lab</div>
+    <div class="profile-refresh">Last refreshed: April 26, 2026 · Next refresh: May 3, 2026</div>
+  </div>
+  <div class="profile-badge">Biomedical Research &amp; Life Sciences 2026</div>
+</div>
+
+<div class="page-header">
+  <h1>Biomedical Research Career Skill Gap Rankings — 2026 &amp; Forecast</h1>
+  <p>Ranked by gap severity × demand growth × supply shortage. Focused on post-doctoral to career transition pathways across academia, industry, and translational research. Sources: NIH, NSF, BLS, McKinsey Health Institute, Nature Careers, Science Careers Survey, AAMC, FASEB, BioSpace.</p>
+</div>
+
+<div class="stats-grid">
+  <div class="stat-card"><div class="stat-val">72%</div><div class="stat-lbl">of biomedical post-docs report feeling underprepared for industry transition</div></div>
+  <div class="stat-card"><div class="stat-val">$42B</div><div class="stat-lbl">US NIH budget 2026 — record high, but grant success rates remain ~20%</div></div>
+  <div class="stat-card"><div class="stat-val">4.2×</div><div class="stat-lbl">Biotech/pharma hiring growth vs academic faculty opening growth since 2022</div></div>
+  <div class="stat-card"><div class="stat-val">89%</div><div class="stat-lbl">of life science employers report difficulty finding candidates with AI/data skills</div></div>
+</div>
+
+<!-- Visual Dashboard -->
+<div class="dashboard-title">Visual Market Intelligence Dashboard</div>
+<div class="charts-grid">
+
+  <div class="chart-card full">
+    <div class="chart-title">Demand vs Supply Across All 10 Career Skill Gaps</div>
+    <div class="chart-sub">Blue = demand pressure · Green = available supply · Wider gap = higher career opportunity. Scores synthesized from NIH, BLS, Nature Careers, McKinsey Health Institute, BioSpace employer surveys.</div>
+    <div class="chart-wrap h380"><canvas id="overviewChart"></canvas></div>
+  </div>
+
+  <div class="chart-card">
+    <div class="chart-title">Salary Premium by Gap Severity</div>
+    <div class="chart-sub">X = gap score (demand − supply). Y = salary premium over baseline post-doc. Bubble size = 24-month forecast severity.</div>
+    <div class="chart-wrap h260"><canvas id="salaryChart"></canvas></div>
+  </div>
+
+  <div class="chart-card">
+    <div class="chart-title">24-Month Opportunity Forecast — Top 6 Skill Areas</div>
+    <div class="chart-sub">Projected gap severity scores at 0, 12, and 24 months. Upward slope = widening opportunity window.</div>
+    <div class="chart-wrap h260"><canvas id="forecastChart"></canvas></div>
+  </div>
+
+</div>
+
+<div class="filters">
+  <button class="filter-btn active" onclick="filterCards('all',this)">All skill gaps (10)</button>
+  <button class="filter-btn" onclick="filterCards('critical',this)">Critical — act now</button>
+  <button class="filter-btn" onclick="filterCards('high',this)">High — growing fast</button>
+  <button class="filter-btn" onclick="filterCards('emerging',this)">Emerging — build early</button>
+  <button class="filter-btn" onclick="filterCards('academia',this)">Academia Path</button>
+  <button class="filter-btn" onclick="filterCards('industry',this)">Industry / Pharma Path</button>
+  <button class="filter-btn" onclick="filterCards('translational',this)">Translational / Clinical</button>
+</div>
+
+<div class="legend">
+  <div class="leg"><div class="leg-dot" style="background:#b91c1c"></div>Critical — acute demand, very low supply</div>
+  <div class="leg"><div class="leg-dot" style="background:#92600a"></div>High — rapidly growing demand</div>
+  <div class="leg"><div class="leg-dot" style="background:#0369a1"></div>Emerging — build now, reap 2027–2028</div>
+  <div class="leg"><div class="leg-dot" style="background:#6d28d9"></div>Future — early mover advantage</div>
+</div>
+
+<div id="cards-container">
+
+<!-- CARD 1 -->
+<div class="gap-card" data-cats="critical industry academia">
+  <div class="card-header">
+    <div class="rank-circle" style="background:#fde8e8;color:#b91c1c">#1</div>
+    <div class="card-title-block">
+      <div class="title-row">
+        <span class="card-title">AI &amp; Machine Learning for Biomedical Research</span>
+        <span class="badge badge-crit">Critical</span>
+      </div>
+    </div>
+  </div>
+  <div class="card-desc">AI is transforming every layer of biomedical research — from drug target identification (AlphaFold 3, RoseTTAFold) to clinical trial design, patient stratification, and biomarker discovery. 89% of life science employers report difficulty finding candidates with AI/ML skills. NIH's recently launched Bridge2AI program is specifically funding efforts to train biomedical researchers in AI methods. The gap between AI capability and biomedical knowledge exists on both sides — AI engineers without biology depth and biologists without ML capability — creating exceptional demand for researchers who have both.</div>
+  <div class="commentary">
+    <div class="commentary-lbl">Career Commentary</div>
+    <div class="commentary-text">The most important structural insight here: this is not a gap that will be closed by training pure AI engineers in biology or pure biologists in AI. Biomedical AI requires genuine depth in both domains — the biology context shapes which questions are worth asking and how to interpret outputs, while the ML methodology shapes what analyses are even possible. Post-doctoral fellows with a strong research foundation in a specific biomedical area are uniquely positioned to acquire targeted ML skills and become the hybrid practitioners the market cannot find. The NIH Bridge2AI investment signals institutional recognition that this gap is a priority — funding, fellowships, and collaborative grants are increasingly flowing toward researchers who can bridge this divide. Companies like Recursion Pharmaceuticals, Insitro, Aria Genomics, and Novo Nordisk's AI hub are paying $150K–$250K+ for post-doc level biomedical AI researchers.</div>
+    <div class="opportunity-note">
+      <div class="opportunity-note-lbl">Pooja's Opportunity</div>
+      <div class="opportunity-note-text">A focused 3–4 month investment in Python/ML fundamentals (FastAI, scikit-learn, PyTorch for biology) combined with applying ML methods to your existing research data creates a differentiated portfolio. Even one published analysis using ML methods in your domain establishes cross-disciplinary credibility.</div>
+    </div>
+  </div>
+  <div class="metrics-row">
+    <div class="metric"><div class="metric-val">$130K–$260K</div><div class="metric-lbl">Industry salary range (US)</div></div>
+    <div class="metric"><div class="metric-val">+75%</div><div class="metric-lbl">Premium over academic post-doc</div></div>
+    <div class="metric"><div class="metric-val">5–8 months</div><div class="metric-lbl">Avg time to fill (industry)</div></div>
+    <div class="metric"><div class="metric-val">Structural through 2030</div><div class="metric-lbl">Forecast</div></div>
+  </div>
+  <div class="gap-bar-wrap">
+    <div class="gap-bar-labels"><span>Demand: 91/100 <span class="gap-score-chip">Gap: 69pts</span></span><span>Supply: 22/100</span></div>
+    <div class="gap-bar-track"><div class="gap-bar-demand" style="width:91%"></div><div class="gap-bar-supply" style="width:22%"></div></div>
+    <div class="gap-bar-note">Blue = demand pressure · Green = available supply · Gap score = demand minus supply</div>
+  </div>
+  <div class="skills-section">
+    <div class="section-lbl">Key skills required</div>
+    <div class="skills-wrap">
+      <span class="skill-pill">Python for biology</span><span class="skill-pill">ML model training &amp; evaluation</span><span class="skill-pill">Drug target prediction</span><span class="skill-pill">Computer vision (pathology)</span><span class="skill-pill">NLP for biomedical text</span><span class="skill-pill">Responsible AI in health</span><span class="skill-pill">MLOps for research</span>
+    </div>
+  </div>
+  <div class="cert-box">
+    <div class="cert-title">Recommended path: FastAI practical course + Coursera ML Specialization + apply to your research data</div>
+    <div class="cert-desc">FastAI (fast.ai, free) is the fastest practical entry — designed for domain experts learning ML, not software engineers. Andrew Ng's ML Specialization (Coursera, ~$49/month) provides rigorous foundations. The critical differentiator: publish or present one analysis using ML methods on real biomedical data from your lab. A GitHub portfolio with working notebooks is more powerful than any course certificate.</div>
+    <div class="cert-meta">
+      <div class="cert-meta-item">Cost: <strong>$0–$300 (courses); lab data is free</strong></div>
+      <div class="cert-meta-item">Timeline: <strong>3–5 months for portfolio-ready competency</strong></div>
+      <div class="cert-meta-item">Providers: <strong>fast.ai (free); Coursera; Kaggle (free competitions)</strong></div>
+    </div>
+    <div class="forecast-track"><div class="forecast-fill" style="width:93%;background:#0d3b6e"></div></div>
+    <div class="forecast-note">Forecast opportunity severity in 24 months: 93% — structural and growing</div>
+  </div>
+</div>
+
+<!-- CARD 2 -->
+<div class="gap-card" data-cats="critical academia industry">
+  <div class="card-header">
+    <div class="rank-circle" style="background:#fde8e8;color:#b91c1c">#2</div>
+    <div class="card-title-block">
+      <div class="title-row">
+        <span class="card-title">Bioinformatics &amp; Multi-Omics Data Analysis</span>
+        <span class="badge badge-crit">Critical</span>
+      </div>
+    </div>
+  </div>
+  <div class="card-desc">Genomics, transcriptomics, proteomics, metabolomics, and spatial omics datasets are now generated routinely in biomedical labs, but the analytical bottleneck is severe — most wet lab researchers cannot process their own multi-omics data. The global bioinformatics market is growing at 14.9% CAGR. Sequencing costs have fallen 99.99% since 2001, meaning data generation has outpaced analytical capability by orders of magnitude. NIH's All of Us program and the 100K Genomes Project are creating enormous unmet analytical demand.</div>
+  <div class="commentary">
+    <div class="commentary-lbl">Career Commentary</div>
+    <div class="commentary-text">Bioinformatics has a supply paradox: dedicated bioinformaticians are increasingly rare and specialized, while the expectation that biomedical researchers can perform basic bioinformatics analysis has risen dramatically. Research groups that cannot perform their own omics analysis face increasing competition for limited bioinformatics core facility time, review delays, and reviewer demands for analyses the lab cannot produce. This creates two distinct career opportunities: (1) the computational biologist who can lead multi-omics analyses end-to-end, commanding $140K–$200K+ in industry; and (2) the bench researcher who can perform competent bioinformatics analysis on their own data, making them dramatically more productive and publishable. For a post-doc at a research-intensive institution, the latter is the minimum competitive threshold, while the former is a strong industry career pivot.</div>
+    <div class="opportunity-note">
+      <div class="opportunity-note-lbl">Pooja's Opportunity</div>
+      <div class="opportunity-note-text">If your lab generates any sequencing, proteomics, or imaging data, learning to analyze it yourself removes a major bottleneck for your publication pipeline while building a skill that dramatically widens your career options. Bioconductor (R) and Seurat (single-cell) are the most industry-relevant entry points.</div>
+    </div>
+  </div>
+  <div class="metrics-row">
+    <div class="metric"><div class="metric-val">$110K–$210K</div><div class="metric-lbl">Industry salary range (US)</div></div>
+    <div class="metric"><div class="metric-val">+55%</div><div class="metric-lbl">Premium over academic post-doc</div></div>
+    <div class="metric"><div class="metric-val">4–6 months</div><div class="metric-lbl">Avg time to fill</div></div>
+    <div class="metric"><div class="metric-val">Expands with omics adoption</div><div class="metric-lbl">Forecast</div></div>
+  </div>
+  <div class="gap-bar-wrap">
+    <div class="gap-bar-labels"><span>Demand: 88/100 <span class="gap-score-chip">Gap: 53pts</span></span><span>Supply: 35/100</span></div>
+    <div class="gap-bar-track"><div class="gap-bar-demand" style="width:88%"></div><div class="gap-bar-supply" style="width:35%"></div></div>
+    <div class="gap-bar-note">Blue = demand pressure · Green = available supply · Gap score = demand minus supply</div>
+  </div>
+  <div class="skills-section">
+    <div class="section-lbl">Key skills required</div>
+    <div class="skills-wrap">
+      <span class="skill-pill">R / Bioconductor</span><span class="skill-pill">Seurat (scRNA-seq)</span><span class="skill-pill">Bulk RNA-seq analysis</span><span class="skill-pill">GWAS &amp; variant annotation</span><span class="skill-pill">Pathway enrichment</span><span class="skill-pill">Spatial transcriptomics</span><span class="skill-pill">Multi-omics integration</span>
+    </div>
+  </div>
+  <div class="cert-box">
+    <div class="cert-title">Recommended path: Bioconductor workflows + EMBL-EBI online training + DataCamp Bioinformatics</div>
+    <div class="cert-desc">Bioconductor.org provides free, publication-standard workflows for RNA-seq, ChIP-seq, and variant calling. EMBL-EBI's online training courses (free) cover bulk and single-cell RNA-seq end-to-end with real datasets. DataCamp's Bioinformatics track (~$40/month) provides structured progression from R basics to single-cell analysis. Rosalind.info is free and excellent for algorithmic bioinformatics fundamentals.</div>
+    <div class="cert-meta">
+      <div class="cert-meta-item">Cost: <strong>$0–$480/year</strong></div>
+      <div class="cert-meta-item">Timeline: <strong>2–4 months for core competency</strong></div>
+      <div class="cert-meta-item">Providers: <strong>Bioconductor (free); EMBL-EBI (free); DataCamp</strong></div>
+    </div>
+    <div class="forecast-track"><div class="forecast-fill" style="width:88%;background:#0d3b6e"></div></div>
+    <div class="forecast-note">Forecast opportunity severity in 24 months: 88% — expands with multi-omics adoption</div>
+  </div>
+</div>
+
+<!-- CARD 3 -->
+<div class="gap-card" data-cats="critical industry translational">
+  <div class="card-header">
+    <div class="rank-circle" style="background:#fde8e8;color:#b91c1c">#3</div>
+    <div class="card-title-block">
+      <div class="title-row">
+        <span class="card-title">Biotech &amp; Pharma Industry Transition Skills</span>
+        <span class="badge badge-crit">Critical</span>
+      </div>
+    </div>
+  </div>
+  <div class="card-desc">Only 15–20% of post-docs who want an industry career feel prepared for the transition. Biotech and pharma hiring grew 4.2× faster than academic faculty openings since 2022. The skills gap is not scientific — post-docs have deep scientific knowledge — it's operational: GxP environments, regulatory submission structure, project management, cross-functional teamwork, and commercial decision-making. Industry hiring managers consistently cite "industry readiness" as the main differentiator between equally qualified scientific candidates.</div>
+  <div class="commentary">
+    <div class="commentary-lbl">Career Commentary</div>
+    <div class="commentary-text">The biotech/pharma industry is experiencing a talent paradox: there are more post-doctoral scientists than ever, but industry hiring managers report that most candidates are unprepared for the operational environment of drug development. Academic research optimizes for depth, novelty, and independence — industry drug development optimizes for speed, regulatory compliance, cross-functional collaboration, and commercial stage gates. These are not contradictory skills, but they require explicit bridging. The candidates who get hired quickly and advance fastest are those who can demonstrate, not just claim, familiarity with the industry context: they've done an industry internship, taken a regulatory affairs course, read FDA guidance documents, or participated in a technology transfer process. The salary gap is significant: a biotech scientist at the post-doc equivalent level earns $110K–$180K vs. $50K–$65K in academic post-doc stipends.</div>
+    <div class="opportunity-note">
+      <div class="opportunity-note-lbl">Pooja's Opportunity</div>
+      <div class="opportunity-note-text">The Lundquist Institute's clinical research environment provides direct exposure to translational workflows that pure academic post-docs don't have. This is a meaningful credential for industry hiring. Supplementing it with RAC Foundation regulatory science coursework and an industry internship (many pharma companies run fellowship programs for post-docs) creates a compelling transition narrative.</div>
+    </div>
+  </div>
+  <div class="metrics-row">
+    <div class="metric"><div class="metric-val">$110K–$200K</div><div class="metric-lbl">Entry–mid industry salary (US)</div></div>
+    <div class="metric"><div class="metric-val">+120%</div><div class="metric-lbl">Premium over post-doc stipend</div></div>
+    <div class="metric"><div class="metric-val">2–4 months</div><div class="metric-lbl">Avg time to fill (active candidates)</div></div>
+    <div class="metric"><div class="metric-val">Growing with biotech expansion</div><div class="metric-lbl">Forecast</div></div>
+  </div>
+  <div class="gap-bar-wrap">
+    <div class="gap-bar-labels"><span>Demand: 85/100 <span class="gap-score-chip">Gap: 60pts</span></span><span>Supply: 25/100</span></div>
+    <div class="gap-bar-track"><div class="gap-bar-demand" style="width:85%"></div><div class="gap-bar-supply" style="width:25%"></div></div>
+    <div class="gap-bar-note">Blue = demand pressure · Green = available supply · Gap score = demand minus supply</div>
+  </div>
+  <div class="skills-section">
+    <div class="section-lbl">Key skills required</div>
+    <div class="skills-wrap">
+      <span class="skill-pill">GxP / GLP / GMP principles</span><span class="skill-pill">IND/NDA submission structure</span><span class="skill-pill">Project management (Agile, PMBOK)</span><span class="skill-pill">Cross-functional teamwork</span><span class="skill-pill">Stage-gate decision making</span><span class="skill-pill">IP &amp; licensing basics</span><span class="skill-pill">Commercial awareness</span>
+    </div>
+  </div>
+  <div class="cert-box">
+    <div class="cert-title">Recommended path: RAC (Regulatory Affairs Certification) foundation + PMP or CAPM + industry internship</div>
+    <div class="cert-desc">RAPS RAC foundation coursework (~$500–$1,500) provides regulatory science knowledge that directly signals industry readiness. PMP certification (~$555 exam) or entry-level CAPM is widely recognized across pharma project management roles. Most critically: apply to Genentech, Merck, AstraZeneca, or Amgen post-doc-to-industry fellowship programs — these are structured industry rotations that provide direct experience and often convert to full-time roles.</div>
+    <div class="cert-meta">
+      <div class="cert-meta-item">Cost: <strong>$1,000–$2,500 (certs); internship stipend-funded</strong></div>
+      <div class="cert-meta-item">Timeline: <strong>6–9 months including internship</strong></div>
+      <div class="cert-meta-item">Providers: <strong>RAPS; PMI; Pharma post-doc fellowship programs</strong></div>
+    </div>
+    <div class="forecast-track"><div class="forecast-fill" style="width:86%;background:#0d3b6e"></div></div>
+    <div class="forecast-note">Forecast opportunity severity in 24 months: 86% — grows with biotech expansion</div>
+  </div>
+</div>
+
+<!-- CARD 4 -->
+<div class="gap-card" data-cats="high academia translational">
+  <div class="card-header">
+    <div class="rank-circle" style="background:#fef3cd;color:#92600a">#4</div>
+    <div class="card-title-block">
+      <div class="title-row">
+        <span class="card-title">NIH Grant Writing &amp; Independent Funding Strategy</span>
+        <span class="badge badge-high">High</span>
+      </div>
+    </div>
+  </div>
+  <div class="card-desc">NIH's budget reached a record $42B in 2026, but grant success rates remain around 20% — meaning competition has intensified proportionally with funding. K99/R00 pathway-to-independence awards are the most critical fellowship for academic career candidates, but most post-docs receive minimal formal training in grantsmanship. The difference between funded and unfunded grants at comparable scientific quality is almost entirely attributable to grantsmanship skill: significance framing, reviewer psychology, specific aims structure, and revision strategy.</div>
+  <div class="commentary">
+    <div class="commentary-lbl">Career Commentary</div>
+    <div class="commentary-text">Grant writing is the single most important skill for an academic career trajectory, and yet most post-doctoral training programs provide zero formal instruction in it. The NIH K99/R00 (Pathway to Independence) award is specifically designed for post-doctoral fellows and provides both fellowship funding and transition to independent R00 funding — it is the most powerful single document in an academic career for a post-doc. Success rates for K99 are approximately 30–40%, dramatically higher than R01 awards, and recipients have significantly higher faculty appointment rates and earlier tenure-track success. The reviewers are scientists with limited time — clarity, significance, and reviewer-perspective framing matter as much as the science itself. Grant writing workshops have measurable ROI: NIGMS data shows that post-docs who complete formal grantsmanship training submit stronger applications with higher funding rates.</div>
+    <div class="opportunity-note">
+      <div class="opportunity-note-lbl">Pooja's Opportunity</div>
+      <div class="opportunity-note-text">If you are within your K99 eligibility window (within 4 years of PhD, not yet faculty), submitting a K99 application should be a near-term priority. The Lundquist Institute likely has a research development office that provides review and support — use them. Even an unfunded K99 strengthens faculty applications significantly.</div>
+    </div>
+  </div>
+  <div class="metrics-row">
+    <div class="metric"><div class="metric-val">K99: $250K</div><div class="metric-lbl">Award value (2-yr fellowship)</div></div>
+    <div class="metric"><div class="metric-val">R00: $750K</div><div class="metric-lbl">Transition award (3 yrs)</div></div>
+    <div class="metric"><div class="metric-val">~30–40%</div><div class="metric-lbl">K99 success rate (vs ~20% R01)</div></div>
+    <div class="metric"><div class="metric-val">Critical for faculty track</div><div class="metric-lbl">Strategic importance</div></div>
+  </div>
+  <div class="gap-bar-wrap">
+    <div class="gap-bar-labels"><span>Demand: 79/100 <span class="gap-score-chip">Gap: 41pts</span></span><span>Supply: 38/100</span></div>
+    <div class="gap-bar-track"><div class="gap-bar-demand" style="width:79%"></div><div class="gap-bar-supply" style="width:38%"></div></div>
+    <div class="gap-bar-note">Blue = demand pressure · Green = available supply · Gap score = demand minus supply</div>
+  </div>
+  <div class="skills-section">
+    <div class="section-lbl">Key skills required</div>
+    <div class="skills-wrap">
+      <span class="skill-pill">K99/R00 application structure</span><span class="skill-pill">Specific aims framing</span><span class="skill-pill">Significance &amp; innovation narrative</span><span class="skill-pill">Reviewer psychology</span><span class="skill-pill">Budget justification</span><span class="skill-pill">Revision response strategy</span><span class="skill-pill">Biosketch optimization</span>
+    </div>
+  </div>
+  <div class="cert-box">
+    <div class="cert-title">Recommended path: NIH NIAID grant writing workshops + Writing the NIH Grant Proposal (Gerin/Kapelke-Dale) + peer mentorship</div>
+    <div class="cert-desc">NIAID's grant writing workshops and resources are free, NIH-authoritative, and highly practical. "Writing the NIH Grant Proposal" (Gerin &amp; Kapelke-Dale) is widely considered the best single resource. Find a peer grant writing group — reading and critiquing others' drafts is the fastest way to develop reviewer-perspective judgment. Your PI and department mentors should review your specific aims before full submission.</div>
+    <div class="cert-meta">
+      <div class="cert-meta-item">Cost: <strong>$0–$60 (book + free NIH resources)</strong></div>
+      <div class="cert-meta-item">Timeline: <strong>3–6 months for first full application</strong></div>
+      <div class="cert-meta-item">Providers: <strong>NIH NIAID (free); FASEB grant writing programs</strong></div>
+    </div>
+    <div class="forecast-track"><div class="forecast-fill" style="width:82%;background:#92600a"></div></div>
+    <div class="forecast-note">Opportunity importance in 24 months: 82% — competition intensifies with flat success rates</div>
+  </div>
+</div>
+
+<!-- CARD 5 -->
+<div class="gap-card" data-cats="high translational industry">
+  <div class="card-header">
+    <div class="rank-circle" style="background:#fef3cd;color:#92600a">#5</div>
+    <div class="card-title-block">
+      <div class="title-row">
+        <span class="card-title">Clinical Research &amp; Regulatory Affairs</span>
+        <span class="badge badge-high">High</span>
+      </div>
+    </div>
+  </div>
+  <div class="card-desc">The translational gap between basic research and clinical application remains one of the most persistent challenges in biomedical science. Clinical research roles (CRA, CRC, CRS, clinical scientist) are growing at 8.4% CAGR — faster than most biomedical research areas. Regulatory affairs professionals with scientific backgrounds command salaries 40–60% above bench scientist equivalents. FDA's digital health and AI/ML frameworks are creating entirely new regulatory science needs that biomedical researchers are uniquely positioned to fill.</div>
+  <div class="commentary">
+    <div class="commentary-lbl">Career Commentary</div>
+    <div class="commentary-text">The clinical research and regulatory affairs space has a specific scarcity: candidates with genuine scientific depth (PhD-level) who can also navigate the regulatory and operational environment of clinical trials. Most clinical research associates have undergraduate science backgrounds and learn regulatory compliance on the job; most PhD scientists never learn clinical trial operations. This creates a "T-shaped" profile shortage — scientific depth + regulatory breadth — that commands significant salary premium. FDA's evolving guidance on AI/ML in Software as a Medical Device (SaMD), AI-assisted drug development, and real-world evidence is creating a new category of regulatory science specialist that barely existed three years ago. Post-docs with biomedical AI skills who understand FDA regulatory frameworks are among the most sought-after profiles in the life science regulatory market.</div>
+    <div class="opportunity-note">
+      <div class="opportunity-note-lbl">Pooja's Opportunity</div>
+      <div class="opportunity-note-text">The Lundquist Institute's clinical environment provides direct exposure to human subjects research, IRB processes, and clinical data — experience that pure academic post-docs at research universities don't get. This is a meaningful differentiation point for clinical research and regulatory affairs roles. CCRP (Certified Clinical Research Professional) is a widely recognized credential that signals this knowledge formally.</div>
+    </div>
+  </div>
+  <div class="metrics-row">
+    <div class="metric"><div class="metric-val">$90K–$175K</div><div class="metric-lbl">Clinical/regulatory salary range (US)</div></div>
+    <div class="metric"><div class="metric-val">+50%</div><div class="metric-lbl">Premium over bench scientist equivalent</div></div>
+    <div class="metric"><div class="metric-val">8.4% CAGR</div><div class="metric-lbl">Clinical research job growth</div></div>
+    <div class="metric"><div class="metric-val">Regulatory AI surge 2026+</div><div class="metric-lbl">Forecast</div></div>
+  </div>
+  <div class="gap-bar-wrap">
+    <div class="gap-bar-labels"><span>Demand: 82/100 <span class="gap-score-chip">Gap: 54pts</span></span><span>Supply: 28/100</span></div>
+    <div class="gap-bar-track"><div class="gap-bar-demand" style="width:82%"></div><div class="gap-bar-supply" style="width:28%"></div></div>
+    <div class="gap-bar-note">Blue = demand pressure · Green = available supply · Gap score = demand minus supply</div>
+  </div>
+  <div class="skills-section">
+    <div class="section-lbl">Key skills required</div>
+    <div class="skills-wrap">
+      <span class="skill-pill">ICH GCP guidelines</span><span class="skill-pill">IRB protocol design</span><span class="skill-pill">FDA regulatory submissions (IND/NDA)</span><span class="skill-pill">Clinical trial management systems (CTMS)</span><span class="skill-pill">21 CFR Part 11</span><span class="skill-pill">Real-world evidence design</span><span class="skill-pill">FDA SaMD guidance</span>
+    </div>
+  </div>
+  <div class="cert-box">
+    <div class="cert-title">Recommended path: CCRP (SOCRA) + RAPS Regulatory Fundamentals + FDA guidance self-study</div>
+    <div class="cert-desc">CCRP (Certified Clinical Research Professional, SOCRA, ~$475) is the most widely recognized clinical research credential for scientists. RAPS Regulatory Fundamentals course (~$300–$500) provides foundational FDA regulatory science knowledge. FDA's guidance documents on AI/ML in SaMD are free primary sources. Online courses in GCP (many free via Collaborative Institutional Training Initiative, CITI) are required for IRB work and signal compliance readiness.</div>
+    <div class="cert-meta">
+      <div class="cert-meta-item">Cost: <strong>$800–$1,500 total</strong></div>
+      <div class="cert-meta-item">Timeline: <strong>4–6 months</strong></div>
+      <div class="cert-meta-item">Providers: <strong>SOCRA; RAPS; CITI Program (free GCP)</strong></div>
+    </div>
+    <div class="forecast-track"><div class="forecast-fill" style="width:84%;background:#92600a"></div></div>
+    <div class="forecast-note">Opportunity severity in 24 months: 84% — regulatory AI surge begins 2026–2028</div>
+  </div>
+</div>
+
+<!-- CARD 6 -->
+<div class="gap-card" data-cats="high industry translational">
+  <div class="card-header">
+    <div class="rank-circle" style="background:#fef3cd;color:#92600a">#6</div>
+    <div class="card-title-block">
+      <div class="title-row">
+        <span class="card-title">Clinical Trial Design &amp; Advanced Biostatistics</span>
+        <span class="badge badge-high">High</span>
+      </div>
+    </div>
+  </div>
+  <div class="card-desc">FDA's increasing acceptance of adaptive trial designs, Bayesian methods, and real-world evidence has created a specific demand for biostatisticians and trial designers who understand both traditional and modern statistical frameworks. Clinical trials are the most expensive single activity in drug development ($50M–$2B per trial), making statistical efficiency improvements enormously valuable. Adaptive designs can reduce trial duration by 30–40% — but require sophisticated statistical expertise most sites don't have in-house.</div>
+  <div class="commentary">
+    <div class="commentary-lbl">Career Commentary</div>
+    <div class="commentary-text">Biostatistics for clinical trials is distinct from research biostatistics — it operates under regulatory constraints (FDA Statistical Guidance, ICH E9 addendum on estimands), requires pre-specified analysis plans, and must withstand regulatory scrutiny. The shortage is acute at the intersection of modern statistical methods (adaptive designs, Bayesian approaches, survival analysis, mixed effects models) and regulatory expertise. R programming has become the dominant language for FDA-accepted statistical analyses, and proficiency in R, along with familiarity with FDA's statistical review standards, is a combination that commands significant premium. Given AI's emerging role in clinical trial optimization (patient selection, endpoint prediction, drop-out modeling), biostatisticians with both classical and AI/ML expertise are the most sought-after profile in this space.</div>
+  </div>
+  <div class="metrics-row">
+    <div class="metric"><div class="metric-val">$100K–$185K</div><div class="metric-lbl">Biostatistician salary range (US)</div></div>
+    <div class="metric"><div class="metric-val">+45%</div><div class="metric-lbl">Premium over academic equivalent</div></div>
+    <div class="metric"><div class="metric-val">3–5 months</div><div class="metric-lbl">Avg time to fill</div></div>
+    <div class="metric"><div class="metric-val">Regulatory demand: persistent</div><div class="metric-lbl">Forecast</div></div>
+  </div>
+  <div class="gap-bar-wrap">
+    <div class="gap-bar-labels"><span>Demand: 75/100 <span class="gap-score-chip">Gap: 45pts</span></span><span>Supply: 30/100</span></div>
+    <div class="gap-bar-track"><div class="gap-bar-demand" style="width:75%"></div><div class="gap-bar-supply" style="width:30%"></div></div>
+    <div class="gap-bar-note">Blue = demand pressure · Green = available supply · Gap score = demand minus supply</div>
+  </div>
+  <div class="skills-section">
+    <div class="section-lbl">Key skills required</div>
+    <div class="skills-wrap">
+      <span class="skill-pill">Adaptive trial design</span><span class="skill-pill">Bayesian clinical statistics</span><span class="skill-pill">Survival analysis (Cox, KM)</span><span class="skill-pill">Mixed effects models (MMRM)</span><span class="skill-pill">R for regulatory analysis</span><span class="skill-pill">SAS (regulatory standard)</span><span class="skill-pill">ICH E9 estimands</span>
+    </div>
+  </div>
+  <div class="cert-box">
+    <div class="cert-title">Recommended path: PSI/ASA clinical trials statistics courses + R for Clinical Trials (free) + FDA guidance self-study</div>
+    <div class="cert-desc">Pharmaceutical Statistics courses from PSI (Statisticians in the Pharmaceutical Industry) or ASA provide regulatory-context biostatistics training. "R for Clinical Trials" resources and training are increasingly available free via posit.cloud and CRAN task views. FDA's Statistical Guidance on Reporting Results from Studies Evaluating Psychiatric Drugs and ICH E9 addendum are free foundational regulatory documents.</div>
+    <div class="cert-meta">
+      <div class="cert-meta-item">Cost: <strong>$500–$2,000 depending on courses</strong></div>
+      <div class="cert-meta-item">Timeline: <strong>3–6 months</strong></div>
+      <div class="cert-meta-item">Providers: <strong>PSI; ASA; Coursera (free audit); FDA (free guidance)</strong></div>
+    </div>
+    <div class="forecast-track"><div class="forecast-fill" style="width:79%;background:#92600a"></div></div>
+    <div class="forecast-note">Opportunity severity in 24 months: 79% — persistent and regulatory-driven</div>
+  </div>
+</div>
+
+<!-- CARD 7 -->
+<div class="gap-card" data-cats="emerging academia industry">
+  <div class="card-header">
+    <div class="rank-circle" style="background:#e0f2fe;color:#0369a1">#7</div>
+    <div class="card-title-block">
+      <div class="title-row">
+        <span class="card-title">Research Data Management &amp; FAIR Principles</span>
+        <span class="badge badge-emrg">Emerging</span>
+      </div>
+    </div>
+  </div>
+  <div class="card-desc">NIH's Data Management and Sharing Policy (effective January 2023) requires all NIH-funded research to include a formal Data Management and Sharing Plan (DMSP). This created an immediate compliance obligation that most labs are still learning to fulfill. FAIR data principles (Findable, Accessible, Interoperable, Reusable) are increasingly required by journals and funders. The EU's Horizon Europe program mandates FAIR data management for all funded research, creating an international standard.</div>
+  <div class="commentary">
+    <div class="commentary-lbl">Career Commentary</div>
+    <div class="commentary-text">Research data management has transitioned from an optional best practice to a funding compliance requirement. Reviewers at NIH study sections now formally assess the quality of Data Management and Sharing Plans as part of application review. Journals including Nature, Science, and PLOS ALL now require data availability statements, and many require data deposition in domain-specific repositories. Post-docs who understand repository requirements for their data type (GEO for genomics, PDB for protein structures, NCBI for sequences, PhysioNet for clinical data) and can write compelling DMSPs are increasingly valued as both grant collaborators and research staff. As AI and ML analyses of large biomedical datasets become standard, proper data provenance, versioning, and documentation are also prerequisites for reproducibility — a growing concern for high-impact journals.</div>
+  </div>
+  <div class="metrics-row">
+    <div class="metric"><div class="metric-val">$75K–$130K</div><div class="metric-lbl">Research data specialist salary</div></div>
+    <div class="metric"><div class="metric-val">Compliance req.</div><div class="metric-lbl">NIH policy since Jan 2023</div></div>
+    <div class="metric"><div class="metric-val">Rising journal demand</div><div class="metric-lbl">Publication gating</div></div>
+    <div class="metric"><div class="metric-val">Mandatory by 2027</div><div class="metric-lbl">Forecast (most funders)</div></div>
+  </div>
+  <div class="gap-bar-wrap">
+    <div class="gap-bar-labels"><span>Demand: 70/100 <span class="gap-score-chip">Gap: 38pts</span></span><span>Supply: 32/100</span></div>
+    <div class="gap-bar-track"><div class="gap-bar-demand" style="width:70%"></div><div class="gap-bar-supply" style="width:32%"></div></div>
+    <div class="gap-bar-note">Blue = demand pressure · Green = available supply · Gap score = demand minus supply</div>
+  </div>
+  <div class="skills-section">
+    <div class="section-lbl">Key skills required</div>
+    <div class="skills-wrap">
+      <span class="skill-pill">NIH DMSP writing</span><span class="skill-pill">FAIR data principles</span><span class="skill-pill">Domain repository requirements</span><span class="skill-pill">Data provenance &amp; versioning</span><span class="skill-pill">Electronic lab notebooks</span><span class="skill-pill">Open science practices</span><span class="skill-pill">Data use agreements</span>
+    </div>
+  </div>
+  <div class="cert-box">
+    <div class="cert-title">Recommended path: FOSTER Open Science training + NIH DMSP resources + data.gov FAIR training (all free)</div>
+    <div class="cert-desc">FOSTER Open Science (fosteropenscience.eu) provides free, comprehensive FAIR data training with certification. NIH's Office of Data Science Strategy provides free DMSP writing guidance and templates. Your institution's library research data management service almost certainly offers free workshops — contact them before writing your next grant application. GO FAIR (go-fair.org) provides the authoritative FAIR principles documentation and implementation guidance.</div>
+    <div class="cert-meta">
+      <div class="cert-meta-item">Cost: <strong>$0 (all free resources)</strong></div>
+      <div class="cert-meta-item">Timeline: <strong>2–4 weeks for working knowledge</strong></div>
+      <div class="cert-meta-item">Providers: <strong>FOSTER (free); NIH ODSS (free); institutional library</strong></div>
+    </div>
+    <div class="forecast-track"><div class="forecast-fill" style="width:78%;background:#0369a1"></div></div>
+    <div class="forecast-note">Opportunity severity in 24 months: 78% — mandatory for most funded research</div>
+  </div>
+</div>
+
+<!-- CARD 8 -->
+<div class="gap-card" data-cats="emerging academia industry">
+  <div class="card-header">
+    <div class="rank-circle" style="background:#e0f2fe;color:#0369a1">#8</div>
+    <div class="card-title-block">
+      <div class="title-row">
+        <span class="card-title">Science Communication &amp; Public Engagement</span>
+        <span class="badge badge-emrg">Emerging</span>
+      </div>
+    </div>
+  </div>
+  <div class="card-desc">NIH, NSF, and PCORI now include broader impact and public communication criteria in funding review. Scientists who can communicate research findings to lay audiences, policymakers, and media are increasingly valuable across academic, industry, and science policy careers. The post-pandemic period has dramatically elevated expectations for scientific communication competence. Science communication is now also a career path: science writers, patient advocates, policy analysts, and medical communications professionals earn competitive salaries and the supply of PhD-trained communicators is low.</div>
+  <div class="commentary">
+    <div class="commentary-lbl">Career Commentary</div>
+    <div class="commentary-text">The value of science communication extends far beyond public outreach — it sharpens your ability to articulate research significance for grant applications, faculty job talks, and industry presentations. Researchers who can clearly explain the significance of their work to a non-specialist reviewer consistently receive better grant scores for innovation and significance. In industry, the ability to explain scientific concepts to cross-functional teams (regulatory, commercial, manufacturing) is one of the most valuable and rare skills a scientist can have. Science communication training has an unusually high ROI: a few targeted workshops improve grant writing, presentation quality, public engagement capacity, and media interaction skills simultaneously. It also opens an alternative career path in medical communications, science journalism, science policy, and patient advocacy organizations at salaries of $75K–$140K.</div>
+    <div class="opportunity-note">
+      <div class="opportunity-note-lbl">Pooja's Opportunity</div>
+      <div class="opportunity-note-text">AAAS Mass Media Fellowship, Alan Alda Center science communication training, and Coursera's Science Communication Specialization are all post-doc-accessible programs. A blog, Twitter/Bluesky science thread, or one public talk substantially strengthens academic and non-academic applications by demonstrating communication capacity.</div>
+    </div>
+  </div>
+  <div class="metrics-row">
+    <div class="metric"><div class="metric-val">$75K–$140K</div><div class="metric-lbl">Sci comm / policy salary range</div></div>
+    <div class="metric"><div class="metric-val">Grant reviewer</div><div class="metric-lbl">Broader impact now scored</div></div>
+    <div class="metric"><div class="metric-val">Low supply</div><div class="metric-lbl">PhD-trained communicators</div></div>
+    <div class="metric"><div class="metric-val">Growing with open science</div><div class="metric-lbl">Forecast</div></div>
+  </div>
+  <div class="gap-bar-wrap">
+    <div class="gap-bar-labels"><span>Demand: 65/100 <span class="gap-score-chip">Gap: 20pts</span></span><span>Supply: 45/100</span></div>
+    <div class="gap-bar-track"><div class="gap-bar-demand" style="width:65%"></div><div class="gap-bar-supply" style="width:45%"></div></div>
+    <div class="gap-bar-note">Blue = demand pressure · Green = available supply · Gap score = demand minus supply</div>
+  </div>
+  <div class="skills-section">
+    <div class="section-lbl">Key skills required</div>
+    <div class="skills-wrap">
+      <span class="skill-pill">Lay audience translation</span><span class="skill-pill">Media interview skills</span><span class="skill-pill">Data visualization for public</span><span class="skill-pill">Policy brief writing</span><span class="skill-pill">Social media for scientists</span><span class="skill-pill">Narrative science storytelling</span>
+    </div>
+  </div>
+  <div class="cert-box">
+    <div class="cert-title">Recommended path: Alan Alda Center workshops + AAAS Mass Media Fellowship + Coursera Science Communication Specialization</div>
+    <div class="cert-desc">Alan Alda Center for Communicating Science (aldalearning.org) offers online and in-person workshops specifically designed for scientists — widely respected in the research community. AAAS Mass Media Fellowship places scientists in newsrooms for 10 weeks during summer — highly competitive but prestigious. Coursera's Science Communication Specialization (UC Santa Cruz, ~$49/month) covers writing, speaking, and media engagement systematically.</div>
+    <div class="cert-meta">
+      <div class="cert-meta-item">Cost: <strong>$0 (AAAS fellowship, stipend-funded); $49–$500 (courses)</strong></div>
+      <div class="cert-meta-item">Timeline: <strong>Ongoing; immediate improvement with any workshop</strong></div>
+      <div class="cert-meta-item">Providers: <strong>Alan Alda Center; AAAS; Coursera</strong></div>
+    </div>
+    <div class="forecast-track"><div class="forecast-fill" style="width:72%;background:#0369a1"></div></div>
+    <div class="forecast-note">Opportunity severity in 24 months: 72% — strengthens all career paths simultaneously</div>
+  </div>
+</div>
+
+<!-- CARD 9 -->
+<div class="gap-card" data-cats="emerging academia industry translational">
+  <div class="card-header">
+    <div class="rank-circle" style="background:#e0f2fe;color:#0369a1">#9</div>
+    <div class="card-title-block">
+      <div class="title-row">
+        <span class="card-title">Research Leadership &amp; Lab Management</span>
+        <span class="badge badge-emrg">Emerging</span>
+      </div>
+    </div>
+  </div>
+  <div class="card-desc">The transition from trainee to independent investigator or research team lead requires a completely different skill set than conducting experiments. Mentoring, budgeting, lab operations, hiring and firing, conflict resolution, and institutional navigation are skills almost never taught in PhD or post-doc training programs, yet they determine career success as much as scientific output. Nature's 2024 survey found 68% of post-docs feel unprepared for leadership responsibilities expected in their next role — both academic and industry.</div>
+  <div class="commentary">
+    <div class="commentary-lbl">Career Commentary</div>
+    <div class="commentary-text">Research leadership is the invisible bottleneck in post-doctoral career progression. A scientist can be technically exceptional and scientifically creative but fail in a faculty or team lead role because of underdeveloped management competencies — budget management, personnel performance, mentorship structure, and institutional politics. Industry research roles at the scientist → senior scientist → principal scientist progression increasingly gate advancement on management capability: can you lead a project team, manage a CRO relationship, or mentor junior scientists? These skills are rarely developed organically in academic post-doc positions and require deliberate cultivation. The good news: even limited leadership experience (mentoring a rotation student, leading a journal club, managing a sub-project) is valued by employers who understand the post-doc training environment. Formal leadership training (AAAS Leadership Seminar, NIH Broadening Experiences in Scientific Training) provides both skills and a credential that signals readiness.</div>
+  </div>
+  <div class="metrics-row">
+    <div class="metric"><div class="metric-val">$130K–$200K</div><div class="metric-lbl">Team lead / Sr. Scientist salary</div></div>
+    <div class="metric"><div class="metric-val">68%</div><div class="metric-lbl">Post-docs feel unprepared (Nature 2024)</div></div>
+    <div class="metric"><div class="metric-val">Career gating</div><div class="metric-lbl">Required for promotion</div></div>
+    <div class="metric"><div class="metric-val">Critical by year 3–5 post-PhD</div><div class="metric-lbl">Forecast</div></div>
+  </div>
+  <div class="gap-bar-wrap">
+    <div class="gap-bar-labels"><span>Demand: 68/100 <span class="gap-score-chip">Gap: 28pts</span></span><span>Supply: 40/100</span></div>
+    <div class="gap-bar-track"><div class="gap-bar-demand" style="width:68%"></div><div class="gap-bar-supply" style="width:40%"></div></div>
+    <div class="gap-bar-note">Blue = demand pressure · Green = available supply · Gap score = demand minus supply</div>
+  </div>
+  <div class="skills-section">
+    <div class="section-lbl">Key skills required</div>
+    <div class="skills-wrap">
+      <span class="skill-pill">Scientific mentorship</span><span class="skill-pill">Lab budget management</span><span class="skill-pill">Performance conversations</span><span class="skill-pill">Project planning &amp; milestones</span><span class="skill-pill">Conflict resolution</span><span class="skill-pill">Institutional navigation</span><span class="skill-pill">Team culture design</span>
+    </div>
+  </div>
+  <div class="cert-box">
+    <div class="cert-title">Recommended path: AAAS Leadership Seminar + NIH BEST program + deliberate mentorship opportunities</div>
+    <div class="cert-desc">NIH's Broadening Experiences in Scientific Training (BEST) program runs at select institutions and provides structured professional development beyond bench skills — check if Lundquist/Harbor-UCLA participates. AAAS Leadership Seminar for early-career researchers is nationally recognized. Deliberate action: volunteer to mentor a rotation student, undergrad, or junior post-doc. Even informal mentorship documented in your CV signals leadership readiness. PMI's CAPM certification (~$225) provides a formal project management foundation recognized across both academic and industry contexts.</div>
+    <div class="cert-meta">
+      <div class="cert-meta-item">Cost: <strong>$0–$500 (many programs institutionally funded)</strong></div>
+      <div class="cert-meta-item">Timeline: <strong>Ongoing; start immediately</strong></div>
+      <div class="cert-meta-item">Providers: <strong>NIH BEST; AAAS; institutional post-doc office</strong></div>
+    </div>
+    <div class="forecast-track"><div class="forecast-fill" style="width:74%;background:#0369a1"></div></div>
+    <div class="forecast-note">Opportunity severity in 24 months: 74% — career gating at all post-PhD transitions</div>
+  </div>
+</div>
+
+<!-- CARD 10 -->
+<div class="gap-card" data-cats="emerging industry translational">
+  <div class="card-header">
+    <div class="rank-circle" style="background:#ede9fe;color:#6d28d9">#10</div>
+    <div class="card-title-block">
+      <div class="title-row">
+        <span class="card-title">Intellectual Property, Technology Transfer &amp; Research Commercialization</span>
+        <span class="badge badge-futr">Future / Emerging</span>
+      </div>
+    </div>
+  </div>
+  <div class="card-desc">University technology transfer offices are transferring a record volume of research discoveries to industry. The Bayh-Dole Act created the framework for university IP ownership, but most post-docs have no formal understanding of patent law, licensing strategy, or startup formation. NIH's iCorps program and NSF Innovation Corps provide structured commercialization training. Biotech startup formation from academic labs has accelerated: 42% of new biotech startups in 2025 were university spin-outs. Scientists who understand IP strategy are valued by both tech transfer offices and venture-backed startups.</div>
+  <div class="commentary">
+    <div class="commentary-lbl">Career Commentary</div>
+    <div class="commentary-text">IP literacy for scientists is increasingly a competitive differentiator, particularly in biomedical research where discoveries have direct commercial pathways. Most post-docs don't know that any invention they make using federal funds must be disclosed to their institution's technology transfer office — or that a single undisclosed disclosure can invalidate a patent. More practically: scientists who understand the basics of patent claims, freedom-to-operate analysis, and licensing deal structures are significantly more valuable to startups, venture capital-funded companies, and tech transfer offices. NIH's I-Corps program specifically trains biomedical researchers in commercialization thinking by requiring customer discovery interviews — a rigorous process that also improves grant writing and translational research design. This is currently a Wave 3 gap — the acute demand is still forming — but early movers position themselves optimally for the biotech career trajectory that is rapidly displacing the traditional academic pipeline.</div>
+    <div class="opportunity-note">
+      <div class="opportunity-note-lbl">Pooja's Opportunity</div>
+      <div class="opportunity-note-text">Apply to NIH I-Corps or NSF I-Corps in your next cycle — applications are open to post-docs at NIH-funded institutions. Lundquist Institute's Harbor-UCLA affiliation and research environment likely have technology transfer infrastructure — an introductory conversation with the tech transfer office costs nothing and provides context about what IP disclosures look like in practice.</div>
+    </div>
+  </div>
+  <div class="metrics-row">
+    <div class="metric"><div class="metric-val">$110K–$220K</div><div class="metric-lbl">Tech transfer / startup salary</div></div>
+    <div class="metric"><div class="metric-val">42%</div><div class="metric-lbl">New biotechs are university spin-outs (2025)</div></div>
+    <div class="metric"><div class="metric-val">Very low supply</div><div class="metric-lbl">PhD scientists with IP knowledge</div></div>
+    <div class="metric"><div class="metric-val">Growing with biotech acceleration</div><div class="metric-lbl">Forecast</div></div>
+  </div>
+  <div class="gap-bar-wrap">
+    <div class="gap-bar-labels"><span>Demand: 62/100 <span class="gap-score-chip">Gap: 47pts</span></span><span>Supply: 15/100</span></div>
+    <div class="gap-bar-track"><div class="gap-bar-demand" style="width:62%"></div><div class="gap-bar-supply" style="width:15%"></div></div>
+    <div class="gap-bar-note">Blue = demand pressure · Green = available supply · Gap score = demand minus supply</div>
+  </div>
+  <div class="skills-section">
+    <div class="section-lbl">Key skills required</div>
+    <div class="skills-wrap">
+      <span class="skill-pill">Patent basics &amp; prior art</span><span class="skill-pill">Technology disclosure process</span><span class="skill-pill">Licensing deal structures</span><span class="skill-pill">Startup formation basics</span><span class="skill-pill">Customer discovery (I-Corps)</span><span class="skill-pill">VC funding landscape</span><span class="skill-pill">FTO &amp; IP landscape analysis</span>
+    </div>
+  </div>
+  <div class="cert-box">
+    <div class="cert-title">Recommended path: NIH I-Corps + MIT OpenCourseWare IP for Scientists + tech transfer office conversation</div>
+    <div class="cert-desc">NIH I-Corps is a structured 6-week commercialization program for NIH-funded post-docs — application is free and the program provides both training and a network of mentors. MIT OpenCourseWare 15.628 (Patents, Copyrights, and the Law of Intellectual Property) is free and covers fundamentals thoroughly. AUTM (Association of University Technology Managers) provides free introductory resources on technology transfer from the licensing office perspective — understanding their process makes you a better collaborator.</div>
+    <div class="cert-meta">
+      <div class="cert-meta-item">Cost: <strong>$0 (NIH I-Corps + MIT OCW + AUTM resources are all free)</strong></div>
+      <div class="cert-meta-item">Timeline: <strong>6–10 weeks for I-Corps; self-study ongoing</strong></div>
+      <div class="cert-meta-item">Providers: <strong>NIH I-Corps; MIT OpenCourseWare (free); AUTM (free)</strong></div>
+    </div>
+    <div class="forecast-track"><div class="forecast-fill" style="width:76%;background:#6d28d9"></div></div>
+    <div class="forecast-note">Opportunity severity in 24 months: 76% — biotech acceleration opening early mover window</div>
+  </div>
+</div>
+
+</div><!-- /cards-container -->
+
+<div class="source-note">
+  Sources: NIH Budget Office 2026, NSF Science &amp; Engineering Indicators 2025, BLS Occupational Outlook Handbook 2025–2026, McKinsey Health Institute Biomedical Workforce Report, Nature Careers Survey 2024, Science Careers Post-Doc Survey 2025, AAMC Workforce Data, FASEB Research Workforce Policy, BioSpace Life Sciences Salary Report 2026, RAPS Regulatory Professionals Survey, AUTM Technology Transfer Survey. Salary figures are US market benchmarks. Demand/supply scores synthesized from employer survey data, job posting analysis (Lightcast, Burning Glass), and funder priority signals. Portal refreshes weekly every Sunday.
+</div>
+
+<script>
+// ── Filter ──────────────────────────────────────────────
+function filterCards(type, btn) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.gap-card').forEach(card => {
+    const cats = card.getAttribute('data-cats');
+    const show = type === 'all' || cats.includes(type);
+    card.style.display = show ? 'block' : 'none';
+  });
+}
+
+// ── Chart Data ───────────────────────────────────────────
+const LABELS = [
+  'AI/ML for Biomedical Research','Bioinformatics & Multi-Omics',
+  'Biotech/Pharma Transition','NIH Grant Writing',
+  'Clinical Research & Regulatory','Trial Design & Biostatistics',
+  'Research Data Mgmt (FAIR)','Science Communication',
+  'Research Leadership','IP & Tech Transfer'
+];
+const DEMAND = [91,88,85,79,82,75,70,65,68,62];
+const SUPPLY = [22,35,25,38,28,30,32,45,40,15];
+const SALARY_PREMIUM = [75,55,120,35,50,45,25,20,40,60];
+const FORECAST_24M = [93,88,86,82,84,79,78,72,74,76];
+
+// Colors
+const CLR_D = 'rgba(13,59,110,0.80)';
+const CLR_S = 'rgba(22,163,74,0.80)';
+
+// ── Chart 1: Overview Horizontal Bar ─────────────────────
+const ctx1 = document.getElementById('overviewChart').getContext('2d');
+new Chart(ctx1, {
+  type: 'bar',
+  data: {
+    labels: LABELS,
+    datasets: [
+      { label: 'Demand Score', data: DEMAND, backgroundColor: CLR_D, borderRadius: 4 },
+      { label: 'Supply Score', data: SUPPLY, backgroundColor: CLR_S, borderRadius: 4 }
+    ]
+  },
+  options: {
+    indexAxis: 'y',
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { position: 'top', labels: { font: { size: 11 }, padding: 16 } },
+      tooltip: {
+        callbacks: {
+          afterBody: (items) => {
+            const i = items[0].dataIndex;
+            return `Gap Score: ${DEMAND[i] - SUPPLY[i]} pts`;
+          }
+        }
+      }
+    },
+    scales: {
+      x: { max: 100, grid: { color: '#e8eef5' }, ticks: { font: { size: 10 } } },
+      y: { ticks: { font: { size: 10 } }, grid: { display: false } }
+    }
+  }
+});
+
+// ── Chart 2: Salary Premium vs Gap Score (Bubble) ────────
+const ctx2 = document.getElementById('salaryChart').getContext('2d');
+const bubbleData = LABELS.map((lbl, i) => ({
+  x: DEMAND[i] - SUPPLY[i],
+  y: SALARY_PREMIUM[i],
+  r: FORECAST_24M[i] / 11
+}));
+const bColors = LABELS.map((_, i) => {
+  const g = DEMAND[i] - SUPPLY[i];
+  return g >= 60 ? 'rgba(13,59,110,0.75)' : g >= 40 ? 'rgba(3,105,161,0.75)' : 'rgba(109,40,217,0.65)';
+});
+new Chart(ctx2, {
+  type: 'bubble',
+  data: { datasets: [{ label: 'Skill Areas', data: bubbleData, backgroundColor: bColors }] },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: (item) => {
+            const i = item.dataIndex;
+            return [`${LABELS[i]}`, `Gap: ${item.raw.x}pts · Premium: +${item.raw.y}%`, `24m forecast: ${FORECAST_24M[i]}%`];
+          }
+        }
+      }
+    },
+    scales: {
+      x: { title: { display: true, text: 'Gap Score (demand − supply)', font: { size: 10 } }, grid: { color: '#e8eef5' }, ticks: { font: { size: 10 } } },
+      y: { title: { display: true, text: 'Salary Premium % (vs post-doc baseline)', font: { size: 10 } }, grid: { color: '#e8eef5' }, ticks: { font: { size: 10 } } }
+    }
+  }
+});
+
+// ── Chart 3: 24-Month Forecast Trajectory (top 6) ────────
+const ctx3 = document.getElementById('forecastChart').getContext('2d');
+const top6 = [0,1,2,4,3,9];
+const now6 = top6.map(i => Math.round((DEMAND[i] - SUPPLY[i]) / 100 * 80 + 20));
+const growth = [0.13,0.10,0.11,0.12,0.08,0.16];
+const m12 = top6.map((i,j) => Math.round(now6[j] * (1 + growth[j])));
+const m24 = top6.map(i => FORECAST_24M[i]);
+const palette = ['#0d3b6e','#0369a1','#0ea5e9','#16a34a','#92600a','#6d28d9'];
+const top6Labels = top6.map(i => LABELS[i].split(' ').slice(0,3).join(' '));
+new Chart(ctx3, {
+  type: 'line',
+  data: {
+    labels: ['Now (Apr 2026)','12 months','24 months'],
+    datasets: top6.map((i,j) => ({
+      label: top6Labels[j],
+      data: [now6[j], m12[j], m24[j]],
+      borderColor: palette[j],
+      backgroundColor: palette[j] + '18',
+      pointRadius: 5, pointHoverRadius: 7,
+      tension: 0.35, borderWidth: 2, fill: false
+    }))
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: 'bottom', labels: { font: { size: 9 }, padding: 8, boxWidth: 12 } } },
+    scales: {
+      y: { min: 30, max: 100, title: { display: true, text: 'Severity Score', font: { size: 10 } }, grid: { color: '#e8eef5' }, ticks: { font: { size: 10 } } },
+      x: { grid: { display: false }, ticks: { font: { size: 10 } } }
+    }
+  }
+});
+</script>
+<script>
+(function() {
+  function nextWed(from, offsetWeeks) {
+    var d = new Date(from);
+    var day = d.getDay(); // 0=Sun, 3=Wed
+    var diffToLastWed = (day + 4) % 7;
+    var base = new Date(d);
+    base.setDate(d.getDate() - diffToLastWed + offsetWeeks * 7);
+    var m = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    return m[base.getMonth()] + ' ' + base.getDate() + ', ' + base.getFullYear();
+  }
+  var el = document.querySelector('.profile-refresh');
+  if (el) {
+    el.textContent = 'Last refreshed: ' + nextWed(new Date(), 0) + ' \u00B7 Next refresh: ' + nextWed(new Date(), 1);
+  }
+})();
+</script>
+</body>
+</html>

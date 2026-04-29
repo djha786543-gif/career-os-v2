@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DJ — Career Intelligence Portal 2026</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f8f7f4; color: #1a1a1a; padding: 24px; max-width: 1100px; margin: 0 auto; }
+
+/* ── Profile Header ── */
+.profile-header { display: flex; align-items: center; gap: 16px; background: #1a1a1a; color: #fff; border-radius: 14px; padding: 20px 24px; margin-bottom: 24px; }
+.profile-avatar { width: 52px; height: 52px; border-radius: 50%; background: #e24b4a; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 700; flex-shrink: 0; }
+.profile-name { font-size: 17px; font-weight: 700; }
+.profile-ctx { font-size: 12px; color: #aaa; margin-top: 3px; }
+.profile-refresh { font-size: 11px; color: #666; margin-top: 4px; }
+.profile-badge { margin-left: auto; background: #e24b4a; color: #fff; font-size: 10px; padding: 4px 12px; border-radius: 20px; font-weight: 600; white-space: nowrap; }
+
+/* ── Page Header ── */
+.page-header { margin-bottom: 24px; }
+.page-header h1 { font-size: 20px; font-weight: 600; margin-bottom: 5px; }
+.page-header p { font-size: 12px; color: #666; line-height: 1.6; }
+
+/* ── Stats Grid ── */
+.stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+.stat-card { background: #fff; border: 1px solid #e8e6e0; border-radius: 10px; padding: 16px; }
+.stat-val { font-size: 24px; font-weight: 700; color: #1a1a1a; }
+.stat-lbl { font-size: 11px; color: #888; margin-top: 4px; line-height: 1.4; }
+
+/* ── Visual Dashboard ── */
+.dashboard-title { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.7px; color: #888; margin-bottom: 14px; }
+.charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 28px; }
+.chart-card { background: #fff; border: 1px solid #e8e6e0; border-radius: 12px; padding: 20px; }
+.chart-card.full { grid-column: 1 / -1; }
+.chart-title { font-size: 13px; font-weight: 600; margin-bottom: 3px; }
+.chart-sub { font-size: 11px; color: #888; margin-bottom: 16px; }
+.chart-wrap { position: relative; }
+.chart-wrap.h380 { height: 380px; }
+.chart-wrap.h260 { height: 260px; }
+
+/* ── Filters ── */
+.filters { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+.filter-btn { border: 1px solid #ddd; background: #fff; color: #666; font-size: 12px; padding: 6px 16px; border-radius: 20px; cursor: pointer; transition: all .15s; }
+.filter-btn.active { background: #1a1a1a; color: #fff; border-color: #1a1a1a; }
+
+/* ── Legend ── */
+.legend { display: flex; gap: 20px; margin-bottom: 20px; flex-wrap: wrap; }
+.leg { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #666; }
+.leg-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+/* ── Gap Cards ── */
+.gap-card { background: #fff; border: 1px solid #e8e6e0; border-radius: 12px; padding: 20px; margin-bottom: 14px; }
+.card-header { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 12px; }
+.rank-circle { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; flex-shrink: 0; }
+.card-title-block { flex: 1; }
+.title-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 5px; }
+.card-title { font-size: 15px; font-weight: 600; }
+.badge { font-size: 10px; padding: 2px 9px; border-radius: 10px; font-weight: 600; }
+.badge-crit { background: #fde8e8; color: #c0392b; }
+.badge-high { background: #fef3e2; color: #b7770d; }
+.badge-emrg { background: #e8f5e9; color: #2e7d32; }
+.badge-futr { background: #e3f2fd; color: #1565c0; }
+.wave-badge { font-size: 10px; padding: 2px 9px; border-radius: 10px; background: #f5f5f5; color: #888; }
+.card-desc { font-size: 12px; color: #555; line-height: 1.7; margin-bottom: 14px; }
+
+/* ── Commentary Box ── */
+.commentary { background: #f0f5ff; border-left: 3px solid #3b6cf6; border-radius: 0 8px 8px 0; padding: 13px 16px; margin-bottom: 14px; }
+.commentary-lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.7px; color: #3b6cf6; margin-bottom: 6px; }
+.commentary-text { font-size: 12px; color: #444; line-height: 1.75; }
+.strategic-note { background: #f0faf4; border-left: 3px solid #2ecc71; border-radius: 0 8px 8px 0; padding: 10px 14px; margin-top: 8px; }
+.strategic-note-lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: #27ae60; margin-bottom: 4px; }
+.strategic-note-text { font-size: 11px; color: #2d6a4f; line-height: 1.65; }
+
+/* ── Metrics ── */
+.metrics-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 14px; }
+.metric { background: #f8f7f4; border-radius: 8px; padding: 10px 12px; }
+.metric-val { font-size: 13px; font-weight: 600; color: #1a1a1a; }
+.metric-lbl { font-size: 10px; color: #888; margin-top: 2px; }
+
+/* ── Gap Bar ── */
+.gap-bar-wrap { margin-bottom: 14px; }
+.gap-bar-labels { display: flex; justify-content: space-between; font-size: 10px; color: #888; margin-bottom: 4px; }
+.gap-bar-track { height: 7px; background: #f0efeb; border-radius: 4px; position: relative; overflow: visible; margin-bottom: 3px; }
+.gap-bar-demand { position: absolute; left: 0; top: 0; height: 100%; border-radius: 4px; background: linear-gradient(90deg,#e24b4a,#ff7675); }
+.gap-bar-supply { position: absolute; left: 0; top: 0; height: 100%; border-radius: 4px; background: linear-gradient(90deg,#27ae60,#55efc4); opacity: 0.85; }
+.gap-score-chip { display: inline-block; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 10px; background: #fde8e8; color: #c0392b; margin-left: 6px; }
+.gap-bar-note { font-size: 10px; color: #aaa; margin-top: 4px; }
+
+/* ── Skills ── */
+.skills-section { margin-bottom: 14px; }
+.section-lbl { font-size: 10px; text-transform: uppercase; letter-spacing: 0.6px; color: #aaa; margin-bottom: 6px; }
+.skills-wrap { display: flex; flex-wrap: wrap; gap: 5px; }
+.skill-pill { font-size: 11px; padding: 3px 10px; border-radius: 10px; border: 1px solid #e8e6e0; color: #555; background: #fff; }
+
+/* ── Cert Box ── */
+.cert-box { background: #f8f7f4; border-radius: 10px; padding: 14px 16px; }
+.cert-title { font-size: 12px; font-weight: 600; color: #1a1a1a; margin-bottom: 5px; }
+.cert-desc { font-size: 11px; color: #666; line-height: 1.65; margin-bottom: 10px; }
+.cert-meta { display: flex; flex-wrap: wrap; gap: 16px; }
+.cert-meta-item { font-size: 11px; color: #888; }
+.cert-meta-item strong { color: #1a1a1a; }
+.forecast-track { height: 4px; background: #e8e6e0; border-radius: 2px; margin-top: 10px; overflow: hidden; }
+.forecast-fill { height: 100%; border-radius: 2px; }
+.forecast-note { font-size: 10px; color: #aaa; margin-top: 3px; }
+
+.hidden { display: none; }
+.source-note { font-size: 10px; color: #aaa; margin-top: 24px; padding-top: 16px; border-top: 1px solid #e8e6e0; line-height: 1.7; }
+
+@media (max-width: 700px) {
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .charts-grid { grid-template-columns: 1fr; }
+  .metrics-row { grid-template-columns: repeat(2, 1fr); }
+  .chart-card.full { grid-column: 1; }
+}
+</style>
+</head>
+<body>
+
+<!-- Profile Header -->
+<div class="profile-header">
+  <div class="profile-avatar">DJ</div>
+  <div>
+    <div class="profile-name">DJ's Career Intelligence Portal</div>
+    <div class="profile-ctx">IT Auditor · CISA · AAIA · AI Governance &amp; Compliance Focus</div>
+    <div class="profile-refresh">Last refreshed: April 26, 2026 · Next refresh: May 3, 2026</div>
+  </div>
+  <div class="profile-badge">Technology Skill Gaps 2026</div>
+</div>
+
+<div class="page-header">
+  <h1>Technology Skill Gap Rankings — 2026 &amp; Forecast</h1>
+  <p>Ranked by gap severity × demand growth × supply shortage. Includes certification paths, salary data, and strategic analyst commentary. Sources: WEF, McKinsey, ISC2, IAPP, Gartner, IDC, CompTIA, Robert Half, SANS/GIAC, Grant Thornton.</p>
+</div>
+
+<div class="stats-grid">
+  <div class="stat-card"><div class="stat-val">3.2:1</div><div class="stat-lbl">AI demand vs supply ratio globally (2026)</div></div>
+  <div class="stat-card"><div class="stat-val">4.8M</div><div class="stat-lbl">Unfilled cybersecurity roles worldwide</div></div>
+  <div class="stat-card"><div class="stat-val">67%</div><div class="stat-lbl">AI salary premium over traditional software roles</div></div>
+  <div class="stat-card"><div class="stat-val">340K</div><div class="stat-lbl">New AI governance roles from regulation alone</div></div>
+</div>
+
+<!-- Visual Dashboard -->
+<div class="dashboard-title">Visual Market Intelligence Dashboard</div>
+<div class="charts-grid">
+
+  <!-- Chart 1: Full-width demand vs supply overview -->
+  <div class="chart-card full">
+    <div class="chart-title">Demand vs Supply Across All 12 Skill Gaps</div>
+    <div class="chart-sub">Red = demand pressure · Green = available supply · Wider gap = higher urgency. Scores synthesized from ISC2, IDC, Gartner, CompTIA workforce studies.</div>
+    <div class="chart-wrap h380"><canvas id="overviewChart"></canvas></div>
+  </div>
+
+  <!-- Chart 2: Salary landscape -->
+  <div class="chart-card">
+    <div class="chart-title">Salary Premium by Gap Severity</div>
+    <div class="chart-sub">Each bubble = one skill area. X = gap score (demand − supply). Y = salary premium %. Bubble size = 24-month forecast severity.</div>
+    <div class="chart-wrap h260"><canvas id="salaryChart"></canvas></div>
+  </div>
+
+  <!-- Chart 3: 24-month forecast -->
+  <div class="chart-card">
+    <div class="chart-title">24-Month Gap Severity Forecast — Top 6 Areas</div>
+    <div class="chart-sub">Projected gap severity scores at 0, 12, and 24 months. Upward slope = widening crisis window.</div>
+    <div class="chart-wrap h260"><canvas id="forecastChart"></canvas></div>
+  </div>
+
+</div>
+
+<div class="filters">
+  <button class="filter-btn active" onclick="filterCards('all',this)">All gaps (12)</button>
+  <button class="filter-btn" onclick="filterCards('wave1',this)">Wave 1 — Acute now</button>
+  <button class="filter-btn" onclick="filterCards('wave2',this)">Wave 2 — Widening</button>
+  <button class="filter-btn" onclick="filterCards('wave3',this)">Wave 3 — Future</button>
+  <button class="filter-btn" onclick="filterCards('audit',this)">Audit &amp; Governance</button>
+  <button class="filter-btn" onclick="filterCards('security',this)">Security</button>
+  <button class="filter-btn" onclick="filterCards('cloud',this)">Cloud</button>
+</div>
+
+<div class="legend">
+  <div class="leg"><div class="leg-dot" style="background:#e24b4a"></div>Critical — acute now</div>
+  <div class="leg"><div class="leg-dot" style="background:#f39c12"></div>High — rapidly growing</div>
+  <div class="leg"><div class="leg-dot" style="background:#2ecc71"></div>Emerging — widening</div>
+  <div class="leg"><div class="leg-dot" style="background:#3498db"></div>Future — early mover window</div>
+</div>
+
+<div id="cards-container">
+
+<!-- CARD 1 -->
+<div class="gap-card" data-wave="wave1" data-cats="audit governance">
+  <div class="card-header">
+    <div class="rank-circle" style="background:#fde8e8;color:#c0392b">#1</div>
+    <div class="card-title-block">
+      <div class="title-row">
+        <span class="card-title">AI Governance, Risk &amp; Compliance</span>
+        <span class="badge badge-crit">Critical</span>
+        <span class="wave-badge">Wave 1</span>
+      </div>
+    </div>
+  </div>
+  <div class="card-desc">Regulatory requirements alone create 340,000 new specialized roles globally. Only 1.5% of organizations have adequate governance headcount. Demand grew 1,257% YoY — 9× faster than AI engineering. $158,750 median salary; $273,032 for senior roles. Every multinational with EU exposure is in panic-hiring mode ahead of August 2026 EU AI Act enforcement.</div>
+  <div class="commentary">
+    <div class="commentary-lbl">Analyst Commentary</div>
+    <div class="commentary-text">The EU AI Act's August 2026 enforcement deadline is creating a demand cliff, not a gradual slope. Organizations that have been in "wait and see" mode are now simultaneously panic-hiring — this is the peak pressure window, which historically lasts 18–24 months before the supply side expands to meet demand. The critical structural insight: AI governance is being treated as an audit discipline, not an engineering discipline, which means hiring managers are actively looking for credentials like CISA + ISO 42001 LA — exactly the combination you are building. Fewer than 150 certified ISO 42001 Lead Auditors exist globally as of Q1 2026; supply constraint is structural, not cyclical.</div>
+    <div class="strategic-note">
+      <div class="strategic-note-lbl">DJ's Strategic Position</div>
+      <div class="strategic-note-text">Your CISA + ISACA alignment maps directly onto the ISO 42001 audit methodology. Completing ISO 42001 LA + AIGP before Q3 2026 puts you inside the acute hiring window at its widest point. This is your highest-ROI credential move in 2026.</div>
+    </div>
+  </div>
+  <div class="metrics-row">
+    <div class="metric"><div class="metric-val">$135K–$273K</div><div class="metric-lbl">Salary range (US)</div></div>
+    <div class="metric"><div class="metric-val">+56%</div><div class="metric-lbl">Salary premium</div></div>
+    <div class="metric"><div class="metric-val">5–7 months</div><div class="metric-lbl">Avg time to fill</div></div>
+    <div class="metric"><div class="metric-val">Widening through 2028</div><div class="metric-lbl">Forecast</div></div>
+  </div>
+  <div class="gap-bar-wrap">
+    <div class="gap-bar-labels"><span>Demand: 94/100 <span class="gap-score-chip">Gap: 76pts</span></span><span>Supply: 18/100</span></div>
+    <div class="gap-bar-track"><div class="gap-bar-demand" style="width:94%"></div><div class="gap-bar-supply" style="width:18%"></div></div>
+    <div class="gap-bar-note">Red = demand pressure · Green = available supply · Gap score = demand minus supply</div>
+  </div>
+  <div class="skills-section">
+    <div class="section-lbl">Key skills required</div>
+    <div class="skills-wrap">
+      <span class="skill-pill">AI risk assessment</span><span class="skill-pill">NIST AI RMF</span><span class="skill-pill">ISO 42001</span><span class="skill-pill">EU AI Act</span><span class="skill-pill">Control design</span><span class="skill-pill">Audit methodology</span><span class="skill-pill">Policy operationalization</span>
+    </div>
+  </div>
+  <div class="cert-box">
+    <div class="cert-title">Recommended cert path: ISO 42001 Lead Auditor + IAPP AIGP</div>
+    <div class="cert-desc">ISO 42001 LA (PECB eLearning) credentials you to audit AI management systems internationally. AIGP covers EU AI Act, NIST RMF, and global regulatory landscape. Together they cover the international standard + regulatory compliance dimension. AIGP updated Feb 2026 to explicitly include agentic AI governance.</div>
+    <div class="cert-meta">
+      <div class="cert-meta-item">Cost: <strong>~$1,650 total</strong></div>
+      <div class="cert-meta-item">Timeline: <strong>14–18 weeks</strong></div>
+      <div class="cert-meta-item">Providers: <strong>PECB, IAPP</strong></div>
+    </div>
+    <div class="forecast-track"><div class="forecast-fill" style="width:92%;background:#e24b4a"></div></div>
+    <div class="forecast-note">Forecast severity in 24 months: 92% — widening</div>
+  </div>
+</div>
+
+<!-- CARD 2 -->
+<div class="gap-card" data-wave="wave1" data-cats="audit governance security">
+  <div class="card-header">
+    <div class="rank-circle" style="background:#fde8e8;color:#c0392b">#2</div>
+    <div class="card-title-block">
+      <div class="title-row">
+        <span class="card-title">AI Security &amp; Red Teaming</span>
+        <span class="badge badge-crit">Critical</span>
+        <span class="wave-badge">Wave 1</span>
+      </div>
+    </div>
+  </div>
+  <div class="card-desc">For the first time in SANS/GIAC 2026 report, skills gaps overtook headcount shortages as the top workforce challenge. 27% of organizations suffered security breaches directly caused by workforce capability gaps. LLM security demand score: 87/100; supply below 28/100. Salaries for technical AI security roles reach $180K–$210K.</div>
+  <div class="commentary">
+    <div class="commentary-lbl">Analyst Commentary</div>
+    <div class="commentary-text">SANS finding that skills gaps have overtaken headcount shortages for the first time is a structural inflection point. Organizations cannot simply recruit their way out — the qualified talent pool at the required depth genuinely does not exist at scale. This creates unusual hiring leverage: employers are willing to credential-bridge candidates who demonstrate hands-on methodology competency, not just theoretical knowledge. LLM-specific security is young enough that 3–4 months of focused study in OWASP LLM Top 10, MITRE ATLAS, and prompt injection methodology can place a candidate in the top 5% of applicants for AI security audit roles. The 27% breach-rate statistic from workforce gaps is creating board-level urgency that bypasses normal budget cycles — these roles are being approved in weeks, not quarters.</div>
+  </div>
+  <div class="metrics-row">
+    <div class="metric"><div class="metric-val">$140K–$210K</div><div class="metric-lbl">Salary range (US)</div></div>
+    <div class="metric"><div class="metric-val">+45%</div><div class="metric-lbl">Salary premium</div></div>
+    <div class="metric"><div class="metric-val">89 days</div><div class="metric-lbl">Avg time to fill</div></div>
+    <div class="metric"><div class="metric-val">Severe through 2030</div><div class="metric-lbl">Forecast</div></div>
+  </div>
+  <div class="gap-bar-wrap">
+    <div class="gap-bar-labels"><span>Demand: 87/100 <span class="gap-score-chip">Gap: 59pts</span></span><span>Supply: 28/100</span></div>
+    <div class="gap-bar-track"><div class="gap-bar-demand" style="width:87%"></div><div class="gap-bar-supply" style="width:28%"></div></div>
+    <div class="gap-bar-note">Red = demand pressure · Green = available supply · Gap score = demand minus supply</div>
+  </div>
+  <div class="skills-section">
+    <div class="section-lbl">Key skills required</div>
+    <div class="skills-wrap">
+      <span class="skill-pill">OWASP LLM Top 10</span><span class="skill-pill">Prompt injection</span><span class="skill-pill">MITRE ATLAS</span><span class="skill-pill">LLM threat modeling</span><span class="skill-pill">Adversarial ML</span><span class="skill-pill">Red team methodology</span><span class="skill-pill">AI supply chain security</span>
+    </div>
+  </div>
+  <div class="cert-box">
+    <div class="cert-title">Recommended cert path: CAISP + HackTheBox AI Red Teamer (CAI)</div>
+    <div class="cert-desc">CAISP (Practical DevSecOps, $999) is a practical 6-hour exam covering the full AI security lifecycle — OWASP LLM Top 10, MITRE ATLAS, DevSecOps for AI, compliance. HTB AI Red Teamer (~$310) is Google SAIF-aligned, hands-on lab-based, genuinely the best price-to-signal ratio in AI security credentials right now.</div>
+    <div class="cert-meta">
+      <div class="cert-meta-item">Cost: <strong>~$1,309 total</strong></div>
+      <div class="cert-meta-item">Timeline: <strong>12–16 weeks</strong></div>
+      <div class="cert-meta-item">Providers: <strong>Practical DevSecOps, HackTheBox</strong></div>
+    </div>
+    <div class="forecast-track"><div class="forecast-fill" style="width:88%;background:#e24b4a"></div></div>
+    <div class="forecast-note">Forecast severity in 24 months: 88% — remains critical</div>
+  </div>
+</div>
+
+<!-- CARD 3 -->
+<div class="gap-card" data-wave="wave1" data-cats="audit governance">
+  <div class="card-header">
+    <div class="rank-circle" style="background:#fde8e8;color:#c0392b">#3</div>
+    <div class="card-title-block">
+      <div class="title-row">
+        <span class="card-title">Agentic AI Oversight &amp; Control</span>
+        <span class="badge badge-crit">Critical</span>
+        <span class="wave-badge">Wave 1 → Wave 2</span>
+      </div>
+    </div>
+  </div>
+  <div class="card-desc">McKinsey added agentic AI governance as a brand-new dimension in their 2026 AI Trust survey — only 30% of organizations are ready. 40% of enterprise apps will embed task-level agents by end of 2026. Organizations can no longer concern themselves only with AI systems saying the wrong thing — they must contend with systems doing the wrong thing. 1,445% surge in multi-agent system inquiries from Q1 2024 to Q2 2025 (Gartner).</div>
+  <div class="commentary">
+    <div class="commentary-lbl">Analyst Commentary</div>
+    <div class="commentary-text">This is the gap that barely existed as a formal category 18 months ago and is now consuming boardroom attention. McKinsey had to add agentic governance as a new survey dimension — indicating that even the leading consulting frameworks haven't caught up yet. The 1,445% surge in multi-agent inquiries is not a bubble metric; it reflects enterprises discovering they have deployed autonomous systems making consequential decisions with no audit trail, no rollback mechanism, and no accountability framework. The audit challenge is conceptually new: unlike a traditional IT control that either works or doesn't, an agent can be operating correctly while producing wrong outcomes due to environmental inputs. Whoever publishes a structured audit framework for agentic systems before the major standards bodies do (projected Q2 2027) will be cited as a reference practitioner for years.</div>
+    <div class="strategic-note">
+      <div class="strategic-note-lbl">DJ's Strategic Position</div>
+      <div class="strategic-note-text">AIGP v2.1 (Feb 2026) is the only formal body of knowledge that explicitly covers agentic governance. You would be among approximately 100 practitioners globally to hold AIGP + a published agentic audit framework. This combination is more powerful than either alone.</div>
+    </div>
+  </div>
+  <div class="metrics-row">
+    <div class="metric"><div class="metric-val">$145K–$240K</div><div class="metric-lbl">Salary range (US)</div></div>
+    <div class="metric"><div class="metric-val">+52%</div><div class="metric-lbl">Salary premium</div></div>
+    <div class="metric"><div class="metric-val">6–8 months</div><div class="metric-lbl">Avg time to fill</div></div>
+    <div class="metric"><div class="metric-val">Becomes #1 gap by 2027</div><div class="metric-lbl">Forecast</div></div>
+  </div>
+  <div class="gap-bar-wrap">
+    <div class="gap-bar-labels"><span>Demand: 85/100 <span class="gap-score-chip">Gap: 73pts</span></span><span>Supply: 12/100</span></div>
+    <div class="gap-bar-track"><div class="gap-bar-demand" style="width:85%"></div><div class="gap-bar-supply" style="width:12%"></div></div>
+    <div class="gap-bar-note">Red = demand pressure · Green = available supply · Gap score = demand minus supply</div>
+  </div>
+  <div class="skills-section">
+    <div class="section-lbl">Key skills required</div>
+    <div class="skills-wrap">
+      <span class="skill-pill">Multi-agent audit frameworks</span><span class="skill-pill">Agent identity controls</span><span class="skill-pill">Tool authorization auditing</span><span class="skill-pill">Human-in-the-loop design</span><span class="skill-pill">Non-deterministic system testing</span><span class="skill-pill">Observability &amp; audit trails</span>
+    </div>
+  </div>
+  <div class="cert-box">
+    <div class="cert-title">Recommended cert path: IAPP AIGP v2.1 + original thought leadership publication</div>
+    <div class="cert-desc">AIGP updated Feb 2026 to explicitly cover agentic AI — the only formal body of knowledge that does. Pair with publishing an original "Auditing Agentic AI Systems" framework document. The cert + published framework is more powerful than either alone. You'd be among fewer than 100 people globally to have done both.</div>
+    <div class="cert-meta">
+      <div class="cert-meta-item">Cost: <strong>~$849 (join IAPP $200 + member exam $649)</strong></div>
+      <div class="cert-meta-item">Timeline: <strong>8–10 weeks</strong></div>
+      <div class="cert-meta-item">Providers: <strong>IAPP</strong></div>
+    </div>
+    <div class="forecast-track"><div class="forecast-fill" style="width:96%;background:#e24b4a"></div></div>
+    <div class="forecast-note">Forecast severity in 24 months: 96% — becoming the #1 gap</div>
+  </div>
+</div>
+
+<!-- CARD 4 -->
+<div class="gap-card" data-wave="wave1" data-cats="security cloud">
+  <div class="card-header">
+    <div class="rank-circle" style="background:#fde8e8;color:#c0392b">#4</div>
+    <div class="card-title-block">
+      <div class="title-row">
+        <span class="card-title">Cloud Security</span>
+        <span class="badge badge-crit">Critical</span>
+        <span class="wave-badge">Wave 1</span>
+      </div>
+    </div>
+  </div>
+  <div class="card-desc">Cloud computing grew 17.9% in 2025. Multi-cloud expertise commands 22% salary premium over single-cloud skills. CCSP consistently ranks top 5 highest-paying certs globally. 90% of security teams report cloud security skill gaps. Cloud security is the foundational layer beneath AI security — every AI system runs in cloud infrastructure.</div>
+  <div class="commentary">
+    <div class="commentary-lbl">Analyst Commentary</div>
+    <div class="commentary-text">Cloud security has a structural peculiarity that most skill gap analyses miss: the 17.9% cloud growth rate means the attack surface is expanding faster than the defender talent base, even if the number of practitioners were growing linearly — which it isn't. CCSP's documented +$25K salary premium is one of the best-evidenced ROI claims in the certification landscape, supported by ISC2's own compensation survey over multiple years. The vendor-neutral architecture coverage (AWS + Azure + GCP) is increasingly valued over single-cloud certifications as enterprises operate in hybrid environments. This gap also functions as a force multiplier: cloud security knowledge enhances the quality of AI governance, NHI governance, and TPRM analysis simultaneously.</div>
+    <div class="strategic-note">
+      <div class="strategic-note-lbl">DJ's Strategic Position</div>
+      <div class="strategic-note-text">CISA substitutes for 1 of the required 5 years of experience for CCSP — meaning you qualify sooner than most candidates. If cost is a near-term barrier, CCAK (~$350, 8 weeks) provides cloud audit foundation as a stepping stone while you prepare for CCSP.</div>
+    </div>
+  </div>
+  <div class="metrics-row">
+    <div class="metric"><div class="metric-val">$130K–$220K</div><div class="metric-lbl">Salary range (US)</div></div>
+    <div class="metric"><div class="metric-val">+38%</div><div class="metric-lbl">Salary premium</div></div>
+    <div class="metric"><div class="metric-val">68 days</div><div class="metric-lbl">Avg time to fill</div></div>
+    <div class="metric"><div class="metric-val">Persistent through 2029</div><div class="metric-lbl">Forecast</div></div>
+  </div>
+  <div class="gap-bar-wrap">
+    <div class="gap-bar-labels"><span>Demand: 88/100 <span class="gap-score-chip">Gap: 56pts</span></span><span>Supply: 32/100</span></div>
+    <div class="gap-bar-track"><div class="gap-bar-demand" style="width:88%"></div><div class="gap-bar-supply" style="width:32%"></div></div>
+    <div class="gap-bar-note">Red = demand pressure · Green = available supply · Gap score = demand minus supply</div>
+  </div>
+  <div class="skills-section">
+    <div class="section-lbl">Key skills required</div>
+    <div class="skills-wrap">
+      <span class="skill-pill">Multi-cloud architecture</span><span class="skill-pill">Cloud IAM</span><span class="skill-pill">Zero-trust design</span><span class="skill-pill">Container security</span><span class="skill-pill">FedRAMP / SOC2</span><span class="skill-pill">Cloud-native SIEM</span><span class="skill-pill">FinOps governance</span>
+    </div>
+  </div>
+  <div class="cert-box">
+    <div class="cert-title">Recommended cert path: CCSP (ISC2) — the gold standard</div>
+    <div class="cert-desc">Vendor-neutral, covers AWS + Azure + GCP architecturally. Carries a documented +$25K salary premium. Requires 5 years experience (CISA substitutes for 1 year — you qualify). If cost is a barrier short-term, CCAK (~$350) provides cloud audit foundation in 8 weeks as a stepping stone.</div>
+    <div class="cert-meta">
+      <div class="cert-meta-item">Cost: <strong>$599 exam + $800–$1,500 prep materials</strong></div>
+      <div class="cert-meta-item">Timeline: <strong>4–6 months</strong></div>
+      <div class="cert-meta-item">Providers: <strong>ISC2; prep via Official CBK, Thor Teaches</strong></div>
+    </div>
+    <div class="forecast-track"><div class="forecast-fill" style="width:80%;background:#e24b4a"></div></div>
+    <div class="forecast-note">Forecast severity in 24 months: 80% — persistent shortage</div>
+  </div>
+</div>
+
+<!-- CARD 5 -->
+<div class="gap-card" data-wave="wave2" data-cats="audit governance security">
+  <div class="card-header">
+    <div class="rank-circle" style="background:#fef3e2;color:#b7770d">#5</div>
+    <div class="card-title-block">
+      <div class="title-row">
+        <span class="card-title">Non-Human Identity (NHI) Governance</span>
+        <span class="badge badge-high">High</span>
+        <span class="wave-badge">Wave 2</span>
+      </div>
+    </div>
+  </div>
+  <div class="card-desc">Machine identities now outnumber human employees 82:1. Only 8% of organizations are highly confident their IAM tools handle AI agent identities. 22% have any formal policies for creating or removing AI identities. Maps directly onto your SOX ITGC Access Controls background — this is Access Controls audit extended to autonomous systems.</div>
+  <div class="commentary">
+    <div class="commentary-lbl">Analyst Commentary</div>
+    <div class="commentary-text">The 82:1 machine-to-human identity ratio is not a projection — it is the current measured state at most Fortune 500 organizations, and the ratio is growing as AI agents multiply. IAM tools were architected for human provisioning cycles (hire, role change, termination) and fundamentally cannot handle the ephemeral, rapidly-scaling nature of AI agent identities. The 8% confidence figure from CyberArk's 2026 survey is striking because it includes organizations with mature PAM programs — even best-in-class PAM deployments weren't designed for NHI governance. This gap will move from Wave 2 to Wave 1 urgency when the first major regulatory enforcement action is taken against an organization that failed to govern an AI agent identity — likely within 18 months.</div>
+    <div class="strategic-note">
+      <div class="strategic-note-lbl">DJ's Strategic Position</div>
+      <div class="strategic-note-text">Your SOX ITGC access controls experience is the direct conceptual foundation for NHI governance — you already understand the lifecycle, entitlement review, and least-privilege disciplines. The extension is applying them to non-human accounts. This is among the lowest-barrier pivots available given your existing background.</div>
+    </div>
+  </div>
+  <div class="metrics-row">
+    <div class="metric"><div class="metric-val">$125K–$195K</div><div class="metric-lbl">Salary range (US)</div></div>
+    <div class="metric"><div class="metric-val">+35%</div><div class="metric-lbl">Salary premium</div></div>
+    <div class="metric"><div class="metric-val">5–6 months</div><div class="metric-lbl">Avg time to fill</div></div>
+    <div class="metric"><div class="metric-val">Mainstream crisis by 2027</div><div class="metric-lbl">Forecast</div></div>
+  </div>
+  <div class="gap-bar-wrap">
+    <div class="gap-bar-labels"><span>Demand: 78/100 <span class="gap-score-chip">Gap: 63pts</span></span><span>Supply: 15/100</span></div>
+    <div class="gap-bar-track"><div class="gap-bar-demand" style="width:78%"></div><div class="gap-bar-supply" style="width:15%"></div></div>
+    <div class="gap-bar-note">Red = demand pressure · Green = available supply · Gap score = demand minus supply</div>
+  </div>
+  <div class="skills-section">
+    <div class="section-lbl">Key skills required</div>
+    <div class="skills-wrap">
+      <span class="skill-pill">AI agent entitlement reviews</span><span class="skill-pill">API key lifecycle management</span><span class="skill-pill">OAuth for autonomous systems</span><span class="skill-pill">Least-privilege for agents</span><span class="skill-pill">Machine identity inventory</span><span class="skill-pill">PAM for NHI</span>
+    </div>
+  </div>
+  <div class="cert-box">
+    <div class="cert-title">Recommended cert path: CyberArk Defender + ISC2 NHI guidance (free)</div>
+    <div class="cert-desc">CyberArk dominates PAM and is building NHI management tooling. CyberArk Defender cert signals identity governance depth in the platform most enterprises already use. ISC2 published NHI guidance in April 2026 — read it as free foundation before any cert spend. SailPoint IdentityNow cert is the IGA-side alternative.</div>
+    <div class="cert-meta">
+      <div class="cert-meta-item">Cost: <strong>$300–$500</strong></div>
+      <div class="cert-meta-item">Timeline: <strong>4–6 weeks</strong></div>
+      <div class="cert-meta-item">Providers: <strong>CyberArk, SailPoint; ISC2 (free guidance)</strong></div>
+    </div>
+    <div class="forecast-track"><div class="forecast-fill" style="width:85%;background:#f39c12"></div></div>
+    <div class="forecast-note">Forecast severity in 24 months: 85% — widening rapidly</div>
+  </div>
+</div>
+
+<!-- CARD 6 -->
+<div class="gap-card" data-wave="wave2" data-cats="audit governance">
+  <div class="card-header">
+    <div class="rank-circle" style="background:#fef3e2;color:#b7770d">#6</div>
+    <div class="card-title-block">
+      <div class="title-row">
+        <span class="card-title">Third-Party AI Risk Management</span>
+        <span class="badge badge-high">High</span>
+        <span class="wave-badge">Wave 2</span>
+      </div>
+    </div>
+  </div>
+  <div class="card-desc">Every enterprise using Salesforce Einstein, Microsoft Copilot, ServiceNow AI, or Workday AI has inherited AI risk it hasn't formally assessed. EU AI Act creates explicit third-party AI supply chain obligations for high-risk systems. Traditional TPRM questionnaires weren't built for probabilistic, drifting, hallucinating AI systems.</div>
+  <div class="commentary">
+    <div class="commentary-lbl">Analyst Commentary</div>
+    <div class="commentary-text">TPRM has existed as a discipline for over a decade, but almost none of its methodology was designed for AI systems. The core challenge: traditional vendor assessment asks "does this system work as specified?" — AI systems don't have a fixed specification, they have a probabilistic behavior distribution that changes as the model retrains. Questions about hallucination rates, training data provenance, model drift thresholds, and adversarial robustness don't appear in any existing vendor assessment questionnaire in widespread use. EU AI Act Article 28 creates explicit obligations on deployers of third-party AI systems — requiring organizations to formally assess and document AI risks in their supply chain, regardless of whether they built the AI themselves. This is the compliance mandate that will force TPRM methodology to evolve.</div>
+    <div class="strategic-note">
+      <div class="strategic-note-lbl">DJ's Strategic Position</div>
+      <div class="strategic-note-text">Your SOX ITGC vendor management background is the foundation — you understand the assessment lifecycle, contract controls, and audit evidence requirements. The required augmentation is AI-specific assessment methodology on top of an existing skill, not a discipline from scratch.</div>
+    </div>
+  </div>
+  <div class="metrics-row">
+    <div class="metric"><div class="metric-val">$120K–$180K</div><div class="metric-lbl">Salary range (US)</div></div>
+    <div class="metric"><div class="metric-val">+30%</div><div class="metric-lbl">Salary premium</div></div>
+    <div class="metric"><div class="metric-val">4–5 months</div><div class="metric-lbl">Avg time to fill</div></div>
+    <div class="metric"><div class="metric-val">Regulatory surge 2026–2028</div><div class="metric-lbl">Forecast</div></div>
+  </div>
+  <div class="gap-bar-wrap">
+    <div class="gap-bar-labels"><span>Demand: 75/100 <span class="gap-score-chip">Gap: 53pts</span></span><span>Supply: 22/100</span></div>
+    <div class="gap-bar-track"><div class="gap-bar-demand" style="width:75%"></div><div class="gap-bar-supply" style="width:22%"></div></div>
+    <div class="gap-bar-note">Red = demand pressure · Green = available supply · Gap score = demand minus supply</div>
+  </div>
+  <div class="skills-section">
+    <div class="section-lbl">Key skills required</div>
+    <div class="skills-wrap">
+      <span class="skill-pill">AI vendor due diligence</span><span class="skill-pill">Model transparency clauses</span><span class="skill-pill">Hallucination liability SLAs</span><span class="skill-pill">AI SBOM / AIBOM auditing</span><span class="skill-pill">CSA STAR for AI</span><span class="skill-pill">EU AI Act supply chain</span>
+    </div>
+  </div>
+  <div class="cert-box">
+    <div class="cert-title">Recommended cert path: CTPRP (Shared Assessments) + NIST AI RMF 3rd-party module</div>
+    <div class="cert-desc">CTPRP is the dominant TPRM credential (~$695). Pair with free NIST AI RMF Appendix on third-party AI risk. Optionally add CSA STAR Auditor training (~$500–$800) for the cloud AI vendor assurance layer. Your existing SOX ITGC vendor management experience is the foundation — this is a direct extension.</div>
+    <div class="cert-meta">
+      <div class="cert-meta-item">Cost: <strong>$695–$1,500</strong></div>
+      <div class="cert-meta-item">Timeline: <strong>8–12 weeks</strong></div>
+      <div class="cert-meta-item">Providers: <strong>Shared Assessments; CSA for STAR Auditor</strong></div>
+    </div>
+    <div class="forecast-track"><div class="forecast-fill" style="width:82%;background:#f39c12"></div></div>
+    <div class="forecast-note">Forecast severity in 24 months: 82% — regulatory mandate incoming</div>
+  </div>
+</div>
+
+<!-- CARD 7 -->
+<div class="gap-card" data-wave="wave2" data-cats="audit governance">
+  <div class="card-header">
+    <div class="rank-circle" style="background:#fef3e2;color:#b7770d">#7</div>
+    <div class="card-title-block">
+      <div class="title-row">
+        <span class="card-title">Data Governance for AI</span>
+        <span class="badge badge-high">High</span>
+        <span class="wave-badge">Wave 2</span>
+      </div>
+    </div>
+  </div>
+  <div class="card-desc">EU AI Act Annex IV mandates training data documentation for high-risk AI systems. Dataset traceability is now a required operational capability, not a reporting feature. AI models are only as good as their training data — and almost nobody can audit the full data lineage layer. Data poisoning is now a top-3 enterprise AI security concern.</div>
+  <div class="commentary">
+    <div class="commentary-lbl">Analyst Commentary</div>
+    <div class="commentary-text">EU AI Act Annex IV converts data lineage from a best practice into a legal audit obligation for high-risk AI systems — creating an immediate demand for practitioners who can verify training data provenance, labeling methodology, and bias assessment. The audit challenge is that most organizations genuinely cannot answer basic questions about their AI training data: where it came from, who labeled it, what consent was obtained, or how skewed it may be. Data poisoning entering the top-3 AI security concerns means data governance failures now have both compliance and security dimensions simultaneously. The absence of a widely recognized credential in this specific intersection (data governance + AI audit) makes original practitioner frameworks particularly valuable here.</div>
+  </div>
+  <div class="metrics-row">
+    <div class="metric"><div class="metric-val">$115K–$175K</div><div class="metric-lbl">Salary range (US)</div></div>
+    <div class="metric"><div class="metric-val">+28%</div><div class="metric-lbl">Salary premium</div></div>
+    <div class="metric"><div class="metric-val">4–5 months</div><div class="metric-lbl">Avg time to fill</div></div>
+    <div class="metric"><div class="metric-val">Existential by 2028</div><div class="metric-lbl">Forecast</div></div>
+  </div>
+  <div class="gap-bar-wrap">
+    <div class="gap-bar-labels"><span>Demand: 72/100 <span class="gap-score-chip">Gap: 47pts</span></span><span>Supply: 25/100</span></div>
+    <div class="gap-bar-track"><div class="gap-bar-demand" style="width:72%"></div><div class="gap-bar-supply" style="width:25%"></div></div>
+    <div class="gap-bar-note">Red = demand pressure · Green = available supply · Gap score = demand minus supply</div>
+  </div>
+  <div class="skills-section">
+    <div class="section-lbl">Key skills required</div>
+    <div class="skills-wrap">
+      <span class="skill-pill">Data lineage auditing</span><span class="skill-pill">Training data bias assessment</span><span class="skill-pill">Data poisoning review</span><span class="skill-pill">AI dataset access controls</span><span class="skill-pill">EU AI Act Annex IV</span><span class="skill-pill">CSRD AI data reporting</span>
+    </div>
+  </div>
+  <div class="cert-box">
+    <div class="cert-title">Recommended cert path: DAMA CDMP + EU AI Act Annex IV self-study</div>
+    <div class="cert-desc">DAMA CDMP (Certified Data Management Professional, ~$400) is the foundational data governance credential globally recognized. Pair with free EU AI Act Annex IV technical documentation requirements and IEA AI Energy Report. No cert covers the full AI data governance intersection yet — publishing an original framework positions you early.</div>
+    <div class="cert-meta">
+      <div class="cert-meta-item">Cost: <strong>$400–$600</strong></div>
+      <div class="cert-meta-item">Timeline: <strong>8–10 weeks</strong></div>
+      <div class="cert-meta-item">Providers: <strong>DAMA International; EU AI Act (free primary source)</strong></div>
+    </div>
+    <div class="forecast-track"><div class="forecast-fill" style="width:78%;background:#f39c12"></div></div>
+    <div class="forecast-note">Forecast severity in 24 months: 78% — growing with AI deployment scale</div>
+  </div>
+</div>
+
+<!-- CARD 8 -->
+<div class="gap-card" data-wave="wave1" data-cats="audit governance cloud">
+  <div class="card-header">
+    <div class="rank-circle" style="background:#fef3e2;color:#b7770d">#8</div>
+    <div class="card-title-block">
+      <div class="title-row">
+        <span class="card-title">GRC Platform Implementation (ServiceNow)</span>
+        <span class="badge badge-high">High</span>
+        <span class="wave-badge">Wave 1</span>
+      </div>
+    </div>
+  </div>
+  <div class="card-desc">Fortune 500 GRC runs on ServiceNow. CIS-RC certified professionals are chronically undersupplied. AI Control Tower — launched Q1 2026 — brings AI governance directly inside the platform enterprises already pay millions for. Big 4 ServiceNow practices (EY, Deloitte, PwC, Accenture) are actively hiring. Highest-paying IT audit adjacent credential available.</div>
+  <div class="commentary">
+    <div class="commentary-lbl">Analyst Commentary</div>
+    <div class="commentary-text">ServiceNow's market position creates a durable demand floor: once an organization has standardized on it for GRC, the switching cost is prohibitive, creating long-lived demand for practitioners who understand its implementation. AI Control Tower (Q1 2026) is significant because it directly embeds AI governance workflows into the platform enterprises already trust and budget for — meaning AI governance hiring is now being funded from existing ServiceNow budgets, not net-new AI governance budgets. Big 4 practices building ServiceNow competency centers are creating a second demand channel beyond direct enterprise hiring: advisory and implementation roles that compound the shortage. The chronic undersupply of CIS-RC practitioners — despite the cert being several years old — indicates a structural supply constraint, not a temporary one.</div>
+  </div>
+  <div class="metrics-row">
+    <div class="metric"><div class="metric-val">$140K–$250K</div><div class="metric-lbl">Salary range (US)</div></div>
+    <div class="metric"><div class="metric-val">+42%</div><div class="metric-lbl">Salary premium</div></div>
+    <div class="metric"><div class="metric-val">3–4 months</div><div class="metric-lbl">Avg time to fill</div></div>
+    <div class="metric"><div class="metric-val">Growing with AI Control Tower</div><div class="metric-lbl">Forecast</div></div>
+  </div>
+  <div class="gap-bar-wrap">
+    <div class="gap-bar-labels"><span>Demand: 80/100 <span class="gap-score-chip">Gap: 50pts</span></span><span>Supply: 30/100</span></div>
+    <div class="gap-bar-track"><div class="gap-bar-demand" style="width:80%"></div><div class="gap-bar-supply" style="width:30%"></div></div>
+    <div class="gap-bar-note">Red = demand pressure · Green = available supply · Gap score = demand minus supply</div>
+  </div>
+  <div class="skills-section">
+    <div class="section-lbl">Key skills required</div>
+    <div class="skills-wrap">
+      <span class="skill-pill">ServiceNow IRM/GRC</span><span class="skill-pill">CCM configuration</span><span class="skill-pill">AI Control Tower</span><span class="skill-pill">Continuous monitoring</span><span class="skill-pill">Policy lifecycle mgmt</span><span class="skill-pill">Risk register design</span>
+    </div>
+  </div>
+  <div class="cert-box">
+    <div class="cert-title">Recommended cert path: ServiceNow CSA → CIS-RC (ideally employer-funded)</div>
+    <div class="cert-desc">CSA (Certified System Administrator) is the prerequisite (~$300 exam, 2–3 weeks). CIS-RC is the Risk &amp; Compliance Implementation Specialist (~$450 exam). Training is expensive self-funded ($2K–$3K) but almost always employer-sponsored — negotiate it into your next role offer. Free PDI instance + Now Learning (800+ courses) for hands-on practice.</div>
+    <div class="cert-meta">
+      <div class="cert-meta-item">Cost: <strong>$750 exams (training ideally employer-funded)</strong></div>
+      <div class="cert-meta-item">Timeline: <strong>3–4 months</strong></div>
+      <div class="cert-meta-item">Providers: <strong>ServiceNow; Now Learning platform</strong></div>
+    </div>
+    <div class="forecast-track"><div class="forecast-fill" style="width:75%;background:#f39c12"></div></div>
+    <div class="forecast-note">Forecast severity in 24 months: 75% — stable high demand</div>
+  </div>
+</div>
+
+<!-- CARD 9 -->
+<div class="gap-card" data-wave="wave2" data-cats="audit governance">
+  <div class="card-header">
+    <div class="rank-circle" style="background:#e8f5e9;color:#2e7d32">#9</div>
+    <div class="card-title-block">
+      <div class="title-row">
+        <span class="card-title">AI Explainability (XAI) Auditing</span>
+        <span class="badge badge-emrg">Emerging</span>
+        <span class="wave-badge">Wave 2</span>
+      </div>
+    </div>
+  </div>
+  <div class="card-desc">EU AI Act transparency articles require explanations for high-risk AI decisions. CFPB adverse action notices, EEOC algorithmic bias guidance, and FDA AI/ML guidance all independently mandate explainability. The specific audit skill — verifying that an explanation is mathematically faithful to what the model actually did — is almost nonexistent. Supply score is among the lowest of all 12 gaps.</div>
+  <div class="commentary">
+    <div class="commentary-lbl">Analyst Commentary</div>
+    <div class="commentary-text">XAI auditing has an unusual supply constraint: it sits at the intersection of technical ML knowledge (understanding SHAP/LIME outputs) and audit methodology (structuring evidence, testing control effectiveness) — and most practitioners have one but not both. ML engineers understand the technical side but lack audit structure; auditors understand the methodology but cannot evaluate mathematical faithfulness. The regulatory convergence from four independent directions (EU AI Act, CFPB, EEOC, FDA) without a unified audit standard creates an opening for a practitioner who can bridge both sides. Note that the demand score of 65 is lower than other cards, but the supply score of 10 is among the lowest of the 12 gaps — making the gap ratio (6.5:1) one of the most extreme in this analysis. Whoever publishes the first comprehensive XAI audit practitioner framework will be cited by regulators and practitioners for years.</div>
+  </div>
+  <div class="metrics-row">
+    <div class="metric"><div class="metric-val">$120K–$185K</div><div class="metric-lbl">Salary range (US)</div></div>
+    <div class="metric"><div class="metric-val">+32%</div><div class="metric-lbl">Salary premium</div></div>
+    <div class="metric"><div class="metric-val">5–6 months</div><div class="metric-lbl">Avg time to fill</div></div>
+    <div class="metric"><div class="metric-val">Regulatory surge 2026–2028</div><div class="metric-lbl">Forecast</div></div>
+  </div>
+  <div class="gap-bar-wrap">
+    <div class="gap-bar-labels"><span>Demand: 65/100 <span class="gap-score-chip">Gap: 55pts</span></span><span>Supply: 10/100</span></div>
+    <div class="gap-bar-track"><div class="gap-bar-demand" style="width:65%"></div><div class="gap-bar-supply" style="width:10%"></div></div>
+    <div class="gap-bar-note">Red = demand pressure · Green = available supply · Gap score = demand minus supply</div>
+  </div>
+  <div class="skills-section">
+    <div class="section-lbl">Key skills required</div>
+    <div class="skills-wrap">
+      <span class="skill-pill">SHAP / LIME evaluation</span><span class="skill-pill">Explanation faithfulness testing</span><span class="skill-pill">EU AI Act Art. 13-14</span><span class="skill-pill">Adverse action notice review</span><span class="skill-pill">Algorithmic fairness auditing</span><span class="skill-pill">Model card assessment</span>
+    </div>
+  </div>
+  <div class="cert-box">
+    <div class="cert-title">Recommended cert path: DeepLearning.AI interpretable ML + FICO free XAI training</div>
+    <div class="cert-desc">DL.AI Plus membership (~$150/3 months) — complete interpretable ML, AI safety, and fairness short courses (Andrew Ng). FICO's XAI training is free, domain-specific (credit/financial services), and highly credible. IIA AI auditing guide (~$100 IIA members) provides audit methodology overlay. No formal cert exists — publish a practitioner guide to become the early authority.</div>
+    <div class="cert-meta">
+      <div class="cert-meta-item">Cost: <strong>$150–$300</strong></div>
+      <div class="cert-meta-item">Timeline: <strong>4–6 weeks</strong></div>
+      <div class="cert-meta-item">Providers: <strong>DeepLearning.AI; FICO (free); IIA</strong></div>
+    </div>
+    <div class="forecast-track"><div class="forecast-fill" style="width:80%;background:#2ecc71"></div></div>
+    <div class="forecast-note">Forecast severity in 24 months: 80% — regulatory mandate-driven surge</div>
+  </div>
+</div>
+
+<!-- CARD 10 -->
+<div class="gap-card" data-wave="wave2" data-cats="audit governance">
+  <div class="card-header">
+    <div class="rank-circle" style="background:#e8f5e9;color:#2e7d32">#10</div>
+    <div class="card-title-block">
+      <div class="title-row">
+        <span class="card-title">Continuous Compliance Architecture</span>
+        <span class="badge badge-emrg">Emerging</span>
+        <span class="wave-badge">Wave 2</span>
+      </div>
+    </div>
+  </div>
+  <div class="card-desc">The era of annual compliance is ending. Real-time attestations, machine-readable policies, and automated compliance monitoring are now expected by regulators. Designing continuous AI control monitoring is a fundamental methodology shift — the entire SOX periodic testing model doesn't map to AI systems that drift and retrain continuously. Almost nobody is credentialed in this yet.</div>
+  <div class="commentary">
+    <div class="commentary-lbl">Analyst Commentary</div>
+    <div class="commentary-text">Annual compliance was designed for systems with fixed configurations — audit once, certify for a year. AI systems retrain continuously, drift from their baseline behavior, and make decisions differently than they did six months ago. Applying a once-a-year audit cadence to these systems is like auditing a river by testing the water once annually. This creates a new discipline: continuous AI control monitoring architecture — designing systems that can attest to AI model behavior in near-real-time, detect drift from governance thresholds, and trigger automated remediation or human escalation. No major credentialing body has codified this yet. The ISACA and IIA are actively developing curriculum in this area (projected Q3 2027). Whoever publishes a practitioner methodology before that certification lands will be cited as the reference framework.</div>
+  </div>
+  <div class="metrics-row">
+    <div class="metric"><div class="metric-val">$130K–$200K</div><div class="metric-lbl">Salary range (US)</div></div>
+    <div class="metric"><div class="metric-val">+38%</div><div class="metric-lbl">Salary premium</div></div>
+    <div class="metric"><div class="metric-val">5–7 months</div><div class="metric-lbl">Avg time to fill</div></div>
+    <div class="metric"><div class="metric-val">Standard practice by 2027</div><div class="metric-lbl">Forecast</div></div>
+  </div>
+  <div class="gap-bar-wrap">
+    <div class="gap-bar-labels"><span>Demand: 68/100 <span class="gap-score-chip">Gap: 54pts</span></span><span>Supply: 14/100</span></div>
+    <div class="gap-bar-track"><div class="gap-bar-demand" style="width:68%"></div><div class="gap-bar-supply" style="width:14%"></div></div>
+    <div class="gap-bar-note">Red = demand pressure · Green = available supply · Gap score = demand minus supply</div>
+  </div>
+  <div class="skills-section">
+    <div class="section-lbl">Key skills required</div>
+    <div class="skills-wrap">
+      <span class="skill-pill">Continuous control monitoring</span><span class="skill-pill">Machine-readable policies</span><span class="skill-pill">Real-time attestation</span><span class="skill-pill">AI model drift alerting</span><span class="skill-pill">Automated evidence collection</span><span class="skill-pill">MLOps governance integration</span>
+    </div>
+  </div>
+  <div class="cert-box">
+    <div class="cert-title">Recommended cert path: IIA Hands-On AI Auditing + publish original methodology</div>
+    <div class="cert-desc">No formal cert covers continuous compliance architecture yet — this is a first-mover thought leadership opportunity. IIA Hands-On AI Auditing cert (~$800) is the closest formal credential. Publish "Continuous AI Control Monitoring — a practitioner methodology" document. ISACA and IIA are building toward this; whoever publishes first gets cited.</div>
+    <div class="cert-meta">
+      <div class="cert-meta-item">Cost: <strong>$0 (thought leadership) + $800 (IIA AI Auditing cert)</strong></div>
+      <div class="cert-meta-item">Timeline: <strong>8–12 weeks</strong></div>
+      <div class="cert-meta-item">Providers: <strong>IIA for formal cert; original publication for authority</strong></div>
+    </div>
+    <div class="forecast-track"><div class="forecast-fill" style="width:83%;background:#2ecc71"></div></div>
+    <div class="forecast-note">Forecast severity in 24 months: 83% — becomes standard practice expectation</div>
+  </div>
+</div>
+
+<!-- CARD 11 -->
+<div class="gap-card" data-wave="wave2" data-cats="audit governance">
+  <div class="card-header">
+    <div class="rank-circle" style="background:#e8f5e9;color:#2e7d32">#11</div>
+    <div class="card-title-block">
+      <div class="title-row">
+        <span class="card-title">Green / Sustainable AI Auditing</span>
+        <span class="badge badge-emrg">Emerging</span>
+        <span class="wave-badge">Wave 2</span>
+      </div>
+    </div>
+  </div>
+  <div class="card-desc">EU AI Act Annex XI requires energy consumption documentation for general purpose AI models. CSRD mandates AI compute carbon disclosure from large enterprises. ILO projects 14 million new green economy jobs by 2026 at +18% salary premium. The ESG + AI governance intersection is almost completely uncovered — combining AAIA + GRI credential creates a profile that essentially doesn't exist yet.</div>
+  <div class="commentary">
+    <div class="commentary-lbl">Analyst Commentary</div>
+    <div class="commentary-text">CSRD mandating AI compute carbon disclosure from large enterprises is not a distant regulatory obligation — it applies to financial year 2025 data for companies already in scope, meaning the audit requirement exists now. The challenge: no audit standard specifically covers AI energy consumption reporting, and general sustainability auditors have no AI knowledge while AI auditors have no sustainability reporting knowledge. EU AI Act Annex XI requiring energy consumption documentation for GPAI models adds a second mandatory disclosure layer from a different regulatory instrument. This dual-mandate structure (CSRD + EU AI Act) creates a compliance bottleneck that practitioners with both audit domains can uniquely resolve. Combining AAIA + GRI creates a profile that essentially doesn't exist in the current practitioner market.</div>
+  </div>
+  <div class="metrics-row">
+    <div class="metric"><div class="metric-val">$115K–$175K</div><div class="metric-lbl">Salary range (US)</div></div>
+    <div class="metric"><div class="metric-val">+28%</div><div class="metric-lbl">Salary premium</div></div>
+    <div class="metric"><div class="metric-val">4–5 months</div><div class="metric-lbl">Avg time to fill</div></div>
+    <div class="metric"><div class="metric-val">Regulatory mandate by 2027</div><div class="metric-lbl">Forecast</div></div>
+  </div>
+  <div class="gap-bar-wrap">
+    <div class="gap-bar-labels"><span>Demand: 55/100 <span class="gap-score-chip">Gap: 47pts</span></span><span>Supply: 8/100</span></div>
+    <div class="gap-bar-track"><div class="gap-bar-demand" style="width:55%"></div><div class="gap-bar-supply" style="width:8%"></div></div>
+    <div class="gap-bar-note">Red = demand pressure · Green = available supply · Gap score = demand minus supply</div>
+  </div>
+  <div class="skills-section">
+    <div class="section-lbl">Key skills required</div>
+    <div class="skills-wrap">
+      <span class="skill-pill">AI energy consumption auditing</span><span class="skill-pill">CSRD AI reporting</span><span class="skill-pill">Carbon footprint of AI workloads</span><span class="skill-pill">EU AI Act Annex XI</span><span class="skill-pill">GRI sustainability standards</span><span class="skill-pill">ESG + AI framework</span>
+    </div>
+  </div>
+  <div class="cert-box">
+    <div class="cert-title">Recommended cert path: GRI Certified Sustainability Professional + EU AI Act Annex XI self-study</div>
+    <div class="cert-desc">GRI Professional certification ($500–$800) is the foundational sustainability reporting credential recognized globally. Pair with free EU AI Act Annex XI + IEA AI Energy Report self-study. Combined with AAIA, creates a virtually unique profile: AI auditor who can also assess and report on AI's environmental footprint under CSRD requirements.</div>
+    <div class="cert-meta">
+      <div class="cert-meta-item">Cost: <strong>$500–$800</strong></div>
+      <div class="cert-meta-item">Timeline: <strong>6–8 weeks</strong></div>
+      <div class="cert-meta-item">Providers: <strong>GRI (Global Reporting Initiative); EU AI Act (free)</strong></div>
+    </div>
+    <div class="forecast-track"><div class="forecast-fill" style="width:72%;background:#2ecc71"></div></div>
+    <div class="forecast-note">Forecast severity in 24 months: 72% — regulatory mandate-driven</div>
+  </div>
+</div>
+
+<!-- CARD 12 -->
+<div class="gap-card" data-wave="wave3" data-cats="security cloud">
+  <div class="card-header">
+    <div class="rank-circle" style="background:#e3f2fd;color:#1565c0">#12</div>
+    <div class="card-title-block">
+      <div class="title-row">
+        <span class="card-title">Quantum-Safe Cryptography Transition</span>
+        <span class="badge badge-futr">Future</span>
+        <span class="wave-badge">Wave 3</span>
+      </div>
+    </div>
+  </div>
+  <div class="card-desc">NIST finalized post-quantum cryptography standards (FIPS 203/204/205) in August 2024. "Harvest now, decrypt later" attacks are already occurring — adversaries collect encrypted data today to decrypt when quantum capability matures. Quantum computing postings grew 127% in 2025. Every organization with long-lived encrypted data has a migration obligation. Early movers become the reference practitioners before 2029.</div>
+  <div class="commentary">
+    <div class="commentary-lbl">Analyst Commentary</div>
+    <div class="commentary-text">"Harvest now, decrypt later" attacks remove the temporal separation between present risk and future threat — organizations with sensitive long-lived data (healthcare records, financial contracts, government secrets) face a present obligation even though quantum decryption capability is years away. NIST FIPS 203/204/205 finalization in August 2024 created immediate compliance obligations for federal systems and planning obligations for enterprises — the regulatory timeline is no longer hypothetical. The 127% growth in quantum computing job postings reflects genuine enterprise investment, not speculative interest. The current demand score of 45 understates the trajectory: Wave 3 gaps typically experience rapid demand acceleration once the acute crisis arrives (projected 2028–2030). Establishing practitioner authority now, before the acute crisis, is the optimal positioning strategy — the audit methodology you publish in 2026–2027 will be cited industry-wide when the acute window opens.</div>
+  </div>
+  <div class="metrics-row">
+    <div class="metric"><div class="metric-val">$150K–$250K</div><div class="metric-lbl">Salary range (US — projected)</div></div>
+    <div class="metric"><div class="metric-val">+55% (projected)</div><div class="metric-lbl">Salary premium</div></div>
+    <div class="metric"><div class="metric-val">6–9 months (rising)</div><div class="metric-lbl">Avg time to fill</div></div>
+    <div class="metric"><div class="metric-val">Critical by 2029–2030</div><div class="metric-lbl">Forecast</div></div>
+  </div>
+  <div class="gap-bar-wrap">
+    <div class="gap-bar-labels"><span>Demand: 45/100 <span class="gap-score-chip">Gap: 40pts</span></span><span>Supply: 5/100</span></div>
+    <div class="gap-bar-track"><div class="gap-bar-demand" style="width:45%"></div><div class="gap-bar-supply" style="width:5%"></div></div>
+    <div class="gap-bar-note">Red = demand pressure · Green = available supply · Gap score = demand minus supply</div>
+  </div>
+  <div class="skills-section">
+    <div class="section-lbl">Key skills required</div>
+    <div class="skills-wrap">
+      <span class="skill-pill">NIST FIPS 203/204/205</span><span class="skill-pill">Cryptographic agility assessment</span><span class="skill-pill">Quantum risk inventory</span><span class="skill-pill">Migration roadmap design</span><span class="skill-pill">HSM &amp; PKI modernization</span><span class="skill-pill">Crypto governance frameworks</span>
+    </div>
+  </div>
+  <div class="cert-box">
+    <div class="cert-title">Recommended cert path: NIST PQC self-study now + ISC2 cryptography foundation</div>
+    <div class="cert-desc">No dedicated quantum-safe audit cert exists yet — this is the first-mover window. NIST FIPS 203/204/205 documents are free primary sources. CCSP and SSCP cover cryptography fundamentals as foundation. Watch ISACA Q4 2026 for quantum risk guidance. The auditor who publishes "quantum migration audit methodology" in 2027 will be cited industry-wide for years.</div>
+    <div class="cert-meta">
+      <div class="cert-meta-item">Cost: <strong>$0–$299 (foundation cert exams)</strong></div>
+      <div class="cert-meta-item">Timeline: <strong>Self-study now; formal cert by 2027</strong></div>
+      <div class="cert-meta-item">Providers: <strong>NIST (free FIPS docs); ISC2 for SSCP/CCSP foundation</strong></div>
+    </div>
+    <div class="forecast-track"><div class="forecast-fill" style="width:90%;background:#3498db"></div></div>
+    <div class="forecast-note">Forecast severity in 24 months: 90% — compressing timeline, early mover window closing</div>
+  </div>
+</div>
+
+</div><!-- /cards-container -->
+
+<div class="source-note">
+  Sources: WEF Future of Jobs Report 2025, McKinsey State of AI Trust 2026, ISC2 Cybersecurity Workforce Study, IAPP AI Governance Profession Report, Gartner AI Workforce Predictions, IDC Global IT Skills Study, CompTIA State of the Tech Workforce 2025, Robert Half 2026 Salary Guide, Second Talent Global AI Talent Shortage Statistics 2026, SANS/GIAC Workforce Report 2026, Grant Thornton 2026 AI Impact Survey. Salary figures are US market benchmarks. Supply/demand scores are synthesized from multiple demand indices. Cert costs are self-funded estimates — employer sponsorship typically reduces by 50–80%. Portal refreshes weekly every Sunday.
+</div>
+
+<script>
+// ── Filter ──────────────────────────────────────────────
+function filterCards(type, btn) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.gap-card').forEach(card => {
+    const wave = card.getAttribute('data-wave');
+    const cats = card.getAttribute('data-cats');
+    let show = type === 'all' ? true :
+               (type === 'wave1' || type === 'wave2' || type === 'wave3') ? wave === type :
+               cats.includes(type);
+    card.style.display = show ? 'block' : 'none';
+  });
+}
+
+// ── Chart Data ───────────────────────────────────────────
+const LABELS = [
+  'AI Governance & Compliance','AI Security & Red Teaming','Agentic AI Oversight',
+  'Cloud Security','NHI Governance','Third-Party AI Risk',
+  'Data Governance for AI','GRC Platform (ServiceNow)','AI Explainability (XAI)',
+  'Continuous Compliance','Green / Sustainable AI','Quantum-Safe Crypto'
+];
+const DEMAND = [94,87,85,88,78,75,72,80,65,68,55,45];
+const SUPPLY = [18,28,12,32,15,22,25,30,10,14,8,5];
+const SALARY_PREMIUM = [56,45,52,38,35,30,28,42,32,38,28,55];
+const FORECAST_24M = [92,88,96,80,85,82,78,75,80,83,72,90];
+const COLORS_D = 'rgba(226,75,74,0.82)';
+const COLORS_S = 'rgba(46,204,113,0.82)';
+
+// ── Chart 1: Overview Horizontal Bar ─────────────────────
+const ctx1 = document.getElementById('overviewChart').getContext('2d');
+new Chart(ctx1, {
+  type: 'bar',
+  data: {
+    labels: LABELS,
+    datasets: [
+      { label: 'Demand Score', data: DEMAND, backgroundColor: COLORS_D, borderRadius: 4 },
+      { label: 'Supply Score', data: SUPPLY, backgroundColor: COLORS_S, borderRadius: 4 }
+    ]
+  },
+  options: {
+    indexAxis: 'y',
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { position: 'top', labels: { font: { size: 11 }, padding: 16 } },
+      tooltip: {
+        callbacks: {
+          afterBody: (items) => {
+            const i = items[0].dataIndex;
+            return `Gap Score: ${DEMAND[i] - SUPPLY[i]} pts`;
+          }
+        }
+      }
+    },
+    scales: {
+      x: { max: 100, grid: { color: '#f0efeb' }, ticks: { font: { size: 10 } } },
+      y: { ticks: { font: { size: 10 } }, grid: { display: false } }
+    }
+  }
+});
+
+// ── Chart 2: Salary Premium vs Gap Score (Scatter) ───────
+const ctx2 = document.getElementById('salaryChart').getContext('2d');
+const scatterData = LABELS.map((lbl, i) => ({
+  x: DEMAND[i] - SUPPLY[i],
+  y: SALARY_PREMIUM[i],
+  r: FORECAST_24M[i] / 10
+}));
+const bubbleColors = LABELS.map((_, i) => {
+  const g = DEMAND[i] - SUPPLY[i];
+  return g >= 65 ? 'rgba(226,75,74,0.75)' : g >= 50 ? 'rgba(243,156,18,0.75)' : 'rgba(52,152,219,0.75)';
+});
+new Chart(ctx2, {
+  type: 'bubble',
+  data: { datasets: [{ label: 'Skill Areas', data: scatterData, backgroundColor: bubbleColors }] },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: (item) => {
+            const i = item.dataIndex;
+            return [`${LABELS[i]}`, `Gap: ${item.raw.x}pts · Premium: +${item.raw.y}%`, `24m forecast: ${FORECAST_24M[i]}%`];
+          }
+        }
+      }
+    },
+    scales: {
+      x: { title: { display: true, text: 'Gap Score (demand − supply)', font: { size: 10 } }, grid: { color: '#f0efeb' }, ticks: { font: { size: 10 } } },
+      y: { title: { display: true, text: 'Salary Premium %', font: { size: 10 } }, grid: { color: '#f0efeb' }, ticks: { font: { size: 10 } } }
+    }
+  }
+});
+
+// ── Chart 3: Forecast Trajectory (top 6) ─────────────────
+const ctx3 = document.getElementById('forecastChart').getContext('2d');
+const top6idx = [0,2,1,4,9,11]; // AI Gov, Agentic, AI Sec, NHI, Cont. Comp, Quantum
+const now6 = top6idx.map(i => Math.round((DEMAND[i] - SUPPLY[i]) / 100 * 80 + 20));
+const m12_6 = top6idx.map((i, j) => Math.round(now6[j] * (1 + [0.12,0.18,0.09,0.15,0.20,0.25][j])));
+const m24_6 = top6idx.map((i, j) => Math.round(FORECAST_24M[i]));
+const palette = ['#e24b4a','#c0392b','#f39c12','#e67e22','#2ecc71','#3498db'];
+const top6Labels = top6idx.map(i => LABELS[i].split(' ').slice(0,3).join(' '));
+new Chart(ctx3, {
+  type: 'line',
+  data: {
+    labels: ['Now (Apr 2026)','12 months','24 months'],
+    datasets: top6idx.map((i, j) => ({
+      label: top6Labels[j],
+      data: [now6[j], m12_6[j], m24_6[j]],
+      borderColor: palette[j],
+      backgroundColor: palette[j] + '18',
+      pointRadius: 5, pointHoverRadius: 7,
+      tension: 0.35, borderWidth: 2, fill: false
+    }))
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: 'bottom', labels: { font: { size: 9 }, padding: 8, boxWidth: 12 } } },
+    scales: {
+      y: { min: 40, max: 100, title: { display: true, text: 'Severity Score', font: { size: 10 } }, grid: { color: '#f0efeb' }, ticks: { font: { size: 10 } } },
+      x: { grid: { display: false }, ticks: { font: { size: 10 } } }
+    }
+  }
+});
+</script>
+<script>
+(function() {
+  function nextWed(from, offsetWeeks) {
+    var d = new Date(from);
+    var day = d.getDay(); // 0=Sun, 3=Wed
+    var diffToLastWed = (day + 4) % 7;
+    var base = new Date(d);
+    base.setDate(d.getDate() - diffToLastWed + offsetWeeks * 7);
+    var m = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    return m[base.getMonth()] + ' ' + base.getDate() + ', ' + base.getFullYear();
+  }
+  var el = document.querySelector('.profile-refresh');
+  if (el) {
+    el.textContent = 'Last refreshed: ' + nextWed(new Date(), 0) + ' \u00B7 Next refresh: ' + nextWed(new Date(), 1);
+  }
+})();
+</script>
+</body>
+</html>

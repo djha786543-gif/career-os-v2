@@ -683,7 +683,7 @@ const LiveMonitorSection: React.FC = () => {
 
       {loading ? (
         <div style={{ padding: 40, textAlign: 'center', color: '#475569', fontSize: 13 }}>Loading cached results...</div>
-      ) : visible.length === 0 ? (
+      ) : visible.length === 0 && !error ? (
         <div style={{ padding: '40px 24px', textAlign: 'center', background: 'rgba(255,255,255,0.02)', border: '1px dashed rgba(168,85,247,0.2)', borderRadius: 12, color: '#475569' }}>
           <div style={{ fontSize: 22, marginBottom: 8 }}>🔍</div>
           {jobs.length > 0 ? (

@@ -95,21 +95,6 @@ export function MarketHeatmap() {
             </div>
           </div>
 
-          {/* Skill Gaps */}
-          <div className="glass" style={{ ...s.card, marginTop: 20, borderColor: 'rgba(245, 158, 11, 0.2)' }}>
-            <h3 style={{ ...s.cardTitle, color: '#f59e0b' }}>Priority Gaps</h3>
-            <div style={s.list}>
-              {data.gaps.map(skill => (
-                <div key={skill.skill} style={s.listItem}>
-                  <div style={s.listItemMain}>
-                    <div style={s.skillName}>{skill.skill}</div>
-                    <div style={{ ...s.signalBadge, color: '#f59e0b' }}>{skill.signal}</div>
-                  </div>
-                  <div style={{ ...s.tagBadge, background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b' }}>{skill.tag}</div>
-                </div>
-              ))}
-            </div>
-          </div>
         </div>
       </div>
     </div>
